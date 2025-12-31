@@ -297,19 +297,6 @@
         .history-metric.hidden {
             display: none;
         }
-        .chart-container {
-            position: relative;
-            height: 260px;
-            margin-top: 20px;
-        }
-        .chart-meta {
-            text-align: center;
-            color: #94a3b8;
-            font-size: 12px;
-            margin-top: 10px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
         .alert-list {
             display: flex;
             flex-direction: column;
@@ -593,15 +580,6 @@
                 </div>
             </div>
 
-            <!-- Trend Card -->
-            <div class="card">
-                <h2>📈 Sensor Trends</h2>
-                <div class="chart-container">
-                    <canvas id="readingsChart"></canvas>
-                </div>
-                <div class="chart-meta">Latest 20 readings</div>
-            </div>
-
             <!-- Alerts Card -->
             <div class="card">
                 <h2>🚨 Alerts</h2>
@@ -635,17 +613,8 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let selectedHistoryCategory = 'environmental';
-        const chartColors = {
-            temperature: '#f87171',
-            pressure: '#fbbf24',
-            vibration: '#34d399',
-            humidity: '#38bdf8',
-            rpm: '#c084fc'
-        };
-        let readingsChart = null;
         let configLimits = null;
         let configDefaults = null;
 
@@ -660,15 +629,6 @@
 
         // Hidden sensors state tracking
         let hiddenSensors = new Set();
-
-        // Chart visibility tracking
-        let visibleMetrics = {
-            temperature: true,
-            pressure: true,
-            vibration: true,
-            humidity: true,
-            rpm: true
-        };
 
         // Load hidden sensors from localStorage on page load
         function loadHiddenSensors() {
@@ -884,64 +844,7 @@
                     } else {
                         document.getElementById('readingsHistory').innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 40px; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">No data yet</div>';
                     }
-
-                    updateChart(readings);
                 });
-        }
-
-        function updateChart(readings) {
-            const canvas = document.getElementById('readingsChart');
-            if (!canvas) return;
-
-            const ordered = (readings || []).slice().reverse();
-            const labels = ordered.map(reading => {
-                const ts = reading.timestamp || reading.created_at;
-                const date = new Date(ts);
-                return isNaN(date.getTime()) ? ts : date.toLocaleTimeString();
-            });
-            const datasets = Object.keys(chartColors).map(metric => ({
-                label: metric.charAt(0).toUpperCase() + metric.slice(1),
-                data: ordered.map(reading => {
-                    const value = reading[metric];
-                    return value === null || value === undefined ? null : Number(value);
-                }),
-                borderColor: chartColors[metric],
-                backgroundColor: chartColors[metric],
-                borderWidth: 2,
-                pointRadius: 0,
-                fill: false,
-                spanGaps: true,
-                tension: 0.3,
-                hidden: !visibleMetrics[metric]
-            }));
-
-            if (!readingsChart) {
-                readingsChart = new Chart(canvas.getContext('2d'), {
-                    type: 'line',
-                    data: { labels, datasets },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { labels: { color: '#e2e8f0' } }
-                        },
-                        scales: {
-                            x: {
-                                ticks: { color: '#94a3b8' },
-                                grid: { color: 'rgba(148, 163, 184, 0.2)' }
-                            },
-                            y: {
-                                ticks: { color: '#94a3b8' },
-                                grid: { color: 'rgba(148, 163, 184, 0.2)' }
-                            }
-                        }
-                    }
-                });
-            } else {
-                readingsChart.data.labels = labels;
-                readingsChart.data.datasets = datasets;
-                readingsChart.update();
-            }
         }
 
         function updateStatus() {
