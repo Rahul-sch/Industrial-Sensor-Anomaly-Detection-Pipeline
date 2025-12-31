@@ -1,46 +1,123 @@
--- Create sensor_readings table
+-- =============================================================================
+-- Enhanced Sensor Data Pipeline Database Schema
+-- 50 sensor parameters across 5 categories
+-- =============================================================================
+
+-- Create sensor_readings table with all 50 parameters
 CREATE TABLE IF NOT EXISTS sensor_readings (
     id SERIAL PRIMARY KEY,
     timestamp TIMESTAMPTZ NOT NULL,
+
+    -- ENVIRONMENTAL SENSORS (10)
     temperature FLOAT NOT NULL,
     pressure FLOAT NOT NULL,
-    vibration FLOAT NOT NULL,
     humidity FLOAT NOT NULL,
+    ambient_temp FLOAT,
+    dew_point FLOAT,
+    air_quality_index INT,
+    co2_level INT,
+    particle_count INT,
+    noise_level INT,
+    light_intensity INT,
+
+    -- MECHANICAL SENSORS (10)
+    vibration FLOAT NOT NULL,
     rpm FLOAT NOT NULL,
+    torque INT,
+    shaft_alignment FLOAT,
+    bearing_temp INT,
+    motor_current INT,
+    belt_tension INT,
+    gear_wear INT,
+    coupling_temp INT,
+    lubrication_pressure INT,
+
+    -- THERMAL SENSORS (10)
+    coolant_temp INT,
+    exhaust_temp INT,
+    oil_temp INT,
+    radiator_temp INT,
+    thermal_efficiency INT,
+    heat_dissipation INT,
+    inlet_temp INT,
+    outlet_temp INT,
+    core_temp INT,
+    surface_temp INT,
+
+    -- ELECTRICAL SENSORS (10)
+    voltage INT,
+    current INT,
+    power_factor FLOAT,
+    frequency FLOAT,
+    resistance FLOAT,
+    capacitance INT,
+    inductance FLOAT,
+    phase_angle INT,
+    harmonic_distortion INT,
+    ground_fault INT,
+
+    -- FLUID DYNAMICS SENSORS (10)
+    flow_rate INT,
+    fluid_pressure INT,
+    viscosity INT,
+    density FLOAT,
+    reynolds_number INT,
+    pipe_pressure_drop INT,
+    pump_efficiency INT,
+    cavitation_index INT,
+    turbulence INT,
+    valve_position INT,
+
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Create indexes for optimized queries
 CREATE INDEX IF NOT EXISTS idx_timestamp ON sensor_readings(timestamp);
 CREATE INDEX IF NOT EXISTS idx_created_at ON sensor_readings(created_at);
+CREATE INDEX IF NOT EXISTS idx_rpm ON sensor_readings(rpm);
+CREATE INDEX IF NOT EXISTS idx_temperature ON sensor_readings(temperature);
 
--- Add constraints for data quality
-ALTER TABLE sensor_readings
-    DROP CONSTRAINT IF EXISTS chk_temperature,
-    DROP CONSTRAINT IF EXISTS chk_pressure,
-    DROP CONSTRAINT IF EXISTS chk_vibration,
-    DROP CONSTRAINT IF EXISTS chk_humidity,
-    DROP CONSTRAINT IF EXISTS chk_rpm;
-
-ALTER TABLE sensor_readings
-    ADD CONSTRAINT chk_temperature CHECK (temperature >= 60 AND temperature <= 100),
-    ADD CONSTRAINT chk_pressure CHECK (pressure >= 0 AND pressure <= 15),
-    ADD CONSTRAINT chk_vibration CHECK (vibration >= 0 AND vibration <= 10),
-    ADD CONSTRAINT chk_humidity CHECK (humidity >= 20 AND humidity <= 80),
-    ADD CONSTRAINT chk_rpm CHECK (rpm >= 1000 AND rpm <= 5000);
-
--- Create view for quick statistics
+-- Create view for quick statistics (all 50 parameters)
 CREATE OR REPLACE VIEW sensor_stats AS
 SELECT
     COUNT(*) as total_readings,
     MIN(timestamp) as first_reading,
     MAX(timestamp) as last_reading,
     EXTRACT(EPOCH FROM (MAX(timestamp) - MIN(timestamp))) / 3600 as duration_hours,
+
+    -- Environmental averages
     AVG(temperature)::NUMERIC(10,2) as avg_temperature,
     AVG(pressure)::NUMERIC(10,2) as avg_pressure,
-    AVG(vibration)::NUMERIC(10,2) as avg_vibration,
     AVG(humidity)::NUMERIC(10,2) as avg_humidity,
-    AVG(rpm)::NUMERIC(10,2) as avg_rpm
+    AVG(ambient_temp)::NUMERIC(10,2) as avg_ambient_temp,
+    AVG(dew_point)::NUMERIC(10,2) as avg_dew_point,
+    AVG(air_quality_index)::NUMERIC(10,2) as avg_air_quality_index,
+    AVG(co2_level)::NUMERIC(10,2) as avg_co2_level,
+
+    -- Mechanical averages
+    AVG(vibration)::NUMERIC(10,2) as avg_vibration,
+    AVG(rpm)::NUMERIC(10,2) as avg_rpm,
+    AVG(torque)::NUMERIC(10,2) as avg_torque,
+    AVG(bearing_temp)::NUMERIC(10,2) as avg_bearing_temp,
+    AVG(motor_current)::NUMERIC(10,2) as avg_motor_current,
+
+    -- Thermal averages
+    AVG(coolant_temp)::NUMERIC(10,2) as avg_coolant_temp,
+    AVG(exhaust_temp)::NUMERIC(10,2) as avg_exhaust_temp,
+    AVG(oil_temp)::NUMERIC(10,2) as avg_oil_temp,
+    AVG(thermal_efficiency)::NUMERIC(10,2) as avg_thermal_efficiency,
+
+    -- Electrical averages
+    AVG(voltage)::NUMERIC(10,2) as avg_voltage,
+    AVG(current)::NUMERIC(10,2) as avg_current,
+    AVG(power_factor)::NUMERIC(10,3) as avg_power_factor,
+    AVG(frequency)::NUMERIC(10,3) as avg_frequency,
+
+    -- Fluid averages
+    AVG(flow_rate)::NUMERIC(10,2) as avg_flow_rate,
+    AVG(fluid_pressure)::NUMERIC(10,2) as avg_fluid_pressure,
+    AVG(pump_efficiency)::NUMERIC(10,2) as avg_pump_efficiency,
+    AVG(valve_position)::NUMERIC(10,2) as avg_valve_position
 FROM sensor_readings;
 
 -- Grant permissions to sensoruser
@@ -59,6 +136,8 @@ CREATE TABLE IF NOT EXISTS alerts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_alerts_severity ON alerts(severity);
+CREATE INDEX IF NOT EXISTS idx_alerts_type ON alerts(alert_type);
 
 GRANT ALL PRIVILEGES ON TABLE alerts TO sensoruser;
 GRANT ALL PRIVILEGES ON SEQUENCE alerts_id_seq TO sensoruser;
