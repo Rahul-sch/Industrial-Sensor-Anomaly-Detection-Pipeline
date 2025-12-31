@@ -9,7 +9,7 @@ Contains all settings for Kafka, PostgreSQL, timing, and sensor parameters.
 
 # Default configuration values so the dashboard can reset safely
 DEFAULT_DURATION_HOURS = 3.0
-DEFAULT_INTERVAL_SECONDS = 30
+DEFAULT_INTERVAL_SECONDS = 1
 
 # Limits for dashboard config validation
 CONFIG_LIMITS = {
@@ -176,6 +176,125 @@ SENSOR_RANGES = {
 }
 
 # ============================================================================
+# SENSOR THRESHOLDS - Normal/Safe Operating Limits for Anomaly Detection
+# Based on industry standards (ISO, OSHA, IEEE, ASHRAE) and best practices
+# These represent the UPPER limit before a reading is considered anomalous
+# For parameters where LOW values are dangerous, use 'low_threshold' as well
+# ============================================================================
+
+SENSOR_THRESHOLDS = {
+    # ENVIRONMENTAL SENSORS
+    # Temperature: Indoor comfort 65-78°F, industrial up to 85°F safe
+    'temperature': {'low': 65.0, 'high': 85.0, 'unit': '°F'},
+    # Pressure: Atmospheric ~14.7 PSI, slight overpressure acceptable
+    'pressure': {'low': 2.0, 'high': 12.0, 'unit': 'PSI'},
+    # Humidity: ASHRAE recommends 30-60% RH for comfort and health
+    'humidity': {'low': 30.0, 'high': 65.0, 'unit': '%'},
+    # Ambient temp: Similar to temperature, industrial environment
+    'ambient_temp': {'low': 55.0, 'high': 82.0, 'unit': '°F'},
+    # Dew point: Condensation risk above 60°F, too dry below 35°F
+    'dew_point': {'low': 35.0, 'high': 60.0, 'unit': '°F'},
+    # Air Quality Index: EPA scale - 0-50 Good, 51-100 Moderate, >100 Unhealthy for sensitive
+    'air_quality_index': {'low': 0, 'high': 100, 'unit': 'AQI'},
+    # CO2: OSHA limit 5000ppm, ASHRAE recommends <1000ppm for good air quality
+    'co2_level': {'low': 350, 'high': 1000, 'unit': 'ppm'},
+    # Particle count: Class 100,000 cleanroom standard ~3,520,000 particles/m³
+    'particle_count': {'low': 0, 'high': 50000, 'unit': 'particles/m³'},
+    # Noise: OSHA 85dB requires hearing protection, 70dB safe for prolonged exposure
+    'noise_level': {'low': 30, 'high': 85, 'unit': 'dB'},
+    # Light: 300-500 lux for office work, 500-1000 for detailed tasks
+    'light_intensity': {'low': 200, 'high': 5000, 'unit': 'lux'},
+
+    # MECHANICAL SENSORS
+    # Vibration: ISO 10816 - <2.8 mm/s Good, 2.8-7.1 Satisfactory, >7.1 Unsatisfactory
+    'vibration': {'low': 0.0, 'high': 4.5, 'unit': 'mm/s'},
+    # RPM: Typical industrial motor 1800-3600 RPM, excessive speed causes wear
+    'rpm': {'low': 1200.0, 'high': 4200.0, 'unit': 'RPM'},
+    # Torque: Should not exceed motor/gearbox rated torque
+    'torque': {'low': 50, 'high': 400, 'unit': 'Nm'},
+    # Shaft alignment: ISO 10816 - should be within ±0.05mm for precision, ±0.25mm acceptable
+    'shaft_alignment': {'low': -0.25, 'high': 0.25, 'unit': 'mm'},
+    # Bearing temp: Normal 100-150°F, alarm at 180°F, critical at 200°F
+    'bearing_temp': {'low': 80, 'high': 160, 'unit': '°F'},
+    # Motor current: Should not exceed 80% of nameplate rating continuously
+    'motor_current': {'low': 5, 'high': 80, 'unit': 'A'},
+    # Belt tension: Manufacturer specific, typical 40-80 lbf
+    'belt_tension': {'low': 30, 'high': 85, 'unit': 'lbf'},
+    # Gear wear: <20% good, 20-50% monitor, >50% replace soon
+    'gear_wear': {'low': 0, 'high': 40, 'unit': '%'},
+    # Coupling temp: Similar to bearing, slightly lower
+    'coupling_temp': {'low': 65, 'high': 130, 'unit': '°F'},
+    # Lubrication pressure: Minimum required for film, max before seal damage
+    'lubrication_pressure': {'low': 20, 'high': 50, 'unit': 'PSI'},
+
+    # THERMAL SENSORS
+    # Coolant temp: Normal 180-200°F, overheating begins >210°F
+    'coolant_temp': {'low': 160, 'high': 205, 'unit': '°F'},
+    # Exhaust temp: Varies by engine type, 400-700°F typical, >800°F dangerous
+    'exhaust_temp': {'low': 350, 'high': 750, 'unit': '°F'},
+    # Oil temp: Normal 180-220°F, degradation accelerates >230°F
+    'oil_temp': {'low': 160, 'high': 220, 'unit': '°F'},
+    # Radiator temp: Should track coolant, slightly higher
+    'radiator_temp': {'low': 160, 'high': 210, 'unit': '°F'},
+    # Thermal efficiency: Modern systems 80-95%, <70% indicates problems
+    'thermal_efficiency': {'low': 70, 'high': 95, 'unit': '%'},
+    # Heat dissipation: System-specific, excessive indicates overload
+    'heat_dissipation': {'low': 100, 'high': 4000, 'unit': 'W'},
+    # Inlet temp: Cooling system intake, should be ambient
+    'inlet_temp': {'low': 55, 'high': 100, 'unit': '°F'},
+    # Outlet temp: Higher than inlet by design delta-T
+    'outlet_temp': {'low': 90, 'high': 170, 'unit': '°F'},
+    # Core temp: Internal component temperature
+    'core_temp': {'low': 150, 'high': 210, 'unit': '°F'},
+    # Surface temp: External touch temperature, <140°F safe for brief contact
+    'surface_temp': {'low': 75, 'high': 150, 'unit': '°F'},
+
+    # ELECTRICAL SENSORS
+    # Voltage: US standard 120V ±5% (114-126V normal), ±10% acceptable
+    'voltage': {'low': 114, 'high': 126, 'unit': 'V'},
+    # Current: Load-dependent, should not exceed circuit rating
+    'current': {'low': 0.5, 'high': 40, 'unit': 'A'},
+    # Power factor: IEEE recommends >0.9, utilities penalize <0.85
+    'power_factor': {'low': 0.85, 'high': 1.0, 'unit': 'PF'},
+    # Frequency: US 60Hz ±0.5Hz for grid stability
+    'frequency': {'low': 59.5, 'high': 60.5, 'unit': 'Hz'},
+    # Resistance: Application-specific, high resistance indicates degradation
+    'resistance': {'low': 0.5, 'high': 75, 'unit': 'Ω'},
+    # Capacitance: Should match design value ±20%
+    'capacitance': {'low': 50, 'high': 800, 'unit': 'μF'},
+    # Inductance: Should match design value
+    'inductance': {'low': 0.5, 'high': 8, 'unit': 'mH'},
+    # Phase angle: Unity power factor = 0°, typical inductive loads 30-45°
+    'phase_angle': {'low': -45, 'high': 45, 'unit': '°'},
+    # Harmonic distortion: IEEE 519 - <5% excellent, 5-8% good, >10% problem
+    'harmonic_distortion': {'low': 0, 'high': 8, 'unit': '%'},
+    # Ground fault: >6mA personnel hazard (GFCI trips at 5mA), >30mA equipment protection
+    'ground_fault': {'low': 0, 'high': 25, 'unit': 'mA'},
+
+    # FLUID DYNAMICS SENSORS
+    # Flow rate: System-specific, too low = blockage, too high = pump issue
+    'flow_rate': {'low': 50, 'high': 400, 'unit': 'L/min'},
+    # Fluid pressure: System operating pressure limits
+    'fluid_pressure': {'low': 10, 'high': 80, 'unit': 'PSI'},
+    # Viscosity: Temperature-dependent, should match spec for lubricant/coolant
+    'viscosity': {'low': 10, 'high': 75, 'unit': 'cP'},
+    # Density: Fluid-specific, contamination changes density
+    'density': {'low': 0.8, 'high': 1.2, 'unit': 'g/cm³'},
+    # Reynolds number: <2300 laminar, 2300-4000 transition, >4000 turbulent
+    'reynolds_number': {'low': 2500, 'high': 8000, 'unit': ''},
+    # Pipe pressure drop: Excessive indicates blockage or pump problems
+    'pipe_pressure_drop': {'low': 1, 'high': 35, 'unit': 'PSI'},
+    # Pump efficiency: Modern pumps 70-90%, <65% indicates wear/cavitation
+    'pump_efficiency': {'low': 70, 'high': 95, 'unit': '%'},
+    # Cavitation index: <2 low risk, 2-5 moderate, >5 high risk of damage
+    'cavitation_index': {'low': 0, 'high': 5, 'unit': ''},
+    # Turbulence: Application-specific, excessive can cause vibration
+    'turbulence': {'low': 0, 'high': 60, 'unit': '%'},
+    # Valve position: 0-100%, near limits may indicate control issues
+    'valve_position': {'low': 5, 'high': 95, 'unit': '%'}
+}
+
+# ============================================================================
 # LOGGING CONFIGURATION
 # ============================================================================
 
@@ -207,11 +326,36 @@ CONTEXT_WINDOW_SIZE = 10  # Readings before/after anomaly to analyze
 MODELS_DIR = os.path.join(os.path.dirname(__file__), 'models')
 
 # ============================================================================
-# CHATGPT API CONFIGURATION
+# AI REPORT GENERATION CONFIGURATION (Groq)
 # ============================================================================
 
-# OpenAI API key (set via environment variable for security)
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+# Groq API key - set via environment variable GROQ_API_KEY
+# Get your free API key at: https://console.groq.com/keys
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 
-# Model to use for report generation
-CHATGPT_MODEL = 'gpt-4'  # or 'gpt-3.5-turbo' for lower cost
+# Groq API endpoint (OpenAI-compatible)
+GROQ_BASE_URL = 'https://api.groq.com/openai/v1'
+
+# Model to use for report generation (Groq models)
+# Options: 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'
+AI_MODEL = 'llama-3.3-70b-versatile'
+
+# Legacy OpenAI config (kept for backwards compatibility)
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+CHATGPT_MODEL = 'gpt-4'
+
+# ============================================================================
+# ANOMALY INJECTION CONFIGURATION
+# ============================================================================
+
+# Default injection settings (can be overridden via UI)
+ANOMALY_INJECTION_ENABLED = False  # Disabled by default
+ANOMALY_INJECTION_INTERVAL_MINUTES = 30  # Default: inject every 30 minutes
+
+# Number of sensors to affect when injecting an anomaly
+INJECTION_MIN_SENSORS = 3
+INJECTION_MAX_SENSORS = 7
+
+# How far outside thresholds to push anomalous values (as % of range)
+INJECTION_DEVIATION_MIN = 0.1  # 10% outside threshold
+INJECTION_DEVIATION_MAX = 0.5  # 50% outside threshold

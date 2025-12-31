@@ -704,6 +704,21 @@ def api_get_report_by_anomaly(anomaly_id):
     return jsonify(report)
 
 
+@app.route('/api/generate-full-report', methods=['POST'])
+def api_generate_full_session_report():
+    """Generate a comprehensive report for the entire monitoring session."""
+    if not ML_REPORTS_AVAILABLE:
+        return jsonify({'error': 'ML components not available'}), 500
+    
+    try:
+        from report_generator import generate_full_session_report
+        result = generate_full_session_report()
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"Full session report generation failed: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/ml-stats')
 def api_ml_stats():
     """Get ML detection statistics."""
@@ -764,6 +779,153 @@ def api_ml_stats():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# THRESHOLD AND ANOMALY INJECTION APIs
+# ============================================================================
+
+# Store custom thresholds in memory (session-based)
+custom_thresholds = {}
+
+# Anomaly injection settings
+injection_settings = {
+    'enabled': False,
+    'interval_minutes': 30,
+    'next_injection_time': None,
+    'inject_now': False
+}
+
+
+@app.route('/api/thresholds', methods=['GET'])
+def api_get_thresholds():
+    """Get all custom thresholds and default safe operating limits."""
+    import config
+    
+    # Build defaults from SENSOR_THRESHOLDS (safe operating limits)
+    # Fall back to SENSOR_RANGES if threshold not defined
+    defaults = {}
+    for name, info in config.SENSOR_RANGES.items():
+        threshold = config.SENSOR_THRESHOLDS.get(name, {})
+        defaults[name] = {
+            'low': threshold.get('low', info['min']),
+            'high': threshold.get('high', info['max']),
+            'unit': info.get('unit', ''),
+            # Also include ranges for reference
+            'range_min': info['min'],
+            'range_max': info['max']
+        }
+    
+    return jsonify({
+        'thresholds': custom_thresholds,
+        'defaults': defaults
+    })
+
+
+@app.route('/api/thresholds', methods=['POST'])
+def api_set_threshold():
+    """Set custom threshold for a sensor."""
+    data = request.get_json()
+    if not data or 'sensor' not in data:
+        return jsonify({'error': 'Missing sensor name'}), 400
+    
+    sensor = data['sensor']
+    
+    # Validate sensor exists
+    if sensor not in config.SENSOR_RANGES:
+        return jsonify({'error': f'Unknown sensor: {sensor}'}), 400
+    
+    # Handle reset
+    if data.get('reset'):
+        if sensor in custom_thresholds:
+            del custom_thresholds[sensor]
+        return jsonify({'success': True, 'message': f'Threshold for {sensor} reset to default'})
+    
+    # Set custom threshold
+    min_val = data.get('min')
+    max_val = data.get('max')
+    
+    if min_val is None or max_val is None:
+        return jsonify({'error': 'Missing min or max value'}), 400
+    
+    try:
+        min_val = float(min_val)
+        max_val = float(max_val)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid min or max value'}), 400
+    
+    if min_val >= max_val:
+        return jsonify({'error': 'Min must be less than max'}), 400
+    
+    custom_thresholds[sensor] = {'min': min_val, 'max': max_val}
+    
+    return jsonify({
+        'success': True,
+        'sensor': sensor,
+        'min': min_val,
+        'max': max_val
+    })
+
+
+@app.route('/api/injection-settings', methods=['GET'])
+def api_get_injection_settings():
+    """Get anomaly injection settings for producer."""
+    # Return inject_now flag and clear it immediately (one-time trigger)
+    inject_now = injection_settings.get('inject_now', False)
+    if inject_now:
+        injection_settings['inject_now'] = False
+    
+    return jsonify({
+        'enabled': injection_settings['enabled'],
+        'interval_minutes': injection_settings['interval_minutes'],
+        'next_injection_time': injection_settings['next_injection_time'],
+        'inject_now': inject_now,
+        'thresholds': custom_thresholds
+    })
+
+
+@app.route('/api/injection-settings', methods=['POST'])
+def api_set_injection_settings():
+    """Update anomaly injection settings."""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Missing data'}), 400
+    
+    if 'enabled' in data:
+        injection_settings['enabled'] = bool(data['enabled'])
+    
+    if 'interval_minutes' in data:
+        try:
+            interval = int(data['interval_minutes'])
+            if interval < 1:
+                return jsonify({'error': 'Interval must be at least 1 minute'}), 400
+            injection_settings['interval_minutes'] = interval
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Invalid interval'}), 400
+    
+    # Calculate next injection time
+    if injection_settings['enabled']:
+        from datetime import datetime, timedelta
+        injection_settings['next_injection_time'] = (
+            datetime.utcnow() + timedelta(minutes=injection_settings['interval_minutes'])
+        ).isoformat()
+    else:
+        injection_settings['next_injection_time'] = None
+    
+    return jsonify({
+        'success': True,
+        'settings': injection_settings
+    })
+
+
+@app.route('/api/inject-anomaly', methods=['POST'])
+def api_inject_anomaly_now():
+    """Trigger immediate anomaly injection."""
+    injection_settings['inject_now'] = True
+    return jsonify({
+        'success': True,
+        'message': 'Anomaly injection triggered for next reading'
+    })
 
 
 @app.route('/api/export')

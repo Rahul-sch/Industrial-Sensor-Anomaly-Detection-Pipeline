@@ -339,16 +339,17 @@ def record_anomaly_detection(reading_id, detection_method, anomaly_score,
         conn = psycopg2.connect(**config.DB_CONFIG)
         cursor = conn.cursor()
         
+        # Convert numpy types to Python native types for psycopg2 compatibility
         cursor.execute("""
             INSERT INTO anomaly_detections 
                 (reading_id, detection_method, anomaly_score, is_anomaly, detected_sensors)
             VALUES (%s, %s, %s, %s, %s)
             RETURNING id
         """, (
-            reading_id,
+            int(reading_id),
             detection_method,
-            anomaly_score,
-            is_anomaly,
+            float(anomaly_score) if anomaly_score is not None else 0.0,
+            bool(is_anomaly),
             detected_sensors or []
         ))
         
