@@ -6,6 +6,7 @@ Provides controls and monitoring for the Kafka pipeline
 from flask import Flask, render_template, jsonify, request, make_response
 import psycopg2
 import subprocess
+import sys
 import os
 import signal
 import json
@@ -428,13 +429,31 @@ def start_component(component):
         return jsonify({'success': False, 'error': 'Invalid component'})
 
     try:
-        venv_python = os.path.join(os.path.dirname(__file__), 'venv', 'Scripts', 'python.exe')
-        script_path = os.path.join(os.path.dirname(__file__), f'{component}.py')
+        base_dir = os.path.dirname(__file__)
+        script_path = os.path.join(base_dir, f'{component}.py')
 
-        proc = subprocess.Popen(
-            [venv_python, script_path],
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
-        )
+        # Prefer project virtualenv; fall back to current interpreter.
+        candidates = []
+        if os.name == 'nt':
+            candidates.extend([
+                os.path.join(base_dir, '.venv', 'Scripts', 'python.exe'),
+                os.path.join(base_dir, 'venv', 'Scripts', 'python.exe'),
+            ])
+        else:
+            candidates.extend([
+                os.path.join(base_dir, '.venv', 'bin', 'python'),
+                os.path.join(base_dir, 'venv', 'bin', 'python'),
+            ])
+        python_exec = next((p for p in candidates if os.path.exists(p)), sys.executable)
+
+        popen_kwargs = {}
+        if os.name == 'nt' and hasattr(subprocess, 'CREATE_NEW_PROCESS_GROUP'):
+            popen_kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            # start_new_session detaches the child on Unix-like systems.
+            popen_kwargs['start_new_session'] = True
+
+        proc = subprocess.Popen([python_exec, script_path], **popen_kwargs)
         processes[component] = proc  # Store the process object, not just PID
 
         return jsonify({'success': True, 'pid': proc.pid})

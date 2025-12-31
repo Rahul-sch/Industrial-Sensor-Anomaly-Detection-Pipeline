@@ -1,3 +1,5 @@
 kafka-python==2.0.2
 psycopg2-binary==2.9.9
 flask==3.0.0
+# Explicit dependency used by kafka-python vendored modules
+six==1.17.0
