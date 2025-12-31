@@ -156,7 +156,10 @@ docker-compose down -v
 | `report_generator.py` | AI-powered report generation            |
 | `docker-compose.yml`  | Starts Kafka & Database                 |
 
-📖 **Full Architecture Documentation:** See [`docs/uml_diagrams.md`](docs/uml_diagrams.md) for comprehensive UML diagrams and system documentation.
+📖 **Documentation:**
+
+- [`docs/ARCHITECTURE_AND_DEVELOPMENT_PLAN.md`](docs/ARCHITECTURE_AND_DEVELOPMENT_PLAN.md) - High-level architecture & product roadmap
+- [`docs/uml_diagrams.md`](docs/uml_diagrams.md) - Comprehensive UML diagrams
 
 ---
 
