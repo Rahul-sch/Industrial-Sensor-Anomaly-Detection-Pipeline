@@ -27,7 +27,7 @@ except ImportError:
 # ============================================================================
 
 # Default configuration values so the dashboard can reset safely
-DEFAULT_DURATION_HOURS = 3.0
+DEFAULT_DURATION_HOURS = 0.03333333333333333
 DEFAULT_INTERVAL_SECONDS = 1
 
 # Limits for dashboard config validation
