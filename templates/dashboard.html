@@ -2112,6 +2112,41 @@
       function getCurrentMachineData() {
         return machineData[selectedMachineId];
       }
+
+      // ========== Producer + Machine Running State ==========
+      // Global producer running state (synced with backend)
+      let producerRunning = false;
+
+      // Per-machine running state
+      let machineRunning = {
+        'A': false,
+        'B': false,
+        'C': false
+      };
+
+      // GUARD: Check if data collection is allowed for current machine
+      // Data may ONLY be appended if: producerRunning === true AND machineRunning[selectedMachine] === true
+      function canCollectData() {
+        return producerRunning === true && machineRunning[selectedMachineId] === true;
+      }
+
+      // Reset all machine data buffers
+      function resetMachineData(machineId) {
+        machineData[machineId] = {
+          statsData: null,
+          recentReadings: [],
+          alerts: [],
+          anomalies: [],
+          mlStats: { totalAnomalies: 0, anomalyRate: 0, reportsGenerated: 0 },
+          lstmPredictions: null,
+          totalCount: 0
+        };
+      }
+
+      // Reset ALL machine data
+      function resetAllMachineData() {
+        ['A', 'B', 'C'].forEach(id => resetMachineData(id));
+      }
       
       // Initialize all sensors as enabled with no baseline override
       function initializeMachineState() {
@@ -2138,6 +2173,12 @@
         });
         document.getElementById('adminMachineLabel').textContent = machineId;
         updateAdminPanel();
+
+        // ========== SYNC MACHINE RUNNING STATE ON SWITCH ==========
+        // If producer is running, enable data collection for this machine
+        if (producerRunning) {
+          machineRunning[machineId] = true;
+        }
 
         // ========== MACHINE DATA ISOLATION ==========
         // Immediately render from cached data for this machine (instant UI update)
@@ -2229,13 +2270,42 @@
         document.getElementById("mlAnomalyRate").textContent = machine.mlStats.anomalyRate.toFixed(1) + "%";
         document.getElementById("mlReportsGenerated").textContent = machine.mlStats.reportsGenerated;
 
-        // Render live readings from cache
+        // Render live readings from cache - FULL RENDER from machine buffer
         const readingsContainer = document.getElementById("readingsHistory");
         if (readingsContainer) {
-          if (machine.recentReadings.length === 0) {
+          const machineReadings = machine.recentReadings;
+          if (machineReadings.length === 0) {
             readingsContainer.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 40px; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">No data yet for Machine ${machineId}</div>`;
+          } else {
+            const allSensors = sensorsByCategory[selectedHistoryCategory] || [];
+            const currentState = machineSensorState[machineId];
+            // Filter out hidden sensors AND disabled sensors for current machine
+            const sensors = allSensors.filter(sensor => {
+              return !hiddenSensors.has(sensor) &&
+                     (currentState[sensor]?.enabled !== false);
+            });
+
+            const historyHTML = machineReadings.map((reading) => {
+              const metricsHtml = sensors.map((sensor) => {
+                const displayName = sensor.replace(/_/g, " ").toUpperCase();
+                const value = reading[sensor];
+                return `
+                  <div class="history-metric">
+                    <div class="metric-value">${formatNumber(value)}</div>
+                    <div class="metric-label">${displayName}</div>
+                  </div>
+                `;
+              }).join("");
+
+              return `
+                <div class="history-item">
+                  <div class="history-timestamp">${formatDateTime(reading.created_at)}</div>
+                  <div class="history-grid">${metricsHtml}</div>
+                </div>
+              `;
+            }).join("");
+            readingsContainer.innerHTML = historyHTML;
           }
-          // Full readings will be rendered by updateStats when it returns
         }
       }
       
@@ -2777,32 +2847,36 @@
             // Apply machine filtering (non-destructive wrapper)
             data = filterSensorData(data);
 
-            // Store filtered data in machine-specific buffer
-            currentMachine.statsData = JSON.parse(JSON.stringify(data)); // Deep copy
+            // ========== GUARD: Only collect data if producer + machine are running ==========
+            if (canCollectData()) {
+              // Store filtered data in machine-specific buffer
+              currentMachine.statsData = JSON.parse(JSON.stringify(data)); // Deep copy
 
-            // Accumulate readings for this machine (keep last 50)
-            if (data.recent_readings_full && data.recent_readings_full.length > 0) {
-              const newReadings = data.recent_readings_full;
-              // Merge new readings avoiding duplicates by timestamp
-              const existingTimestamps = new Set(currentMachine.recentReadings.map(r => r.created_at));
-              newReadings.forEach(reading => {
-                if (!existingTimestamps.has(reading.created_at)) {
-                  currentMachine.recentReadings.unshift(reading);
-                }
-              });
-              // Keep only last 50 readings per machine
-              currentMachine.recentReadings = currentMachine.recentReadings.slice(0, 50);
+              // Accumulate readings for this machine (keep last 50)
+              if (data.recent_readings_full && data.recent_readings_full.length > 0) {
+                const newReadings = data.recent_readings_full;
+                // Merge new readings avoiding duplicates by timestamp
+                const existingTimestamps = new Set(currentMachine.recentReadings.map(r => r.created_at));
+                newReadings.forEach(reading => {
+                  if (!existingTimestamps.has(reading.created_at)) {
+                    currentMachine.recentReadings.unshift(reading);
+                  }
+                });
+                // Keep only last 50 readings per machine
+                currentMachine.recentReadings = currentMachine.recentReadings.slice(0, 50);
+              }
+
+              // Update total count for THIS machine specifically
+              // Each fetch increments machine-specific counter
+              const previousCount = currentMachine.totalCount || 0;
+              const newDataCount = (data.recent_readings_full || []).length;
+              if (newDataCount > 0) {
+                currentMachine.totalCount = previousCount + newDataCount;
+              }
             }
+            // ========== END GUARD ==========
 
-            // Update total count for THIS machine specifically
-            // Each fetch increments machine-specific counter
-            const previousCount = currentMachine.totalCount || 0;
-            const newDataCount = (data.recent_readings_full || []).length;
-            if (newDataCount > 0) {
-              currentMachine.totalCount = previousCount + newDataCount;
-            }
-
-            // Display count from machine buffer
+            // Always display count from machine buffer (even when not collecting)
             document.getElementById("totalCount").textContent = currentMachine.totalCount;
 
             // Update Statistics section with category tabs
@@ -3046,12 +3120,16 @@
         fetch("/api/status")
           .then((r) => r.json())
           .then((data) => {
+            // ========== SYNC PRODUCER RUNNING STATE ==========
+            // This is the single source of truth for producer state
+            producerRunning = data.producer_running === true;
+
             const producerEl = document.getElementById("producerStatus");
             const consumerEl = document.getElementById("consumerStatus");
             if (producerEl) {
               producerEl.className =
                 "status-indicator " +
-                (data.producer_running ? "status-running" : "status-stopped");
+                (producerRunning ? "status-running" : "status-stopped");
             }
             if (consumerEl) {
               consumerEl.className =
@@ -3178,11 +3256,17 @@
         })
           .then((r) => r.json())
           .then((result) => {
-            alert(
-              result.success
-                ? `✅ ${component} started!`
-                : `❌ Failed: ${result.error}`
-            );
+            if (result.success) {
+              // ========== SYNC MACHINE RUNNING STATE ON START ==========
+              if (component === 'producer') {
+                producerRunning = true;
+                // Enable data collection for current machine
+                machineRunning[selectedMachineId] = true;
+              }
+              alert(`✅ ${component} started!`);
+            } else {
+              alert(`❌ Failed: ${result.error}`);
+            }
             updateStatus();
           })
           .catch((error) => {
@@ -3196,11 +3280,19 @@
         })
           .then((r) => r.json())
           .then((result) => {
-            alert(
-              result.success
-                ? `✅ ${component} stopped!`
-                : `❌ Failed: ${result.error}`
-            );
+            if (result.success) {
+              // ========== SYNC MACHINE RUNNING STATE ON STOP ==========
+              if (component === 'producer') {
+                producerRunning = false;
+                // Disable data collection for ALL machines
+                machineRunning['A'] = false;
+                machineRunning['B'] = false;
+                machineRunning['C'] = false;
+              }
+              alert(`✅ ${component} stopped!`);
+            } else {
+              alert(`❌ Failed: ${result.error}`);
+            }
             updateStatus();
           })
           .catch((error) => {
@@ -3213,9 +3305,20 @@
           fetch("/api/clear_data")
             .then((r) => r.json())
             .then((result) => {
-              alert(
-                result.success ? "✅ Data cleared!" : "❌ Failed to clear data"
-              );
+              if (result.success) {
+                // ========== RESET ALL MACHINE DATA BUFFERS ==========
+                resetAllMachineData();
+                // Update UI to show zeros
+                document.getElementById("totalCount").textContent = "0";
+                document.getElementById("mlTotalAnomalies").textContent = "0";
+                document.getElementById("mlAnomalyRate").textContent = "0.0%";
+                document.getElementById("mlReportsGenerated").textContent = "0";
+                // Re-render from empty cache
+                renderFromMachineCache(selectedMachineId);
+                alert("✅ Data cleared!");
+              } else {
+                alert("❌ Failed to clear data");
+              }
               updateStats();
             });
         }
@@ -3231,29 +3334,33 @@
             // ========== MACHINE DATA ISOLATION ==========
             const currentMachine = machineData[selectedMachineId];
 
-            const allAlerts = data.alerts || [];
-            // Filter alerts: only show if they mention enabled sensors for selected machine
-            const enabledSensors = getEnabledSensors();
-            const filteredAlerts = allAlerts.filter(alert => {
-              // Check if alert message mentions any enabled sensor
-              const message = (alert.message || '').toLowerCase();
-              return enabledSensors.some(sensor =>
-                message.includes(sensor.toLowerCase()) ||
-                message.includes(sensor.replace(/_/g, ' ').toLowerCase())
-              ) || enabledSensors.length === 0; // Show all if no sensors enabled (edge case)
-            });
+            // ========== GUARD: Only collect data if producer + machine are running ==========
+            if (canCollectData()) {
+              const allAlerts = data.alerts || [];
+              // Filter alerts: only show if they mention enabled sensors for selected machine
+              const enabledSensors = getEnabledSensors();
+              const filteredAlerts = allAlerts.filter(alert => {
+                // Check if alert message mentions any enabled sensor
+                const message = (alert.message || '').toLowerCase();
+                return enabledSensors.some(sensor =>
+                  message.includes(sensor.toLowerCase()) ||
+                  message.includes(sensor.replace(/_/g, ' ').toLowerCase())
+                ) || enabledSensors.length === 0; // Show all if no sensors enabled (edge case)
+              });
 
-            // Store alerts in machine-specific buffer (accumulate unique alerts by ID)
-            const existingIds = new Set(currentMachine.alerts.map(a => a.id));
-            filteredAlerts.forEach(alert => {
-              if (!existingIds.has(alert.id)) {
-                currentMachine.alerts.unshift(alert);
-              }
-            });
-            // Keep only last 50 alerts per machine
-            currentMachine.alerts = currentMachine.alerts.slice(0, 50);
+              // Store alerts in machine-specific buffer (accumulate unique alerts by ID)
+              const existingIds = new Set(currentMachine.alerts.map(a => a.id));
+              filteredAlerts.forEach(alert => {
+                if (!existingIds.has(alert.id)) {
+                  currentMachine.alerts.unshift(alert);
+                }
+              });
+              // Keep only last 50 alerts per machine
+              currentMachine.alerts = currentMachine.alerts.slice(0, 50);
+            }
+            // ========== END GUARD ==========
 
-            // Render from machine-specific buffer
+            // Always render from machine-specific buffer
             const alerts = currentMachine.alerts;
 
             if (alerts.length === 0) {
@@ -3455,8 +3562,10 @@
             const currentMachine = machineData[selectedMachineId];
 
             if (!data.available || !data.trained) {
-              // Store null prediction for this machine
-              currentMachine.lstmPredictions = null;
+              // Store null prediction for this machine (only if collecting)
+              if (canCollectData()) {
+                currentMachine.lstmPredictions = null;
+              }
               document.getElementById("lstmRiskScore").textContent = "N/A";
               document.getElementById("lstmConfidence").textContent = "N/A";
               document.getElementById("lstmPredictedWindow").textContent = "LSTM not trained";
@@ -3467,8 +3576,12 @@
 
             const pred = data.current_prediction;
 
-            // Store prediction in machine-specific buffer
-            currentMachine.lstmPredictions = JSON.parse(JSON.stringify(pred));
+            // ========== GUARD: Only store prediction if producer + machine are running ==========
+            if (canCollectData()) {
+              // Store prediction in machine-specific buffer
+              currentMachine.lstmPredictions = JSON.parse(JSON.stringify(pred));
+            }
+            // ========== END GUARD ==========
 
             // Risk score with color
             const riskScore = pred.risk_score || 0;
@@ -3628,29 +3741,33 @@
             // ========== MACHINE DATA ISOLATION ==========
             const currentMachine = machineData[selectedMachineId];
 
-            // Use machine-specific anomaly buffer for stats calculation
-            const machineAnomalies = currentMachine.anomalies || [];
+            // ========== GUARD: Only update stats if producer + machine are running ==========
+            if (canCollectData()) {
+              // Use machine-specific anomaly buffer for stats calculation
+              const machineAnomalies = currentMachine.anomalies || [];
 
-            // Calculate machine-specific stats from buffer
-            const totalAnomalies = machineAnomalies.length;
+              // Calculate machine-specific stats from buffer
+              const totalAnomalies = machineAnomalies.length;
 
-            // Calculate rate based on machine anomalies
-            const recentAnomalies = machineAnomalies.filter(a => {
-              const age = Date.now() - new Date(a.created_at).getTime();
-              return age < 3600000; // Last hour
-            }).length;
-            const enabledSensors = getEnabledSensors();
-            const enabledCount = enabledSensors.length;
-            const recentRate = enabledCount > 0 ? (recentAnomalies / Math.max(1, enabledCount)) * 10 : 0;
+              // Calculate rate based on machine anomalies
+              const recentAnomalies = machineAnomalies.filter(a => {
+                const age = Date.now() - new Date(a.created_at).getTime();
+                return age < 3600000; // Last hour
+              }).length;
+              const enabledSensors = getEnabledSensors();
+              const enabledCount = enabledSensors.length;
+              const recentRate = enabledCount > 0 ? (recentAnomalies / Math.max(1, enabledCount)) * 10 : 0;
 
-            // Store in machine-specific buffer
-            currentMachine.mlStats = {
-              totalAnomalies: totalAnomalies,
-              anomalyRate: recentRate,
-              reportsGenerated: data.completed_reports || 0
-            };
+              // Store in machine-specific buffer
+              currentMachine.mlStats = {
+                totalAnomalies: totalAnomalies,
+                anomalyRate: recentRate,
+                reportsGenerated: data.completed_reports || 0
+              };
+            }
+            // ========== END GUARD ==========
 
-            // Render from machine buffer
+            // Always render from machine buffer
             document.getElementById("mlTotalAnomalies").textContent = currentMachine.mlStats.totalAnomalies;
             document.getElementById("mlAnomalyRate").textContent = currentMachine.mlStats.anomalyRate.toFixed(1) + "%";
             document.getElementById("mlReportsGenerated").textContent = currentMachine.mlStats.reportsGenerated;
@@ -3668,23 +3785,27 @@
             // ========== MACHINE DATA ISOLATION ==========
             const currentMachine = machineData[selectedMachineId];
 
-            const allAnomalies = data.anomalies || [];
-            // Filter to only show anomalies involving enabled sensors for selected machine
-            const filteredAnomalies = allAnomalies.filter(anomaly =>
-              anomalyInvolvesEnabledSensors(anomaly)
-            );
+            // ========== GUARD: Only collect data if producer + machine are running ==========
+            if (canCollectData()) {
+              const allAnomalies = data.anomalies || [];
+              // Filter to only show anomalies involving enabled sensors for selected machine
+              const filteredAnomalies = allAnomalies.filter(anomaly =>
+                anomalyInvolvesEnabledSensors(anomaly)
+              );
 
-            // Store anomalies in machine-specific buffer (accumulate unique by ID)
-            const existingIds = new Set(currentMachine.anomalies.map(a => a.id));
-            filteredAnomalies.forEach(anomaly => {
-              if (!existingIds.has(anomaly.id)) {
-                currentMachine.anomalies.unshift(anomaly);
-              }
-            });
-            // Keep only last 50 anomalies per machine
-            currentMachine.anomalies = currentMachine.anomalies.slice(0, 50);
+              // Store anomalies in machine-specific buffer (accumulate unique by ID)
+              const existingIds = new Set(currentMachine.anomalies.map(a => a.id));
+              filteredAnomalies.forEach(anomaly => {
+                if (!existingIds.has(anomaly.id)) {
+                  currentMachine.anomalies.unshift(anomaly);
+                }
+              });
+              // Keep only last 50 anomalies per machine
+              currentMachine.anomalies = currentMachine.anomalies.slice(0, 50);
+            }
+            // ========== END GUARD ==========
 
-            // Render from machine-specific buffer
+            // Always render from machine-specific buffer
             const anomalies = currentMachine.anomalies;
 
             if (anomalies.length === 0) {
