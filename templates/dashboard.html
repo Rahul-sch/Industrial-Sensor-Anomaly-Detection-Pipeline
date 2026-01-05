@@ -3148,6 +3148,19 @@
                         const thresholdActiveClass = hasCustomThreshold
                           ? "threshold-active"
                           : "";
+                        // Get metadata if available
+                        const metadata = info.metadata || {};
+                        const location = metadata.location || '';
+                        const equipment = metadata.equipment_section || '';
+                        const criticality = metadata.criticality || 'medium';
+                        const metadataHtml = (location || equipment || criticality) ? `
+                                            <div class="sensor-metadata">
+                                                ${location ? `<span class="metadata-badge metadata-location">📍 ${location}</span>` : ''}
+                                                ${equipment ? `<span class="metadata-badge metadata-equipment">⚙️ ${equipment}</span>` : ''}
+                                                ${criticality ? `<span class="metadata-badge metadata-criticality ${criticality}">${criticality.toUpperCase()}</span>` : ''}
+                                            </div>
+                                        ` : '';
+                        
                         return `
                                         <div class="sensor-item ${hiddenClass} ${thresholdActiveClass}" data-sensor="${name}">
                                             <input type="checkbox" class="sensor-toggle" ${checkedAttr} onchange="toggleSensor('${name}')" title="Toggle visibility">
@@ -3155,6 +3168,7 @@
                                             <div class="sensor-value">${value}<span class="sensor-unit">${
                           info.unit
                         }</span></div>
+                                            ${metadataHtml}
                                             <div class="threshold-toggle" onclick="toggleThreshold('${name}', event)">
                                                 ⚙️ Set Limits ${
                                                   hasCustomThreshold ? "✓" : ""
