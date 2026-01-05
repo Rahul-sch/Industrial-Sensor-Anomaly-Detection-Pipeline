@@ -3074,12 +3074,26 @@
                         const value = machineAvg !== null
                             ? formatNumber(machineAvg)
                             : "--";
+                        // Get metadata if available
+                        const metadata = info.metadata || {};
+                        const location = metadata.location || '';
+                        const equipment = metadata.equipment_section || '';
+                        const criticality = metadata.criticality || 'medium';
+                        const metadataHtml = (location || equipment || criticality) ? `
+                                            <div class="sensor-metadata" style="margin-top: 4px;">
+                                                ${location ? `<span class="metadata-badge metadata-location">📍 ${location}</span>` : ''}
+                                                ${equipment ? `<span class="metadata-badge metadata-equipment">⚙️ ${equipment}</span>` : ''}
+                                                ${criticality ? `<span class="metadata-badge metadata-criticality ${criticality}">${criticality.toUpperCase()}</span>` : ''}
+                                            </div>
+                                        ` : '';
+                        
                         return `
                                         <div class="stat">
                                             <span class="stat-label">${displayName}</span>
                                             <span class="stat-value">${value}${
                           info.unit ? " " + info.unit : ""
                         }</span>
+                                            ${metadataHtml}
                                         </div>
                                     `;
                       })
