@@ -2101,7 +2101,12 @@
         });
         document.getElementById('adminMachineLabel').textContent = machineId;
         updateAdminPanel();
-        updateStats(); // Refresh data display with new machine filter
+        // Refresh all data displays with new machine filter
+        updateStats();
+        loadAlerts();
+        loadMLStats();
+        loadAnomalies();
+        loadLSTMPredictions();
       }
       
       function switchMode(mode) {
@@ -2171,6 +2176,31 @@
         }
         machineSensorState[selectedMachineId][sensorName].baseline = value ? parseFloat(value) : null;
         updateStats(); // Refresh display
+      }
+      
+      // Helper: Check if a sensor is enabled for the selected machine
+      function isSensorEnabled(sensorName) {
+        const currentState = machineSensorState[selectedMachineId];
+        const sensorState = currentState[sensorName];
+        return !sensorState || sensorState.enabled !== false;
+      }
+      
+      // Helper: Get all enabled sensors for the selected machine
+      function getEnabledSensors() {
+        const currentState = machineSensorState[selectedMachineId];
+        const allSensors = Object.keys(sensorsByCategory).flatMap(cat => sensorsByCategory[cat]);
+        return allSensors.filter(sensor => isSensorEnabled(sensor));
+      }
+      
+      // Helper: Check if an anomaly involves any enabled sensors
+      function anomalyInvolvesEnabledSensors(anomaly) {
+        const detectedSensors = anomaly.detected_sensors || [];
+        return detectedSensors.some(sensor => isSensorEnabled(sensor));
+      }
+      
+      // Helper: Filter sensors array to only enabled ones
+      function filterSensorsArray(sensors) {
+        return sensors.filter(sensor => isSensorEnabled(sensor));
       }
       
       // Filter sensor data by machine and enabled state (non-destructive wrapper)
@@ -2613,8 +2643,13 @@
             // Apply machine filtering (non-destructive wrapper)
             data = filterSensorData(data);
             
-            document.getElementById("totalCount").textContent =
-              data.total_count || 0;
+            // Calculate total count for selected machine (only enabled sensors)
+            const enabledSensors = getEnabledSensors();
+            const enabledCount = enabledSensors.length;
+            const totalSensors = Object.keys(sensorsByCategory).flatMap(cat => sensorsByCategory[cat]).length;
+            // Approximate machine count: scale by enabled sensors ratio
+            const machineCount = Math.round((data.total_count || 0) * (enabledCount / Math.max(1, totalSensors)));
+            document.getElementById("totalCount").textContent = machineCount;
 
             // Update Statistics section with category tabs
             if (data.stats_by_category) {
@@ -3041,10 +3076,21 @@
             const container = document.getElementById("alertList");
             if (!container) return;
 
-            const alerts = data.alerts || [];
+            const allAlerts = data.alerts || [];
+            // Filter alerts: only show if they mention enabled sensors for selected machine
+            const enabledSensors = getEnabledSensors();
+            const alerts = allAlerts.filter(alert => {
+              // Check if alert message mentions any enabled sensor
+              const message = (alert.message || '').toLowerCase();
+              return enabledSensors.some(sensor => 
+                message.includes(sensor.toLowerCase()) || 
+                message.includes(sensor.replace(/_/g, ' ').toLowerCase())
+              ) || enabledSensors.length === 0; // Show all if no sensors enabled (edge case)
+            });
+            
             if (alerts.length === 0) {
               container.innerHTML =
-                '<div style="text-align: center; color: #94a3b8; padding: 20px;">No alerts yet</div>';
+                `<div style="text-align: center; color: #94a3b8; padding: 20px;">No alerts for Machine ${selectedMachineId} yet</div>`;
               return;
             }
 
@@ -3280,16 +3326,20 @@
             }
             document.getElementById("lstmTrend").textContent = trendText;
 
-            // Contributing sensors
-            const sensors = pred.contributing_sensors || [];
+            // Contributing sensors - filter to only enabled sensors for selected machine
+            const allSensors = pred.contributing_sensors || [];
+            const sensors = filterSensorsArray(allSensors);
             if (sensors.length > 0) {
               document.getElementById("lstmSensors").textContent = sensors.slice(0, 5).join(", ");
             } else {
-              document.getElementById("lstmSensors").textContent = "None identified";
+              document.getElementById("lstmSensors").textContent = "None identified for Machine " + selectedMachineId;
             }
 
-            // Display detailed sensor analysis
-            const sensorAnalyses = pred.sensor_analyses || [];
+            // Display detailed sensor analysis - filter to only enabled sensors
+            const allSensorAnalyses = pred.sensor_analyses || [];
+            const sensorAnalyses = allSensorAnalyses.filter(analysis => 
+              isSensorEnabled(analysis.sensor)
+            );
             const analysisContainer = document.getElementById("lstmSensorAnalysisContainer");
             const analysisList = document.getElementById("lstmSensorAnalysisList");
 
@@ -3399,12 +3449,38 @@
           .then((data) => {
             if (data.error) return;
 
-            document.getElementById("mlTotalAnomalies").textContent =
-              data.total_anomalies || 0;
-            document.getElementById("mlAnomalyRate").textContent =
-              (data.recent_anomaly_rate || 0).toFixed(1) + "%";
-            document.getElementById("mlReportsGenerated").textContent =
-              data.completed_reports || 0;
+            // Filter anomalies to only count those involving enabled sensors for selected machine
+            fetch("/api/anomalies?limit=1000&only_anomalies=true")
+              .then((r) => r.json())
+              .then((anomaliesData) => {
+                const allAnomalies = anomaliesData.anomalies || [];
+                const machineAnomalies = allAnomalies.filter(anomaly => 
+                  anomalyInvolvesEnabledSensors(anomaly)
+                );
+                
+                // Calculate machine-specific stats
+                const totalAnomalies = machineAnomalies.length;
+                const enabledSensors = getEnabledSensors();
+                const enabledCount = enabledSensors.length;
+                const totalSensors = Object.keys(sensorsByCategory).flatMap(cat => sensorsByCategory[cat]).length;
+                
+                // Calculate rate based on enabled sensors (approximate)
+                const recentAnomalies = machineAnomalies.filter(a => {
+                  const age = Date.now() - new Date(a.created_at).getTime();
+                  return age < 3600000; // Last hour
+                }).length;
+                const recentRate = enabledCount > 0 ? (recentAnomalies / Math.max(1, enabledCount)) * 10 : 0; // Approximate rate
+                
+                document.getElementById("mlTotalAnomalies").textContent = totalAnomalies;
+                document.getElementById("mlAnomalyRate").textContent = recentRate.toFixed(1) + "%";
+                document.getElementById("mlReportsGenerated").textContent = data.completed_reports || 0;
+              })
+              .catch(() => {
+                // Fallback to original data if anomaly fetch fails
+                document.getElementById("mlTotalAnomalies").textContent = data.total_anomalies || 0;
+                document.getElementById("mlAnomalyRate").textContent = (data.recent_anomaly_rate || 0).toFixed(1) + "%";
+                document.getElementById("mlReportsGenerated").textContent = data.completed_reports || 0;
+              });
           })
           .catch(() => {});
       }
@@ -3416,11 +3492,16 @@
             const container = document.getElementById("anomalyList");
             if (!container) return;
 
-            const anomalies = data.anomalies || [];
+            const allAnomalies = data.anomalies || [];
+            // Filter to only show anomalies involving enabled sensors for selected machine
+            const anomalies = allAnomalies.filter(anomaly => 
+              anomalyInvolvesEnabledSensors(anomaly)
+            );
+            
             if (anomalies.length === 0) {
               container.innerHTML = `
                             <div style="text-align: center; color: #94a3b8; padding: 40px;">
-                                No ML anomalies detected yet. Start the pipeline to begin monitoring.
+                                No ML anomalies detected for Machine ${selectedMachineId} yet. Start the pipeline to begin monitoring.
                             </div>
                         `;
               return;
@@ -3428,7 +3509,9 @@
 
             container.innerHTML = anomalies
               .map((anomaly) => {
-                const sensors = anomaly.detected_sensors || [];
+                // Filter detected sensors to only show enabled ones
+                const allSensors = anomaly.detected_sensors || [];
+                const sensors = filterSensorsArray(allSensors);
                 const sensorTags = sensors
                   .slice(0, 5)
                   .map((s) => `<span>${s.replace(/_/g, " ")}</span>`)
@@ -3822,6 +3905,12 @@
                         margin-bottom: 8px;
                     }
                 </style>
+                
+                <div style="background: rgba(96, 165, 250, 0.1); border: 1px solid rgba(96, 165, 250, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 20px; text-align: center;">
+                    <p style="color: #60a5fa; font-weight: 600; font-size: 14px; margin: 0;">
+                        📊 Report for Machine ${selectedMachineId} (Filtered by enabled sensors)
+                    </p>
+                </div>
                 
                 <div class="report-actions">
                     <button class="btn-download-pdf" onclick="downloadReportAsPDF()">
