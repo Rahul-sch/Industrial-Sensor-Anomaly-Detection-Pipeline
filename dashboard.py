@@ -268,14 +268,50 @@ def get_stats():
                 cursor.execute(query)
                 averages = cursor.fetchone()
 
-                # Build category stats
+                # Build category stats with metadata enrichment
+                try:
+                    from sensor_metadata import get_sensor_metadata
+                    metadata_available = True
+                except ImportError:
+                    metadata_available = False
+                
                 category_stats = {}
                 for i, sensor in enumerate(sensors):
                     value = averages[i] if averages and averages[i] is not None else None
-                    category_stats[sensor] = {
+                    sensor_data = {
                         'value': float(value) if value is not None else None,
                         'unit': config.SENSOR_RANGES[sensor].get('unit', '')
                     }
+                    
+                    # Enrich with metadata if available
+                    if metadata_available:
+                        try:
+                            metadata = get_sensor_metadata(sensor)
+                            sensor_data['metadata'] = {
+                                'location': metadata.get('location', ''),
+                                'equipment_section': metadata.get('equipment_section', ''),
+                                'criticality': metadata.get('criticality', 'medium'),
+                                'unit': metadata.get('unit', '') or sensor_data['unit']
+                            }
+                        except Exception as e:
+                            # Safe fallback if metadata lookup fails
+                            logging.warning(f"Metadata lookup failed for {sensor}: {e}")
+                            sensor_data['metadata'] = {
+                                'location': '',
+                                'equipment_section': '',
+                                'criticality': 'medium',
+                                'unit': sensor_data['unit']
+                            }
+                    else:
+                        # No metadata available - use defaults
+                        sensor_data['metadata'] = {
+                            'location': '',
+                            'equipment_section': '',
+                            'criticality': 'medium',
+                            'unit': sensor_data['unit']
+                        }
+                    
+                    category_stats[sensor] = sensor_data
 
                 stats_by_category[category_key] = {
                     'name': category_name,
