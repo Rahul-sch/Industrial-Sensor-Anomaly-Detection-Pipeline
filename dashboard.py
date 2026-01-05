@@ -15,7 +15,10 @@ import time
 import csv
 import io
 from datetime import datetime
-from kafka import KafkaAdminClient
+try:
+    from kafka.admin import KafkaAdminClient
+except ImportError:
+    from kafka import KafkaAdminClient
 
 # Import ML components
 try:
