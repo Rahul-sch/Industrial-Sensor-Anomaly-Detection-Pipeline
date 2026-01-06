@@ -2373,7 +2373,11 @@
           btn.classList.toggle('active', btn.dataset.machine === machineId);
         });
         document.getElementById('adminMachineLabel').textContent = machineId;
-        updateAdminPanel();
+
+        // Render admin panel with new sortable list if in admin mode
+        if (currentMode === 'admin') {
+          renderAdminSensorList();
+        }
 
         // ========== SYNC MACHINE RUNNING STATE ON SWITCH ==========
         // If producer is running, enable data collection for this machine
@@ -2518,9 +2522,12 @@
         const adminPanel = document.getElementById('adminPanel');
         if (mode === 'admin') {
           adminPanel.classList.add('active');
-          updateAdminPanel();
+          // Use new sortable admin sensor list
+          renderAdminSensorList();
         } else {
           adminPanel.classList.remove('active');
+          // Refresh operator dashboard when switching back
+          refreshOperatorDashboard();
         }
       }
       
