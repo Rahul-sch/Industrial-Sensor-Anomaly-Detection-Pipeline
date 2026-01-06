@@ -1296,11 +1296,112 @@
         box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
       }
 
+      /* ========== Admin 3-Pane Layout ========== */
+      .admin-3pane {
+        display: grid;
+        grid-template-columns: 180px 1fr 1fr;
+        gap: 16px;
+        min-height: 400px;
+      }
+
+      .admin-pane {
+        background: rgba(15, 23, 42, 0.5);
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .admin-pane-header {
+        padding: 12px 16px;
+        background: rgba(30, 41, 59, 0.8);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #94a3b8;
+      }
+
+      .admin-pane-header.active-header {
+        color: #4ade80;
+      }
+
+      .admin-pane-header.disabled-header {
+        color: #f87171;
+      }
+
+      .admin-pane-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+      }
+
+      .admin-pane-content.drop-zone-active {
+        background: rgba(59, 130, 246, 0.1);
+        border: 2px dashed rgba(59, 130, 246, 0.4);
+        border-radius: 8px;
+        margin: 4px;
+      }
+
+      /* Category Selector */
+      .category-list {
+        padding: 8px;
+      }
+
+      .category-item {
+        padding: 10px 12px;
+        margin-bottom: 4px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+        color: #94a3b8;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .category-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #e2e8f0;
+      }
+
+      .category-item.active {
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+        font-weight: 500;
+      }
+
+      .category-icon {
+        font-size: 16px;
+      }
+
+      .category-count {
+        margin-left: auto;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+      }
+
       /* ========== Admin Sensor List - Sortable ========== */
       .admin-sensor-list {
         max-height: 500px;
         overflow-y: auto;
         padding: 8px;
+      }
+
+      .admin-sensor-list.empty-list {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100px;
+        color: #64748b;
+        font-size: 13px;
+        text-align: center;
+        padding: 20px;
       }
 
       .admin-sensor-item {
@@ -2233,6 +2334,7 @@
       // ========== Machine and Mode State Management ==========
       let selectedMachineId = 'A';
       let currentMode = 'operator';
+      let selectedAdminCategory = 'environmental'; // For 3-pane admin UI
       
       // Per-machine sensor state: { machineId: { sensorName: { enabled: bool, baseline: number } } }
       let machineSensorState = {
@@ -2628,7 +2730,22 @@
           .replace(/\b\w/g, c => c.toUpperCase());
       }
 
-      // Render the admin sensor list with drag-and-drop support
+      // Category icons for admin panel
+      const adminCategoryIcons = {
+        environmental: '🌍',
+        mechanical: '⚙️',
+        thermal: '🔥',
+        electrical: '⚡',
+        fluid: '💧'
+      };
+
+      // Select admin category
+      function selectAdminCategory(category) {
+        selectedAdminCategory = category;
+        renderAdminSensorList();
+      }
+
+      // Render the admin sensor list with 3-pane layout
       function renderAdminSensorList() {
         const container = document.getElementById('adminSensorControls');
         if (!container) return;
@@ -2640,41 +2757,106 @@
           return;
         }
 
-        let html = '<div class="admin-sensor-list" id="adminSensorList">';
+        // Get sensors for selected category (enabled, in order)
+        const categorySensors = config.sensorOrder.filter(s =>
+          getSensorCategory(s) === selectedAdminCategory && config.enabledSensors.has(s)
+        );
 
-        config.sensorOrder.forEach((sensorName, index) => {
-          const isEnabled = config.enabledSensors.has(sensorName);
-          const category = getSensorCategory(sensorName);
-          const isFirst = index === 0;
-          const isLast = index === config.sensorOrder.length - 1;
+        // Get all disabled sensors (from all categories)
+        const disabledSensors = config.sensorOrder.filter(s => !config.enabledSensors.has(s));
 
+        // Count enabled sensors per category
+        const categoryCounts = {};
+        Object.keys(sensorsByCategory).forEach(cat => {
+          categoryCounts[cat] = config.sensorOrder.filter(s =>
+            getSensorCategory(s) === cat && config.enabledSensors.has(s)
+          ).length;
+        });
+
+        // Build 3-pane HTML
+        let html = '<div class="admin-3pane">';
+
+        // Left Pane: Category Selector
+        html += `
+          <div class="admin-pane">
+            <div class="admin-pane-header">Categories</div>
+            <div class="category-list">
+        `;
+        Object.keys(sensorsByCategory).forEach(cat => {
+          const icon = adminCategoryIcons[cat] || '📊';
+          const isActive = cat === selectedAdminCategory ? 'active' : '';
+          const displayName = cat.charAt(0).toUpperCase() + cat.slice(1);
           html += `
-            <div class="admin-sensor-item ${isEnabled ? '' : 'disabled'}"
-                 data-sensor="${sensorName}" data-index="${index}">
-              <span class="drag-handle" title="Drag to reorder">☰</span>
-              <div class="sensor-info">
-                <span class="sensor-name">${formatSensorName(sensorName)}</span>
-                <span class="sensor-category">${category}</span>
-              </div>
-              <div class="sensor-controls">
-                <button class="move-btn" onclick="moveSensor('${sensorName}', -1)"
-                        ${isFirst ? 'disabled' : ''} title="Move up">▲</button>
-                <button class="move-btn" onclick="moveSensor('${sensorName}', 1)"
-                        ${isLast ? 'disabled' : ''} title="Move down">▼</button>
-                <button class="toggle-btn ${isEnabled ? 'enabled' : 'disabled-state'}"
-                        onclick="toggleSensorEnabledNew('${sensorName}')">
-                  ${isEnabled ? 'Enabled' : 'Disabled'}
-                </button>
-              </div>
+            <div class="category-item ${isActive}" onclick="selectAdminCategory('${cat}')">
+              <span class="category-icon">${icon}</span>
+              <span>${displayName}</span>
+              <span class="category-count">${categoryCounts[cat]}</span>
             </div>
           `;
         });
+        html += '</div></div>';
 
-        html += '</div>';
+        // Center Pane: Active Sensors for Selected Category
+        html += `
+          <div class="admin-pane">
+            <div class="admin-pane-header active-header">
+              ${adminCategoryIcons[selectedAdminCategory] || '📊'} Active - ${selectedAdminCategory.charAt(0).toUpperCase() + selectedAdminCategory.slice(1)}
+            </div>
+            <div class="admin-pane-content" id="activeSensorsPane" data-pane="active">
+        `;
+
+        if (categorySensors.length === 0) {
+          html += '<div class="admin-sensor-list empty-list">No active sensors in this category.<br>Drag from Disabled to enable.</div>';
+        } else {
+          html += '<div class="admin-sensor-list" id="activeSensorList">';
+          categorySensors.forEach((sensorName, index) => {
+            html += renderSensorItem(sensorName, index, true);
+          });
+          html += '</div>';
+        }
+        html += '</div></div>';
+
+        // Right Pane: Disabled Sensors Bucket
+        html += `
+          <div class="admin-pane">
+            <div class="admin-pane-header disabled-header">
+              🚫 Disabled (${disabledSensors.length})
+            </div>
+            <div class="admin-pane-content" id="disabledSensorsPane" data-pane="disabled">
+        `;
+
+        if (disabledSensors.length === 0) {
+          html += '<div class="admin-sensor-list empty-list">No disabled sensors.<br>Drag here to disable.</div>';
+        } else {
+          html += '<div class="admin-sensor-list" id="disabledSensorList">';
+          disabledSensors.forEach((sensorName, index) => {
+            html += renderSensorItem(sensorName, index, false);
+          });
+          html += '</div>';
+        }
+        html += '</div></div>';
+
+        html += '</div>'; // Close admin-3pane
+
         html += '<button class="reset-config-btn" onclick="resetMachineConfig()">Reset to Defaults</button>';
 
         container.innerHTML = html;
         attachDragListeners();
+      }
+
+      // Render a single sensor item
+      function renderSensorItem(sensorName, index, isEnabled) {
+        const category = getSensorCategory(sensorName);
+        return `
+          <div class="admin-sensor-item ${isEnabled ? '' : 'disabled'}"
+               data-sensor="${sensorName}" data-index="${index}" data-enabled="${isEnabled}">
+            <span class="drag-handle" title="Drag to reorder or move">☰</span>
+            <div class="sensor-info">
+              <span class="sensor-name">${formatSensorName(sensorName)}</span>
+              <span class="sensor-category">${category}</span>
+            </div>
+          </div>
+        `;
       }
 
       // ========== Custom Drag-and-Drop (Mouse + Touch) ==========
@@ -2683,9 +2865,12 @@
       let dragState = {
         item: null,
         startY: 0,
+        startX: 0,
         startIndex: 0,
         offsetY: 0,
-        clone: null
+        offsetX: 0,
+        clone: null,
+        sourcePane: null // 'active' or 'disabled'
       };
 
       function attachDragListeners() {
@@ -2704,22 +2889,30 @@
         const item = e.target.closest('.admin-sensor-item');
         if (!item) return;
 
+        const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
         const rect = item.getBoundingClientRect();
 
+        // Determine source pane
+        const paneContent = item.closest('.admin-pane-content');
+        dragState.sourcePane = paneContent?.dataset.pane || 'active';
+
         dragState.item = item;
         dragState.startY = clientY;
+        dragState.startX = clientX;
         dragState.startIndex = parseInt(item.dataset.index);
         dragState.offsetY = clientY - rect.top;
+        dragState.offsetX = clientX - rect.left;
 
         // Create visual clone for dragging
         dragState.clone = item.cloneNode(true);
         dragState.clone.classList.add('dragging');
         dragState.clone.style.position = 'fixed';
         dragState.clone.style.width = rect.width + 'px';
-        dragState.clone.style.left = rect.left + 'px';
+        dragState.clone.style.left = (clientX - dragState.offsetX) + 'px';
         dragState.clone.style.top = (clientY - dragState.offsetY) + 'px';
         dragState.clone.style.pointerEvents = 'none';
+        dragState.clone.style.zIndex = '9999';
         document.body.appendChild(dragState.clone);
 
         // Fade original
@@ -2739,23 +2932,56 @@
         if (!dragState.item) return;
         e.preventDefault();
 
+        const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
         const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
 
         // Move clone
         if (dragState.clone) {
+          dragState.clone.style.left = (clientX - dragState.offsetX) + 'px';
           dragState.clone.style.top = (clientY - dragState.offsetY) + 'px';
         }
 
-        // Find drop target
-        const items = document.querySelectorAll('.admin-sensor-item:not(.dragging)');
-        items.forEach(item => {
+        // Clear all drop indicators
+        document.querySelectorAll('.admin-sensor-item').forEach(item => {
           item.classList.remove('drop-target-above', 'drop-target-below');
         });
+        document.querySelectorAll('.admin-pane-content').forEach(pane => {
+          pane.classList.remove('drop-zone-active');
+        });
 
-        const target = getDropTarget(clientY);
-        if (target && target.element !== dragState.item) {
-          target.element.classList.add(target.position === 'above' ? 'drop-target-above' : 'drop-target-below');
+        // Check if over a pane
+        const targetPane = getTargetPane(clientX, clientY);
+        if (targetPane) {
+          // If over a different pane, highlight it
+          if (targetPane.pane !== dragState.sourcePane) {
+            targetPane.element.classList.add('drop-zone-active');
+          } else {
+            // Same pane - show drop position indicators
+            const target = getDropTarget(clientY);
+            if (target && target.element !== dragState.item) {
+              target.element.classList.add(target.position === 'above' ? 'drop-target-above' : 'drop-target-below');
+            }
+          }
         }
+      }
+
+      function getTargetPane(clientX, clientY) {
+        const activePane = document.getElementById('activeSensorsPane');
+        const disabledPane = document.getElementById('disabledSensorsPane');
+
+        if (activePane) {
+          const rect = activePane.getBoundingClientRect();
+          if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+            return { element: activePane, pane: 'active' };
+          }
+        }
+        if (disabledPane) {
+          const rect = disabledPane.getBoundingClientRect();
+          if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+            return { element: disabledPane, pane: 'disabled' };
+          }
+        }
+        return null;
       }
 
       function getDropTarget(clientY) {
@@ -2774,8 +3000,10 @@
       function endDrag(e) {
         if (!dragState.item) return;
 
+        const clientX = e.type === 'touchend' ? e.changedTouches[0].clientX : e.clientX;
         const clientY = e.type === 'touchend' ? e.changedTouches[0].clientY : e.clientY;
         const target = getDropTarget(clientY);
+        const targetPane = getTargetPane(clientX, clientY);
 
         // Clean up event listeners
         document.removeEventListener('mousemove', onDrag);
@@ -2793,11 +3021,29 @@
         document.querySelectorAll('.admin-sensor-item').forEach(item => {
           item.classList.remove('drop-target-above', 'drop-target-below');
         });
+        document.querySelectorAll('.admin-pane-content').forEach(pane => {
+          pane.classList.remove('drop-zone-active');
+        });
 
-        // Apply reorder if dropped on valid target
-        if (target && target.element !== dragState.item) {
-          const config = machineParameterConfig[selectedMachineId];
-          const sensorName = dragState.item.dataset.sensor;
+        const config = machineParameterConfig[selectedMachineId];
+        const sensorName = dragState.item.dataset.sensor;
+
+        // Handle cross-pane drops (enable/disable)
+        if (targetPane && targetPane.pane !== dragState.sourcePane) {
+          if (targetPane.pane === 'disabled') {
+            // Dropped on disabled pane - disable the sensor
+            config.enabledSensors.delete(sensorName);
+            syncMachineSensorState(sensorName, false);
+          } else if (targetPane.pane === 'active') {
+            // Dropped on active pane - enable the sensor
+            config.enabledSensors.add(sensorName);
+            syncMachineSensorState(sensorName, true);
+          }
+          renderAdminSensorList();
+          refreshOperatorDashboard();
+        }
+        // Handle same-pane reorder (only in active pane)
+        else if (target && target.element !== dragState.item && dragState.sourcePane === 'active') {
           const targetSensor = target.element.dataset.sensor;
 
           const oldIndex = config.sensorOrder.indexOf(sensorName);
@@ -2809,13 +3055,20 @@
           config.sensorOrder.splice(oldIndex, 1);
           config.sensorOrder.splice(newIndex, 0, sensorName);
 
-          // Re-render and refresh
           renderAdminSensorList();
           refreshOperatorDashboard();
         }
 
         // Reset drag state
-        dragState = { item: null, startY: 0, startIndex: 0, offsetY: 0, clone: null };
+        dragState = { item: null, startY: 0, startX: 0, startIndex: 0, offsetY: 0, offsetX: 0, clone: null, sourcePane: null };
+      }
+
+      // Sync machineSensorState with config change
+      function syncMachineSensorState(sensorName, enabled) {
+        if (!machineSensorState[selectedMachineId][sensorName]) {
+          machineSensorState[selectedMachineId][sensorName] = { enabled: true, baseline: null };
+        }
+        machineSensorState[selectedMachineId][sensorName].enabled = enabled;
       }
 
       // Refresh operator dashboard when config changes
