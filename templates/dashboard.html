@@ -2788,10 +2788,26 @@
 
       // Get category for a sensor name
       function getSensorCategory(sensorName) {
+        // Check unified registry first
+        if (unifiedSensorRegistry[sensorName]) {
+          return unifiedSensorRegistry[sensorName].category || 'custom';
+        }
+        // Fallback to sensorsByCategory (for backward compatibility)
         for (const [cat, sensors] of Object.entries(sensorsByCategory)) {
           if (sensors.includes(sensorName)) return cat;
         }
-        return 'unknown';
+        return 'custom'; // Default to 'custom' instead of 'unknown'
+      }
+
+      // Get sensor metadata from unified registry
+      function getSensorMetadata(sensorName) {
+        return unifiedSensorRegistry[sensorName] || {
+          name: sensorName,
+          category: 'custom',
+          unit: '',
+          source: 'unknown',
+          enabled: true
+        };
       }
 
       // Format sensor name for display (underscores to spaces, capitalize words)
@@ -2807,7 +2823,8 @@
         mechanical: '⚙️',
         thermal: '🔥',
         electrical: '⚡',
-        fluid: '💧'
+        fluid: '💧',
+        custom: '➕'
       };
 
       // Select admin category
@@ -3369,13 +3386,21 @@
           .filter(sensor => !hiddenSensors.has(sensor));
 
         const historyHTML = machineReadings.map((reading) => {
+          // Merge custom_sensors into reading if present
+          const mergedReading = { ...reading };
+          if (reading.custom_sensors && typeof reading.custom_sensors === 'object') {
+            Object.assign(mergedReading, reading.custom_sensors);
+          }
+          
           const metricsHtml = sensors.map((sensor) => {
             const displayName = sensor.replace(/_/g, " ").toUpperCase();
-            const value = reading[sensor];
-            const unit = sensorUnits[sensor]?.unit || "";
+            // Check both direct property and custom_sensors object
+            const value = mergedReading[sensor];
+            // Get unit from stats or unified registry
+            const unit = sensorUnits[sensor]?.unit || getSensorMetadata(sensor).unit || "";
             return `
               <div class="history-metric">
-                <div class="metric-value">${formatNumber(value)}${unit ? '<span class="sensor-unit">' + unit + "</span>" : ""}</div>
+                <div class="metric-value">${value !== undefined && value !== null ? formatNumber(value) : '--'}${unit ? '<span class="sensor-unit">' + unit + "</span>" : ""}</div>
                 <div class="metric-label">${displayName}</div>
               </div>
             `;
@@ -3397,8 +3422,12 @@
       let configLimits = null;
       let configDefaults = null;
 
-      // Map of sensors by category from config
-      const sensorsByCategory = {
+      // ============================================================================
+      // UNIFIED SENSOR REGISTRY (Built-in + Custom Sensors)
+      // ============================================================================
+      
+      // Built-in sensors definition (static)
+      const builtInSensorsByCategory = {
         environmental: [
           "temperature",
           "pressure",
@@ -3460,6 +3489,103 @@
           "valve_position",
         ],
       };
+
+      // Unified sensor registry: {sensorName: {name, category, unit, source, enabled}}
+      let unifiedSensorRegistry = {};
+      
+      // Dynamic sensorsByCategory (built from unified registry)
+      let sensorsByCategory = {};
+
+      // Initialize built-in sensors in unified registry
+      function initializeBuiltInSensors() {
+        Object.keys(builtInSensorsByCategory).forEach(category => {
+          builtInSensorsByCategory[category].forEach(sensorName => {
+            unifiedSensorRegistry[sensorName] = {
+              name: sensorName,
+              category: category,
+              unit: '', // Will be populated from stats API
+              source: 'builtin',
+              enabled: true
+            };
+          });
+        });
+        rebuildSensorsByCategory();
+      }
+
+      // Merge custom sensors into unified registry
+      function mergeCustomSensors(customSensors) {
+        // Only merge active custom sensors
+        const activeCustomSensors = (customSensors || []).filter(s => s.is_active);
+        
+        activeCustomSensors.forEach(sensor => {
+          const category = sensor.category || 'custom';
+          unifiedSensorRegistry[sensor.sensor_name] = {
+            name: sensor.sensor_name,
+            category: category,
+            unit: sensor.unit || '',
+            source: 'custom',
+            enabled: true // Default enabled, can be overridden by machine config
+          };
+        });
+        
+        rebuildSensorsByCategory();
+        
+        // Update machine state to include new custom sensors
+        updateMachineStateForCustomSensors(activeCustomSensors);
+      }
+
+      // Update machine state when custom sensors are added
+      function updateMachineStateForCustomSensors(customSensors) {
+        const allSensors = Object.keys(sensorsByCategory).flatMap(cat => sensorsByCategory[cat]);
+        ['A', 'B', 'C'].forEach(machineId => {
+          // Add new custom sensors to machine state
+          customSensors.forEach(sensor => {
+            const sensorName = sensor.sensor_name;
+            if (!machineSensorState[machineId][sensorName]) {
+              machineSensorState[machineId][sensorName] = {
+                enabled: true,
+                baseline: null
+              };
+            }
+          });
+          
+          // Update machineParameterConfig to include new sensors
+          const config = machineParameterConfig[machineId];
+          customSensors.forEach(sensor => {
+            const sensorName = sensor.sensor_name;
+            if (!config.sensorOrder.includes(sensorName)) {
+              config.sensorOrder.push(sensorName);
+            }
+            if (!config.enabledSensors.has(sensorName)) {
+              config.enabledSensors.add(sensorName);
+            }
+          });
+        });
+      }
+
+      // Rebuild sensorsByCategory from unified registry
+      function rebuildSensorsByCategory() {
+        // Initialize all categories (including 'custom' if needed)
+        sensorsByCategory = {};
+        Object.keys(builtInSensorsByCategory).forEach(cat => {
+          sensorsByCategory[cat] = [];
+        });
+        sensorsByCategory['custom'] = [];
+        
+        // Populate from unified registry
+        Object.values(unifiedSensorRegistry).forEach(sensor => {
+          const category = sensor.category || 'custom';
+          if (!sensorsByCategory[category]) {
+            sensorsByCategory[category] = [];
+          }
+          if (!sensorsByCategory[category].includes(sensor.name)) {
+            sensorsByCategory[category].push(sensor.name);
+          }
+        });
+      }
+
+      // Initialize built-in sensors on page load
+      initializeBuiltInSensors();
 
       // Hidden sensors state tracking
       let hiddenSensors = new Set();
@@ -3736,6 +3862,7 @@
         thermal: "🔥",
         electrical: "⚡",
         fluid: "💧",
+        custom: "➕",
       };
 
       function switchCategory(category) {
@@ -3799,13 +3926,19 @@
 
                     // ========== ACCUMULATE SENSOR SUMS/COUNTS FOR AVERAGES ==========
                     // For each sensor value in this reading, add to machine-specific accumulators
-                    Object.keys(reading).forEach(sensorName => {
-                      if (sensorName !== 'created_at' && sensorName !== 'id' && typeof reading[sensorName] === 'number') {
+                    // Merge custom_sensors into reading for accumulation
+                    const mergedReading = { ...reading };
+                    if (reading.custom_sensors && typeof reading.custom_sensors === 'object') {
+                      Object.assign(mergedReading, reading.custom_sensors);
+                    }
+                    
+                    Object.keys(mergedReading).forEach(sensorName => {
+                      if (sensorName !== 'created_at' && sensorName !== 'id' && sensorName !== 'custom_sensors' && typeof mergedReading[sensorName] === 'number') {
                         if (!currentMachine.sensorSums[sensorName]) {
                           currentMachine.sensorSums[sensorName] = 0;
                           currentMachine.sensorCounts[sensorName] = 0;
                         }
-                        currentMachine.sensorSums[sensorName] += reading[sensorName];
+                        currentMachine.sensorSums[sensorName] += mergedReading[sensorName];
                         currentMachine.sensorCounts[sensorName] += 1;
                       }
                     });
@@ -3859,12 +3992,21 @@
                       cat === activeStatsCategory ? "active" : "";
 
                     // Get sensors in configured order, filtered to enabled, also filter hidden
+                    // Include custom sensors from unified registry even if not in stats API yet
                     const orderedSensors = getOrderedEnabledSensors(cat)
-                      .filter(name => !hiddenSensors.has(name) && catData.sensors[name]);
+                      .filter(name => {
+                        if (hiddenSensors.has(name)) return false;
+                        // Include if in stats API response OR if it's a custom sensor in unified registry
+                        return catData.sensors[name] || (unifiedSensorRegistry[name] && unifiedSensorRegistry[name].source === 'custom' && unifiedSensorRegistry[name].category === cat);
+                      });
 
                     const statsHtml = orderedSensors
                       .map((name) => {
-                        const info = catData.sensors[name];
+                        // Get info from stats API or fallback to unified registry
+                        const info = catData.sensors[name] || {
+                          unit: getSensorMetadata(name).unit || '',
+                          metadata: {}
+                        };
                         const displayName = name
                           .replace(/_/g, " ")
                           .toUpperCase();
@@ -3898,11 +4040,16 @@
                       })
                       .join("");
 
+                    // Only show "No visible sensors" if there are truly no sensors in this category
+                    const hasSensorsInCategory = sensorsByCategory[cat] && sensorsByCategory[cat].length > 0;
+                    const noSensorsMessage = hasSensorsInCategory 
+                      ? '<div class="stat"><span class="stat-label" style="color: #94a3b8;">All sensors in this category are hidden or disabled</span></div>'
+                      : '<div class="stat"><span class="stat-label">No sensors in this category</span></div>';
+
                     return `
                                     <div class="tab-content ${isActive}" data-category="${cat}">
                                         ${
-                                          statsHtml ||
-                                          '<div class="stat"><span class="stat-label">No visible sensors</span></div>'
+                                          statsHtml || noSensorsMessage
                                         }
                                     </div>
                                 `;
@@ -3937,11 +4084,19 @@
                     const catData = data.stats_by_category[cat];
                     const isActive = cat === activeCategory ? "active" : "";
                     // Get sensors in configured order, filtered to enabled
+                    // Include custom sensors from unified registry even if not in stats API yet
                     const orderedSensors = getOrderedEnabledSensors(cat)
-                      .filter(name => catData.sensors[name]);
+                      .filter(name => {
+                        // Include if in stats API response OR if it's a custom sensor in unified registry
+                        return catData.sensors[name] || (unifiedSensorRegistry[name] && unifiedSensorRegistry[name].source === 'custom' && unifiedSensorRegistry[name].category === cat);
+                      });
                     const sensorsHtml = orderedSensors
                       .map((name) => {
-                        const info = catData.sensors[name];
+                        // Get info from stats API or fallback to unified registry
+                        const info = catData.sensors[name] || {
+                          unit: getSensorMetadata(name).unit || '',
+                          metadata: {}
+                        };
                         const displayName = name
                           .replace(/_/g, " ")
                           .toUpperCase();
@@ -5579,6 +5734,9 @@ Report generated by Sensor Data Pipeline Dashboard
       loadLSTMStatus();
       loadLSTMPredictions();
       
+      // Load custom sensors and merge into unified registry
+      loadCustomSensors();
+      
       // Initialize Live Sensor Readings timer with default 10s interval
       setRefreshRate(10000);
       
@@ -5597,7 +5755,20 @@ Report generated by Sensor Data Pipeline Dashboard
             }
             
             const sensors = data.sensors || [];
+            
+            // Merge custom sensors into unified registry
+            mergeCustomSensors(sensors);
+            
+            // Refresh UI to show custom sensors
+            updateStats();
+            updateLiveSensorReadings();
+            if (currentMode === 'admin') {
+              renderAdminSensorList();
+            }
+            
+            // Update admin panel custom sensors list
             const container = document.getElementById('customSensorsList');
+            if (!container) return;
             
             if (sensors.length === 0) {
               container.innerHTML = 
@@ -5728,10 +5899,9 @@ Report generated by Sensor Data Pipeline Dashboard
               document.getElementById('newSensorMaxRange').value = '';
               document.getElementById('newSensorLowThreshold').value = '';
               document.getElementById('newSensorHighThreshold').value = '';
-              // Reload list
+              // Reload list and refresh UI
               setTimeout(() => {
-                loadCustomSensors();
-                updateStats(); // Refresh stats to show new sensor
+                loadCustomSensors(); // This will merge into unified registry and refresh UI
               }, 500);
             }
           })
@@ -5856,10 +6026,9 @@ Report generated by Sensor Data Pipeline Dashboard
                 addButton.removeAttribute('data-original-onclick');
               }
               
-              // Reload list
+              // Reload list and refresh UI
               setTimeout(() => {
-                loadCustomSensors();
-                updateStats(); // Refresh stats
+                loadCustomSensors(); // This will merge into unified registry and refresh UI
               }, 500);
             }
           })
