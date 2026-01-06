@@ -3,7 +3,8 @@ Simple Web Dashboard for Sensor Data Pipeline
 Provides controls and monitoring for the Kafka pipeline
 """
 
-from flask import Flask, render_template, jsonify, request, make_response
+from flask import Flask, render_template, jsonify, request, make_response, session
+from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import subprocess
 import os
@@ -548,10 +549,161 @@ def update_config(duration_hours, duration_minutes, interval_seconds):
     except Exception as e:
         return False, str(e)
 
+def bootstrap_admin_user():
+    """Create initial admin user if it doesn't exist."""
+    admin_password = os.getenv('ADMIN_PASSWORD', 'admin')
+    admin_username = os.getenv('ADMIN_USERNAME', 'admin')
+    
+    conn = get_db_connection()
+    if not conn:
+        logging.error("Cannot bootstrap admin user: database not connected")
+        return
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Check if admin user exists
+        cursor.execute("SELECT id FROM users WHERE username = %s", (admin_username,))
+        if cursor.fetchone():
+            cursor.close()
+            conn.close()
+            logging.info(f"Admin user '{admin_username}' already exists")
+            return
+        
+        # Create admin user
+        password_hash = generate_password_hash(admin_password)
+        cursor.execute("""
+            INSERT INTO users (username, password_hash, role)
+            VALUES (%s, %s, 'admin')
+        """, (admin_username, password_hash))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        logging.info(f"Created initial admin user '{admin_username}'")
+    except Exception as e:
+        logging.error(f"Failed to bootstrap admin user: {e}")
+        if conn:
+            conn.rollback()
+            cursor.close()
+            conn.close()
+
+
 @app.route('/')
 def index():
     """Main dashboard page"""
     return render_template('dashboard.html')
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    """Authenticate user and create session."""
+    data = request.json or {}
+    username = data.get('username')
+    password = data.get('password')
+    
+    if not username or not password:
+        return jsonify({'success': False, 'error': 'Username and password required'}), 400
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'error': 'Database not connected'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Get user
+        cursor.execute("""
+            SELECT id, username, password_hash, role
+            FROM users
+            WHERE username = %s
+        """, (username,))
+        row = cursor.fetchone()
+        
+        if not row:
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
+        
+        user_id, db_username, password_hash, role = row
+        
+        # Verify password
+        if not check_password_hash(password_hash, password):
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
+        
+        # Get user's accessible machines
+        cursor.execute("""
+            SELECT machine_id FROM user_machine_access
+            WHERE user_id = %s
+            ORDER BY machine_id
+        """, (user_id,))
+        machine_rows = cursor.fetchall()
+        accessible_machines = [row[0] for row in machine_rows]
+        
+        # If admin, give access to all machines
+        if role == 'admin':
+            accessible_machines = ['A', 'B', 'C']
+        
+        # Update last_login
+        cursor.execute("""
+            UPDATE users SET last_login = NOW() WHERE id = %s
+        """, (user_id,))
+        conn.commit()
+        
+        cursor.close()
+        conn.close()
+        
+        # Create session
+        session.permanent = True
+        session['user_id'] = user_id
+        session['username'] = db_username
+        session['role'] = role
+        session['accessible_machines'] = accessible_machines
+        
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': user_id,
+                'username': db_username,
+                'role': role,
+                'accessible_machines': accessible_machines
+            }
+        })
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            cursor.close()
+            conn.close()
+        logging.error(f"Login error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/auth/logout', methods=['POST'])
+def api_logout():
+    """Destroy session."""
+    session.clear()
+    return jsonify({'success': True})
+
+
+@app.route('/api/auth/me', methods=['GET'])
+def api_auth_me():
+    """Get current user info."""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'Not authenticated'}), 401
+    
+    return jsonify({
+        'success': True,
+        'user': {
+            'id': session['user_id'],
+            'username': session['username'],
+            'role': session['role'],
+            'accessible_machines': session.get('accessible_machines', [])
+        }
+    })
+
 
 def init_background_threads():
     """Ensure background monitors are running."""
@@ -2716,6 +2868,9 @@ def check_custom_sensors_table():
         conn.close()
         return False
 
+
+# Bootstrap admin user on module load
+bootstrap_admin_user()
 
 if __name__ == '__main__':
     # Run startup check
