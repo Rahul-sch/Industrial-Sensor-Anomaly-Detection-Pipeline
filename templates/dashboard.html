@@ -2108,6 +2108,14 @@
         'C': {}
       };
 
+      // Per-machine parameter configuration (in-memory only, resets on refresh)
+      // Tracks sensor order and enabled/disabled state for admin configuration
+      let machineParameterConfig = {
+        'A': { sensorOrder: [], enabledSensors: new Set() },
+        'B': { sensorOrder: [], enabledSensors: new Set() },
+        'C': { sensorOrder: [], enabledSensors: new Set() }
+      };
+
       // ========== Per-Machine Data Isolation ==========
       // TRUE machine-scoped data storage - each machine has its own independent data
       let machineData = {
@@ -2216,6 +2224,12 @@
                 };
               }
             });
+
+            // Initialize machineParameterConfig with sensor order and all enabled
+            machineParameterConfig[machineId] = {
+              sensorOrder: [...allSensors],
+              enabledSensors: new Set(allSensors)
+            };
           });
         }
       }
