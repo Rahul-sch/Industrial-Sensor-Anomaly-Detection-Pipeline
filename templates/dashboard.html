@@ -2535,12 +2535,12 @@
               filterMachineSelector();
               updateUserInfo();
               if (currentUser.role === 'admin') {
-                // Show mode toggle and admin panel for admins
+                // Hide mode toggle for admins (they only see admin panel)
                 const modeToggle = document.querySelector('.mode-toggle');
                 if (modeToggle) {
-                  modeToggle.style.display = 'flex';
+                  modeToggle.style.display = 'none';
                 }
-                // Auto-switch to admin mode for admins
+                // Auto-switch to admin mode for admins (permanent admin mode)
                 switchMode('admin');
               } else {
                 // Hide admin panel and mode toggle for operators
@@ -2636,12 +2636,12 @@
             filterMachineSelector();
             updateUserInfo();
             if (currentUser.role === 'admin') {
-              // Show mode toggle and admin panel for admins
+              // Hide mode toggle for admins (they only see admin panel)
               const modeToggle = document.querySelector('.mode-toggle');
               if (modeToggle) {
-                modeToggle.style.display = 'flex';
+                modeToggle.style.display = 'none';
               }
-              // Auto-switch to admin mode for admins
+              // Auto-switch to admin mode for admins (permanent admin mode)
               switchMode('admin');
             } else {
               // Hide admin panel and mode toggle for operators
