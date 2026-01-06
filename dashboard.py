@@ -236,24 +236,51 @@ def get_stats():
         recent_readings = cursor.fetchall()
 
         # Recent readings with ALL 50 parameters for history display
+        # Check if custom_sensors column exists before including it
         cursor.execute("""
-            SELECT
-                timestamp, created_at,
-                temperature, pressure, humidity, ambient_temp, dew_point,
-                air_quality_index, co2_level, particle_count, noise_level, light_intensity,
-                vibration, rpm, torque, shaft_alignment, bearing_temp,
-                motor_current, belt_tension, gear_wear, coupling_temp, lubrication_pressure,
-                coolant_temp, exhaust_temp, oil_temp, radiator_temp, thermal_efficiency,
-                heat_dissipation, inlet_temp, outlet_temp, core_temp, surface_temp,
-                voltage, current, power_factor, frequency, resistance,
-                capacitance, inductance, phase_angle, harmonic_distortion, ground_fault,
-                flow_rate, fluid_pressure, viscosity, density, reynolds_number,
-                pipe_pressure_drop, pump_efficiency, cavitation_index, turbulence, valve_position,
-                custom_sensors
-            FROM sensor_readings
-            ORDER BY created_at DESC
-            LIMIT 10;
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'sensor_readings' AND column_name = 'custom_sensors'
         """)
+        has_custom_sensors_column = cursor.fetchone() is not None
+        
+        if has_custom_sensors_column:
+            cursor.execute("""
+                SELECT
+                    timestamp, created_at,
+                    temperature, pressure, humidity, ambient_temp, dew_point,
+                    air_quality_index, co2_level, particle_count, noise_level, light_intensity,
+                    vibration, rpm, torque, shaft_alignment, bearing_temp,
+                    motor_current, belt_tension, gear_wear, coupling_temp, lubrication_pressure,
+                    coolant_temp, exhaust_temp, oil_temp, radiator_temp, thermal_efficiency,
+                    heat_dissipation, inlet_temp, outlet_temp, core_temp, surface_temp,
+                    voltage, current, power_factor, frequency, resistance,
+                    capacitance, inductance, phase_angle, harmonic_distortion, ground_fault,
+                    flow_rate, fluid_pressure, viscosity, density, reynolds_number,
+                    pipe_pressure_drop, pump_efficiency, cavitation_index, turbulence, valve_position,
+                    custom_sensors
+                FROM sensor_readings
+                ORDER BY created_at DESC
+                LIMIT 10;
+            """)
+        else:
+            cursor.execute("""
+                SELECT
+                    timestamp, created_at,
+                    temperature, pressure, humidity, ambient_temp, dew_point,
+                    air_quality_index, co2_level, particle_count, noise_level, light_intensity,
+                    vibration, rpm, torque, shaft_alignment, bearing_temp,
+                    motor_current, belt_tension, gear_wear, coupling_temp, lubrication_pressure,
+                    coolant_temp, exhaust_temp, oil_temp, radiator_temp, thermal_efficiency,
+                    heat_dissipation, inlet_temp, outlet_temp, core_temp, surface_temp,
+                    voltage, current, power_factor, frequency, resistance,
+                    capacitance, inductance, phase_angle, harmonic_distortion, ground_fault,
+                    flow_rate, fluid_pressure, viscosity, density, reynolds_number,
+                    pipe_pressure_drop, pump_efficiency, cavitation_index, turbulence, valve_position
+                FROM sensor_readings
+                ORDER BY created_at DESC
+                LIMIT 10;
+            """)
         full_readings = cursor.fetchall()
 
         # Calculate averages for all 50 parameters organized by category
@@ -320,14 +347,18 @@ def get_stats():
                     'sensors': category_stats
                 }
 
-        # Add custom sensors category
-        cursor.execute("""
-            SELECT sensor_name, category, unit, min_range, max_range
-            FROM custom_sensors
-            WHERE is_active = TRUE
-            ORDER BY sensor_name
-        """)
-        custom_sensors_list = cursor.fetchall()
+        # Add custom sensors category (only if custom_sensors table exists)
+        try:
+            cursor.execute("""
+                SELECT sensor_name, category, unit, min_range, max_range
+                FROM custom_sensors
+                WHERE is_active = TRUE
+                ORDER BY sensor_name
+            """)
+            custom_sensors_list = cursor.fetchall()
+        except Exception:
+            # Table doesn't exist yet - skip custom sensors
+            custom_sensors_list = []
         
         if custom_sensors_list:
             custom_stats = {}
@@ -390,14 +421,17 @@ def get_stats():
                     'cavitation_index': reading[49], 'turbulence': reading[50], 'valve_position': reading[51]
                 }
                 
-                # Add custom sensors from JSONB (reading[52])
-                if reading[52] and isinstance(reading[52], dict):
-                    reading_dict['custom_sensors'] = reading[52]
-                elif reading[52]:
-                    # If it's a string, parse it
-                    try:
-                        reading_dict['custom_sensors'] = json.loads(reading[52]) if isinstance(reading[52], str) else reading[52]
-                    except:
+                # Add custom sensors from JSONB if column exists (reading[52])
+                if has_custom_sensors_column and len(reading) > 52:
+                    if reading[52] and isinstance(reading[52], dict):
+                        reading_dict['custom_sensors'] = reading[52]
+                    elif reading[52]:
+                        # If it's a string, parse it
+                        try:
+                            reading_dict['custom_sensors'] = json.loads(reading[52]) if isinstance(reading[52], str) else reading[52]
+                        except:
+                            reading_dict['custom_sensors'] = {}
+                    else:
                         reading_dict['custom_sensors'] = {}
                 else:
                     reading_dict['custom_sensors'] = {}
