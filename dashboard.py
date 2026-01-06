@@ -15,6 +15,7 @@ import time
 import csv
 import io
 from datetime import datetime
+import os
 try:
     from kafka.admin import KafkaAdminClient
 except ImportError:
@@ -96,7 +97,7 @@ def get_db_connection():
         import config
         conn = psycopg2.connect(**config.DB_CONFIG)
         return conn
-    except:
+    except Exception as e:
         return None
 
 def record_alert(alert_type, message, severity='INFO', source='dashboard'):
@@ -1905,6 +1906,26 @@ def api_list_custom_sensors():
     
     try:
         cursor = conn.cursor()
+        
+        # Check if table exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'custom_sensors'
+            )
+        """)
+        table_exists = cursor.fetchone()[0]
+        
+        if not table_exists:
+            db_name = conn.get_dsn_parameters().get('dbname')
+            db_host = conn.get_dsn_parameters().get('host')
+            cursor.close()
+            conn.close()
+            return jsonify({
+                'error': 'custom_sensors table does not exist. Migration add_custom_sensors.sql has not been applied to this database.'
+            }), 500
+        
         cursor.execute("""
             SELECT id, sensor_name, category, unit, min_range, max_range,
                    low_threshold, high_threshold, is_active, created_at, updated_at, created_by
@@ -2245,5 +2266,62 @@ def api_delete_custom_sensor(sensor_id):
         return jsonify({'error': str(e)}), 500
 
 
+def check_custom_sensors_table():
+    """Startup check: Verify custom_sensors table exists"""
+    conn = get_db_connection()
+    if not conn:
+        print("WARNING: Cannot verify custom_sensors table - database not connected")
+        return False
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'custom_sensors'
+            )
+        """)
+        table_exists = cursor.fetchone()[0]
+        db_name = conn.get_dsn_parameters().get('dbname')
+        db_host = conn.get_dsn_parameters().get('host')
+        
+        cursor.close()
+        conn.close()
+        
+        if not table_exists:
+            print("=" * 80)
+            print("ERROR: custom_sensors table does not exist!")
+            print("=" * 80)
+            print(f"Database: {db_name} on {db_host}")
+            print("")
+            print("The migration add_custom_sensors.sql has not been applied.")
+            print("")
+            print("To apply the migration, run one of these commands:")
+            print("")
+            print("  Option 1 (PowerShell, from stub directory):")
+            print("    cd stub")
+            print("    Get-Content migrations/add_custom_sensors.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb")
+            print("")
+            print("  Option 2 (PowerShell, from workspace root):")
+            print("    Get-Content stub/migrations/add_custom_sensors.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb")
+            print("")
+            print("  Option 3 (psql directly, if installed):")
+            print("    psql -h localhost -U sensoruser -d sensordb -f stub/migrations/add_custom_sensors.sql")
+            print("")
+            print("The Admin UI custom sensor features will not work until this migration is applied.")
+            print("=" * 80)
+            return False
+        else:
+            print(f"Verified: custom_sensors table exists in database '{db_name}'")
+            return True
+    except Exception as e:
+        print(f"WARNING: Error checking custom_sensors table: {e}")
+        conn.close()
+        return False
+
+
 if __name__ == '__main__':
+    # Run startup check
+    check_custom_sensors_table()
     app.run(debug=True, host='0.0.0.0', port=5000)
