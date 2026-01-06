@@ -2890,6 +2890,45 @@
         refreshOperatorDashboard();
       }
 
+      // ========== Helper Functions for Ordered Sensor Rendering ==========
+
+      // Get sensors in configured order, filtered to enabled only, optionally by category
+      function getOrderedEnabledSensors(category = null) {
+        const config = machineParameterConfig[selectedMachineId];
+        if (!config || !config.sensorOrder || config.sensorOrder.length === 0) {
+          // Fallback to category order if config not initialized
+          if (category) {
+            return sensorsByCategory[category] || [];
+          }
+          return Object.values(sensorsByCategory).flat();
+        }
+
+        // Filter to enabled sensors in configured order
+        let sensors = config.sensorOrder.filter(s => config.enabledSensors.has(s));
+
+        // Optionally filter by category
+        if (category) {
+          sensors = sensors.filter(s => getSensorCategory(s) === category);
+        }
+
+        return sensors;
+      }
+
+      // Filter and order an array of sensor names based on config
+      function filterAndOrderSensors(sensorArray) {
+        const config = machineParameterConfig[selectedMachineId];
+        if (!config || !config.sensorOrder || config.sensorOrder.length === 0) {
+          // Fallback: just filter by enabled
+          return sensorArray.filter(s => isSensorEnabled(s));
+        }
+
+        const orderMap = new Map(config.sensorOrder.map((s, i) => [s, i]));
+
+        return sensorArray
+          .filter(s => config.enabledSensors.has(s))
+          .sort((a, b) => (orderMap.get(a) ?? 999) - (orderMap.get(b) ?? 999));
+      }
+
       // Filter sensor data by machine and enabled state (non-destructive wrapper)
       function filterSensorData(data) {
         if (!data) return data;
