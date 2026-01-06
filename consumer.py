@@ -8,10 +8,12 @@ import logging
 import signal
 import sys
 import time
+import os
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
 import psycopg2
 from psycopg2 import sql, OperationalError
+from psycopg2.extras import Json
 
 import config
 
@@ -48,6 +50,11 @@ class SensorDataConsumer:
             signal.signal(signal.SIGBREAK, self.signal_handler)
 
         self.logger.info("Consumer initialized")
+        # #region agent log
+        debug_log('consumer.py:__init__', 'Consumer initialized', {
+            'debug_log_path': DEBUG_LOG_PATH
+        }, 'H5')
+        # #endregion
 
     def setup_logging(self):
         """Configure logging."""
@@ -247,8 +254,8 @@ class SensorDataConsumer:
         custom_sensors_raw = reading.get('custom_sensors', {})
         custom_sensors_validated, invalid_sensors = self.validate_custom_sensors(custom_sensors_raw)
         
-        # Convert validated custom sensors to JSONB
-        custom_sensors_jsonb = json.dumps(custom_sensors_validated) if custom_sensors_validated else '{}'
+        # Convert validated custom sensors to JSONB (use psycopg2 Json for proper handling)
+        custom_sensors_jsonb = Json(custom_sensors_validated) if custom_sensors_validated else Json({})
         
         insert_query = """
             INSERT INTO sensor_readings (
@@ -277,7 +284,7 @@ class SensorDataConsumer:
                 %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s,
-                %s::jsonb
+                %s
             )
             RETURNING id
         """
@@ -310,11 +317,12 @@ class SensorDataConsumer:
                 reading.get('density'), reading.get('reynolds_number'),
                 reading.get('pipe_pressure_drop'), reading.get('pump_efficiency'),
                 reading.get('cavitation_index'), reading.get('turbulence'), reading.get('valve_position'),
-                # Custom sensors JSONB
+                # Custom sensors JSONB (psycopg2 Json handles conversion)
                 custom_sensors_jsonb
             ))
             reading_id = self.db_cursor.fetchone()[0]
             self.db_conn.commit()
+            
             return reading_id
 
         except Exception as e:
