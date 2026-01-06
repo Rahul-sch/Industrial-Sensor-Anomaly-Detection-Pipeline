@@ -1536,6 +1536,31 @@
       <h1>🚀 Sensor Data Pipeline</h1>
       <div class="subtitle">Real-Time IoT Monitoring Dashboard</div>
 
+      <!-- Login Form (shown when not authenticated) -->
+      <div id="loginForm" style="display: none; max-width: 400px; margin: 100px auto; padding: 40px; background: rgba(30, 41, 59, 0.8); border-radius: 20px; border: 1px solid rgba(148, 163, 184, 0.2);">
+        <h2 style="text-align: center; margin-bottom: 30px; color: #60a5fa;">Login</h2>
+        <form id="loginFormElement" onsubmit="handleLogin(event)">
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: #94a3b8; font-size: 14px;">Username</label>
+            <input type="text" id="loginUsername" required style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; color: #e2e8f0; font-size: 14px;">
+          </div>
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: #94a3b8; font-size: 14px;">Password</label>
+            <input type="password" id="loginPassword" required style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; color: #e2e8f0; font-size: 14px;">
+          </div>
+          <button type="submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%); border: none; border-radius: 8px; color: white; font-weight: 600; font-size: 14px; cursor: pointer;">Login</button>
+          <div id="loginError" style="margin-top: 16px; color: #f87171; font-size: 14px; text-align: center; display: none;"></div>
+        </form>
+      </div>
+
+      <!-- Main Dashboard (hidden when not authenticated) -->
+      <div id="mainDashboard" style="display: none;">
+        <!-- User Info Bar -->
+        <div style="text-align: right; margin-bottom: 20px; padding: 12px; background: rgba(30, 41, 59, 0.6); border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.1);">
+          <span id="userInfo" style="color: #94a3b8; margin-right: 16px;"></span>
+          <button onclick="handleLogout()" style="padding: 6px 16px; background: rgba(248, 113, 113, 0.2); border: 1px solid rgba(248, 113, 113, 0.3); border-radius: 6px; color: #f87171; font-size: 12px; cursor: pointer;">Logout</button>
+        </div>
+
       <!-- Machine and Mode Controls -->
       <div class="machine-mode-controls">
         <div class="machine-selector">
@@ -2400,6 +2425,122 @@
     </div>
 
     <script>
+      // ========== Authentication State ==========
+      let currentUser = null;
+      let accessibleMachines = [];
+
+      // Check authentication on page load
+      async function checkAuth() {
+        try {
+          const response = await fetch('/api/auth/me');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              currentUser = data.user;
+              accessibleMachines = data.user.accessible_machines || [];
+              showDashboard();
+              filterMachineSelector();
+              updateUserInfo();
+              if (currentUser.role !== 'admin') {
+                document.getElementById('adminPanel').style.display = 'none';
+                document.querySelector('.mode-toggle').style.display = 'none';
+              }
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Auth check failed:', e);
+        }
+        showLogin();
+      }
+
+      function showLogin() {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('mainDashboard').style.display = 'none';
+      }
+
+      function showDashboard() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('mainDashboard').style.display = 'block';
+      }
+
+      async function handleLogin(event) {
+        event.preventDefault();
+        const username = document.getElementById('loginUsername').value;
+        const password = document.getElementById('loginPassword').value;
+        const errorDiv = document.getElementById('loginError');
+
+        try {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            currentUser = data.user;
+            accessibleMachines = data.user.accessible_machines || [];
+            showDashboard();
+            filterMachineSelector();
+            updateUserInfo();
+            if (currentUser.role !== 'admin') {
+              document.getElementById('adminPanel').style.display = 'none';
+              document.querySelector('.mode-toggle').style.display = 'none';
+            }
+            errorDiv.style.display = 'none';
+            // Select first accessible machine
+            if (accessibleMachines.length > 0) {
+              selectMachine(accessibleMachines[0]);
+            }
+          } else {
+            errorDiv.textContent = data.error || 'Login failed';
+            errorDiv.style.display = 'block';
+          }
+        } catch (e) {
+          errorDiv.textContent = 'Network error. Please try again.';
+          errorDiv.style.display = 'block';
+        }
+      }
+
+      async function handleLogout() {
+        try {
+          await fetch('/api/auth/logout', { method: 'POST' });
+        } catch (e) {
+          console.error('Logout error:', e);
+        }
+        currentUser = null;
+        accessibleMachines = [];
+        showLogin();
+      }
+
+      function updateUserInfo() {
+        if (currentUser) {
+          const roleText = currentUser.role === 'admin' ? 'Admin' : 'Operator';
+          document.getElementById('userInfo').textContent = 
+            `Logged in as ${currentUser.username} (${roleText})`;
+        }
+      }
+
+      function filterMachineSelector() {
+        const machineButtons = document.querySelectorAll('.machine-btn');
+        machineButtons.forEach(btn => {
+          const machineId = btn.dataset.machine;
+          if (accessibleMachines.includes(machineId)) {
+            btn.style.display = 'inline-block';
+          } else {
+            btn.style.display = 'none';
+          }
+        });
+        // Select first accessible machine if current selection is not accessible
+        if (!accessibleMachines.includes(selectedMachineId) && accessibleMachines.length > 0) {
+          selectMachine(accessibleMachines[0]);
+        }
+      }
+
+      // Check auth on page load
+      checkAuth();
+
       // ========== Machine and Mode State Management ==========
       let selectedMachineId = 'A';
       let currentMode = 'operator';
@@ -2692,6 +2833,10 @@
       }
       
       function switchMode(mode) {
+        // Only allow admin mode if user is admin
+        if (mode === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
+          return;
+        }
         currentMode = mode;
         document.querySelectorAll('.mode-btn').forEach(btn => {
           btn.classList.toggle('active', btn.dataset.mode === mode);
