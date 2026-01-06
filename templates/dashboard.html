@@ -2545,6 +2545,12 @@
         });
         document.getElementById('adminMachineLabel').textContent = machineId;
 
+        // Load machine-specific custom sensor state when switching machines
+        const customSensors = Object.values(unifiedSensorRegistry).filter(s => s.source === 'custom');
+        if (customSensors.length > 0) {
+          loadMachineCustomSensorState(machineId, customSensors.map(s => ({ sensor_name: s.name })));
+        }
+
         // Render admin panel with new sortable list if in admin mode
         if (currentMode === 'admin') {
           renderAdminSensorList();
@@ -3120,15 +3126,55 @@
         if (targetPane && targetPane.pane !== dragState.sourcePane) {
           if (targetPane.pane === 'disabled') {
             // Dropped on disabled pane - disable the sensor
-            config.enabledSensors.delete(sensorName);
-            syncMachineSensorState(sensorName, false);
+            const isCustomSensor = unifiedSensorRegistry[sensorName] && unifiedSensorRegistry[sensorName].source === 'custom';
+            if (isCustomSensor) {
+              // For custom sensors, use backend API
+              fetch(`/api/machines/${selectedMachineId}/custom-sensors/${sensorName}/toggle`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+              })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.success) {
+                    config.enabledSensors.delete(sensorName);
+                    syncMachineSensorState(sensorName, false);
+                    renderAdminSensorList();
+                    refreshOperatorDashboard();
+                  }
+                })
+                .catch(error => console.error('Error disabling custom sensor:', error));
+            } else {
+              config.enabledSensors.delete(sensorName);
+              syncMachineSensorState(sensorName, false);
+              renderAdminSensorList();
+              refreshOperatorDashboard();
+            }
           } else if (targetPane.pane === 'active') {
             // Dropped on active pane - enable the sensor
-            config.enabledSensors.add(sensorName);
-            syncMachineSensorState(sensorName, true);
+            const isCustomSensor = unifiedSensorRegistry[sensorName] && unifiedSensorRegistry[sensorName].source === 'custom';
+            if (isCustomSensor) {
+              // For custom sensors, use backend API
+              fetch(`/api/machines/${selectedMachineId}/custom-sensors/${sensorName}/toggle`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+              })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.success && data.enabled) {
+                    config.enabledSensors.add(sensorName);
+                    syncMachineSensorState(sensorName, true);
+                    renderAdminSensorList();
+                    refreshOperatorDashboard();
+                  }
+                })
+                .catch(error => console.error('Error enabling custom sensor:', error));
+            } else {
+              config.enabledSensors.add(sensorName);
+              syncMachineSensorState(sensorName, true);
+              renderAdminSensorList();
+              refreshOperatorDashboard();
+            }
           }
-          renderAdminSensorList();
-          refreshOperatorDashboard();
         }
         // Handle same-pane reorder (only in active pane)
         else if (target && target.element !== dragState.item && dragState.sourcePane === 'active') {
@@ -3194,22 +3240,60 @@
         const config = machineParameterConfig[selectedMachineId];
         if (!config) return;
 
-        // Toggle in machineParameterConfig
-        if (config.enabledSensors.has(sensorName)) {
-          config.enabledSensors.delete(sensorName);
+        // Check if this is a custom sensor
+        const isCustomSensor = unifiedSensorRegistry[sensorName] && unifiedSensorRegistry[sensorName].source === 'custom';
+        
+        if (isCustomSensor) {
+          // For custom sensors, use backend API to persist to machine_sensor_config
+          const currentEnabled = config.enabledSensors.has(sensorName);
+          fetch(`/api/machines/${selectedMachineId}/custom-sensors/${sensorName}/toggle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                // Update local state
+                if (data.enabled) {
+                  config.enabledSensors.add(sensorName);
+                } else {
+                  config.enabledSensors.delete(sensorName);
+                }
+                
+                // Sync with machineSensorState
+                if (!machineSensorState[selectedMachineId][sensorName]) {
+                  machineSensorState[selectedMachineId][sensorName] = { enabled: true, baseline: null };
+                }
+                machineSensorState[selectedMachineId][sensorName].enabled = data.enabled;
+                
+                // Re-render and refresh
+                renderAdminSensorList();
+                refreshOperatorDashboard();
+              } else {
+                console.error('Failed to toggle custom sensor:', data.error);
+              }
+            })
+            .catch(error => {
+              console.error('Error toggling custom sensor:', error);
+            });
         } else {
-          config.enabledSensors.add(sensorName);
-        }
+          // For built-in sensors, use existing logic (in-memory only)
+          if (config.enabledSensors.has(sensorName)) {
+            config.enabledSensors.delete(sensorName);
+          } else {
+            config.enabledSensors.add(sensorName);
+          }
 
-        // Sync with existing machineSensorState for backward compatibility
-        if (!machineSensorState[selectedMachineId][sensorName]) {
-          machineSensorState[selectedMachineId][sensorName] = { enabled: true, baseline: null };
-        }
-        machineSensorState[selectedMachineId][sensorName].enabled = config.enabledSensors.has(sensorName);
+          // Sync with existing machineSensorState for backward compatibility
+          if (!machineSensorState[selectedMachineId][sensorName]) {
+            machineSensorState[selectedMachineId][sensorName] = { enabled: true, baseline: null };
+          }
+          machineSensorState[selectedMachineId][sensorName].enabled = config.enabledSensors.has(sensorName);
 
-        // Re-render and refresh
-        renderAdminSensorList();
-        refreshOperatorDashboard();
+          // Re-render and refresh
+          renderAdminSensorList();
+          refreshOperatorDashboard();
+        }
       }
 
       // ========== Reset to Defaults ==========
@@ -3538,29 +3622,72 @@
       function updateMachineStateForCustomSensors(customSensors) {
         const allSensors = Object.keys(sensorsByCategory).flatMap(cat => sensorsByCategory[cat]);
         ['A', 'B', 'C'].forEach(machineId => {
-          // Add new custom sensors to machine state
-          customSensors.forEach(sensor => {
-            const sensorName = sensor.sensor_name;
-            if (!machineSensorState[machineId][sensorName]) {
-              machineSensorState[machineId][sensorName] = {
-                enabled: true,
-                baseline: null
-              };
-            }
-          });
-          
-          // Update machineParameterConfig to include new sensors
-          const config = machineParameterConfig[machineId];
-          customSensors.forEach(sensor => {
-            const sensorName = sensor.sensor_name;
-            if (!config.sensorOrder.includes(sensorName)) {
-              config.sensorOrder.push(sensorName);
-            }
-            if (!config.enabledSensors.has(sensorName)) {
-              config.enabledSensors.add(sensorName);
-            }
-          });
+          // Load machine-specific enabled state from backend
+          loadMachineCustomSensorState(machineId, customSensors);
         });
+      }
+
+      // Load machine-specific custom sensor enabled state from backend
+      function loadMachineCustomSensorState(machineId, customSensors) {
+        fetch(`/api/machines/${machineId}/custom-sensors`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.sensors) {
+              // Add custom sensors to machine state with their enabled status
+              customSensors.forEach(sensor => {
+                const sensorName = sensor.sensor_name;
+                const enabled = data.sensors[sensorName]?.enabled !== false; // Default to true if not set
+                
+                if (!machineSensorState[machineId][sensorName]) {
+                  machineSensorState[machineId][sensorName] = {
+                    enabled: enabled,
+                    baseline: null
+                  };
+                } else {
+                  machineSensorState[machineId][sensorName].enabled = enabled;
+                }
+              });
+              
+              // Update machineParameterConfig to include new sensors with correct enabled state
+              const config = machineParameterConfig[machineId];
+              customSensors.forEach(sensor => {
+                const sensorName = sensor.sensor_name;
+                const enabled = data.sensors[sensorName]?.enabled !== false;
+                
+                if (!config.sensorOrder.includes(sensorName)) {
+                  config.sensorOrder.push(sensorName);
+                }
+                if (enabled) {
+                  config.enabledSensors.add(sensorName);
+                } else {
+                  config.enabledSensors.delete(sensorName);
+                }
+              });
+              
+              // If this is the currently selected machine, refresh the UI
+              if (machineId === selectedMachineId && currentMode === 'admin') {
+                renderAdminSensorList();
+              }
+            }
+          })
+          .catch(error => {
+            console.error(`Error loading custom sensor state for machine ${machineId}:`, error);
+            // Fallback: enable all custom sensors by default
+            customSensors.forEach(sensor => {
+              const sensorName = sensor.sensor_name;
+              if (!machineSensorState[machineId][sensorName]) {
+                machineSensorState[machineId][sensorName] = {
+                  enabled: true,
+                  baseline: null
+                };
+              }
+              const config = machineParameterConfig[machineId];
+              if (!config.sensorOrder.includes(sensorName)) {
+                config.sensorOrder.push(sensorName);
+              }
+              config.enabledSensors.add(sensorName);
+            });
+          });
       }
 
       // Rebuild sensorsByCategory from unified registry

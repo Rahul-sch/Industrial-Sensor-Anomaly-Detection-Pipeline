@@ -146,11 +146,13 @@ class SensorDataProducer:
         elapsed = (datetime.utcnow() - self.last_config_reload).total_seconds()
         return elapsed >= self.config_reload_interval
 
-    def generate_custom_sensors(self):
-        """Generate values for all active custom sensors."""
+    def generate_custom_sensors(self, machine_id='A'):
+        """Generate values for custom sensors enabled for the specified machine."""
+        # Get only enabled custom sensors for this machine
+        enabled_sensors = self.get_enabled_custom_sensors_for_machine(machine_id)
         custom_sensor_values = {}
         
-        for sensor_name, sensor_config in self.custom_sensors.items():
+        for sensor_name, sensor_config in enabled_sensors.items():
             min_val = sensor_config['min']
             max_val = sensor_config['max']
             
@@ -474,8 +476,13 @@ class SensorDataProducer:
         }
         
         # Add custom sensors if any are configured
+        # Note: For now, we generate for machine 'A' by default
+        # In a multi-machine setup, this would be passed as a parameter
+        # The consumer/dashboard will filter based on machine_sensor_config
         if self.custom_sensors:
-            custom_values = self.generate_custom_sensors()
+            # Generate all custom sensors (consumer will filter per-machine)
+            # This maintains backward compatibility
+            custom_values = self.generate_custom_sensors('A')
             if custom_values:
                 reading['custom_sensors'] = custom_values
         

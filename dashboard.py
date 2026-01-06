@@ -1790,7 +1790,7 @@ def api_stop_machine(machine_id):
 
 @app.route('/api/machines/<machine_id>/sensors/<sensor_name>/toggle', methods=['POST'])
 def api_toggle_sensor(machine_id, sensor_name):
-    """Toggle sensor enabled/disabled state"""
+    """Toggle sensor enabled/disabled state (built-in sensors only)"""
     if machine_id not in ['A', 'B', 'C']:
         return jsonify({'success': False, 'error': 'Invalid machine ID'}), 400
     
@@ -1810,6 +1810,116 @@ def api_toggle_sensor(machine_id, sensor_name):
             })
         else:
             return jsonify({'success': False, 'error': 'Sensor not found'}), 404
+
+
+@app.route('/api/machines/<machine_id>/custom-sensors/<sensor_name>/toggle', methods=['POST'])
+def api_toggle_custom_sensor(machine_id, sensor_name):
+    """Toggle custom sensor enabled/disabled state for a specific machine (uses machine_sensor_config)"""
+    if machine_id not in ['A', 'B', 'C']:
+        return jsonify({'success': False, 'error': 'Invalid machine ID'}), 400
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'error': 'Database not connected'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Check if custom sensor exists and is active
+        cursor.execute("""
+            SELECT sensor_name FROM custom_sensors 
+            WHERE sensor_name = %s AND is_active = TRUE
+        """, (sensor_name,))
+        if not cursor.fetchone():
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'error': 'Custom sensor not found or inactive'}), 404
+        
+        # Get current enabled state from machine_sensor_config
+        cursor.execute("""
+            SELECT enabled FROM machine_sensor_config
+            WHERE machine_id = %s AND sensor_name = %s
+        """, (machine_id, sensor_name))
+        row = cursor.fetchone()
+        
+        if row:
+            # Update existing config
+            new_enabled = not row[0]
+            cursor.execute("""
+                UPDATE machine_sensor_config
+                SET enabled = %s, updated_at = NOW()
+                WHERE machine_id = %s AND sensor_name = %s
+            """, (new_enabled, machine_id, sensor_name))
+        else:
+            # Create new config (default to enabled, but we're toggling so set to False)
+            new_enabled = False
+            cursor.execute("""
+                INSERT INTO machine_sensor_config (machine_id, sensor_name, enabled, updated_at)
+                VALUES (%s, %s, %s, NOW())
+                ON CONFLICT (machine_id, sensor_name) 
+                DO UPDATE SET enabled = %s, updated_at = NOW()
+            """, (machine_id, sensor_name, new_enabled, new_enabled))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'machine_id': machine_id,
+            'sensor_name': sensor_name,
+            'enabled': new_enabled
+        })
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            cursor.close()
+            conn.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/machines/<machine_id>/custom-sensors', methods=['GET'])
+def api_get_machine_custom_sensors(machine_id):
+    """Get enabled/disabled state of custom sensors for a specific machine"""
+    if machine_id not in ['A', 'B', 'C']:
+        return jsonify({'success': False, 'error': 'Invalid machine ID'}), 400
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'error': 'Database not connected'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Get all active custom sensors with their machine-specific enabled state
+        cursor.execute("""
+            SELECT 
+                cs.sensor_name,
+                COALESCE(msc.enabled, TRUE) as enabled
+            FROM custom_sensors cs
+            LEFT JOIN machine_sensor_config msc 
+                ON cs.sensor_name = msc.sensor_name 
+                AND msc.machine_id = %s
+            WHERE cs.is_active = TRUE
+            ORDER BY cs.sensor_name
+        """, (machine_id,))
+        
+        sensors = {}
+        for row in cursor.fetchall():
+            sensors[row[0]] = {
+                'enabled': row[1]
+            }
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'machine_id': machine_id,
+            'sensors': sensors
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/machines/<machine_id>/sensors/<sensor_name>/baseline', methods=['POST'])
 def api_set_baseline(machine_id, sensor_name):
