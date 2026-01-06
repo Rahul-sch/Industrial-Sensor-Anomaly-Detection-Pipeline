@@ -2819,6 +2819,27 @@
         }
       }
 
+      // ========== Keyboard Fallback (Move Up/Down Buttons) ==========
+
+      function moveSensor(sensorName, direction) {
+        const config = machineParameterConfig[selectedMachineId];
+        if (!config || !config.sensorOrder) return;
+
+        const currentIndex = config.sensorOrder.indexOf(sensorName);
+        const newIndex = currentIndex + direction;
+
+        // Bounds check
+        if (newIndex < 0 || newIndex >= config.sensorOrder.length) return;
+
+        // Swap positions
+        [config.sensorOrder[currentIndex], config.sensorOrder[newIndex]] =
+          [config.sensorOrder[newIndex], config.sensorOrder[currentIndex]];
+
+        // Re-render and refresh
+        renderAdminSensorList();
+        refreshOperatorDashboard();
+      }
+
       // Filter sensor data by machine and enabled state (non-destructive wrapper)
       function filterSensorData(data) {
         if (!data) return data;
