@@ -56,6 +56,10 @@ flowchart LR
 | **AI Analysis Reports**  | Groq/LLaMA generates root cause analysis                       |
 | **Training Quality Indicator** | Visual bar showing model readiness and reliability          |
 | **Web Dashboard**        | Modern UI with live updates, charts, controls                  |
+| **User Authentication**  | Login/signup with role-based access control (admin/operator)  |
+| **Machine Access Control** | Operators can only access assigned machines                 |
+| **Dynamic Custom Sensors** | Add new sensor parameters at runtime via Admin UI          |
+| **Per-Sensor Frequency Control** | Configure sampling frequency per sensor (global + per-machine) |
 
 ---
 
@@ -78,17 +82,103 @@ python train_combined_detector.py
 
 This trains both Isolation Forest and LSTM models. Wait until you have at least 100 readings for Isolation Forest, and 500+ for LSTM.
 
-### Step 3: Open Dashboard
+### Step 3: Apply Database Migrations
+
+```powershell
+# Apply user authentication migration
+Get-Content migrations\add_user_auth.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb
+
+# Apply custom sensors migration (if not already done)
+Get-Content migrations\add_custom_sensors.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb
+
+# Apply frequency control migration (if not already done)
+Get-Content migrations\add_frequency_control.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb
+```
+
+### Step 4: Open Dashboard
 
 ```powershell
 python dashboard.py
 ```
 
-### Step 4: Open Browser
+### Step 5: Open Browser and Login
 
-Go to: **http://localhost:5001**
+Go to: **http://localhost:5000**
+
+**Default Admin Credentials:**
+- Username: `admin`
+- Password: `admin`
+
+**Or create a new account:**
+1. Click "Sign Up" on the login page
+2. Enter username and password
+3. Check "Create as Admin" for admin access, or leave unchecked and select machines for operator access
+4. Click "Sign Up"
 
 **That's it!** Use the dashboard to start/stop and monitor everything.
+
+---
+
+## Authentication & User Management
+
+### User Roles
+
+| Role     | Access Level                                    |
+| -------- | ----------------------------------------------- |
+| **Admin** | Full access to all machines (A, B, C) and admin features |
+| **Operator** | Access only to assigned machines              |
+
+### Default Admin User
+
+On first startup, an admin user is automatically created:
+- **Username**: `admin` (or value from `ADMIN_USERNAME` env var)
+- **Password**: `admin` (or value from `ADMIN_PASSWORD` env var)
+
+### Creating Users
+
+**Option 1: Sign Up (Public)**
+1. Go to login page
+2. Click "Sign Up" tab
+3. Enter username and password
+4. Toggle "Create as Admin":
+   - ✅ **Checked** = Admin user (access to all machines)
+   - ❌ **Unchecked** = Operator user (must select at least one machine)
+5. Click "Sign Up"
+
+**Option 2: Admin Panel (Admin Only)**
+1. Login as admin
+2. Click "➕ Create User" button in top right
+3. Fill out form and create user
+
+### Machine Access
+
+- **Admin users**: Automatically have access to all machines (A, B, C)
+- **Operator users**: Must be assigned specific machines via `user_machine_access` table
+- Operators can only view and control their assigned machines
+- Machine selector in dashboard only shows accessible machines
+
+### API Endpoints
+
+| Endpoint | Method | Auth Required | Description |
+|----------|--------|---------------|-------------|
+| `/api/auth/login` | POST | No | Authenticate and create session |
+| `/api/auth/logout` | POST | Yes | Destroy session |
+| `/api/auth/me` | GET | Yes | Get current user info |
+| `/api/auth/signup` | POST | No | Create new user account |
+
+### Authorization
+
+All API endpoints are protected:
+- **Public endpoints**: `/api/auth/login`, `/api/auth/signup`
+- **Authenticated endpoints**: Most endpoints require login
+- **Admin-only endpoints**: `/api/admin/*`, `/api/sensors/<name>/frequency` (global)
+- **Machine-specific endpoints**: Require access to the specified machine
+
+### Session Management
+
+- Sessions last 24 hours
+- Session stored in secure HTTP-only cookies
+- Auto-logout on browser close (session cookie expires)
 
 ---
 
