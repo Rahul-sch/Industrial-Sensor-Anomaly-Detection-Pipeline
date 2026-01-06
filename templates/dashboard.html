@@ -1558,7 +1558,53 @@
         <!-- User Info Bar -->
         <div style="text-align: right; margin-bottom: 20px; padding: 12px; background: rgba(30, 41, 59, 0.6); border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.1);">
           <span id="userInfo" style="color: #94a3b8; margin-right: 16px;"></span>
+          <button id="showSignupBtn" onclick="toggleSignupForm()" style="display: none; padding: 6px 16px; background: rgba(96, 165, 250, 0.2); border: 1px solid rgba(96, 165, 250, 0.3); border-radius: 6px; color: #60a5fa; font-size: 12px; cursor: pointer; margin-right: 8px;">➕ Create User</button>
           <button onclick="handleLogout()" style="padding: 6px 16px; background: rgba(248, 113, 113, 0.2); border: 1px solid rgba(248, 113, 113, 0.3); border-radius: 6px; color: #f87171; font-size: 12px; cursor: pointer;">Logout</button>
+        </div>
+
+        <!-- Sign Up Form (admin only, hidden by default) -->
+        <div id="signupForm" style="display: none; max-width: 500px; margin: 0 auto 30px; padding: 30px; background: rgba(30, 41, 59, 0.8); border-radius: 16px; border: 1px solid rgba(148, 163, 184, 0.2);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="color: #60a5fa; margin: 0;">Create New User</h3>
+            <button onclick="toggleSignupForm()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 0; width: 24px; height: 24px;">✕</button>
+          </div>
+          <form id="signupFormElement" onsubmit="handleSignup(event)">
+            <div style="margin-bottom: 16px;">
+              <label style="display: block; margin-bottom: 6px; color: #94a3b8; font-size: 13px;">Username</label>
+              <input type="text" id="signupUsername" required style="width: 100%; padding: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; color: #e2e8f0; font-size: 14px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 16px;">
+              <label style="display: block; margin-bottom: 6px; color: #94a3b8; font-size: 13px;">Password</label>
+              <input type="password" id="signupPassword" required style="width: 100%; padding: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; color: #e2e8f0; font-size: 14px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 16px;">
+              <label style="display: block; margin-bottom: 6px; color: #94a3b8; font-size: 13px;">Role</label>
+              <select id="signupRole" required onchange="toggleMachineSelection()" style="width: 100%; padding: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; color: #e2e8f0; font-size: 14px; box-sizing: border-box; cursor: pointer;">
+                <option value="operator">Operator</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div id="machineSelection" style="margin-bottom: 16px;">
+              <label style="display: block; margin-bottom: 8px; color: #94a3b8; font-size: 13px;">Machine Access (select at least one)</label>
+              <div style="display: flex; gap: 12px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="checkbox" value="A" class="machine-checkbox" style="cursor: pointer;">
+                  <span style="color: #e2e8f0;">Machine A</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="checkbox" value="B" class="machine-checkbox" style="cursor: pointer;">
+                  <span style="color: #e2e8f0;">Machine B</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="checkbox" value="C" class="machine-checkbox" style="cursor: pointer;">
+                  <span style="color: #e2e8f0;">Machine C</span>
+                </label>
+              </div>
+            </div>
+            <button type="submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; border-radius: 8px; color: white; font-weight: 600; font-size: 14px; cursor: pointer;">Create User</button>
+            <div id="signupError" style="margin-top: 12px; color: #f87171; font-size: 13px; text-align: center; display: none;"></div>
+            <div id="signupSuccess" style="margin-top: 12px; color: #10b981; font-size: 13px; text-align: center; display: none;"></div>
+          </form>
         </div>
 
       <!-- Machine and Mode Controls -->
@@ -2487,6 +2533,7 @@
             if (currentUser.role !== 'admin') {
               document.getElementById('adminPanel').style.display = 'none';
               document.querySelector('.mode-toggle').style.display = 'none';
+              document.getElementById('signupForm').style.display = 'none';
             }
             errorDiv.style.display = 'none';
             // Select first accessible machine
