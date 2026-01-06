@@ -2670,6 +2670,155 @@
         attachDragListeners();
       }
 
+      // ========== Custom Drag-and-Drop (Mouse + Touch) ==========
+
+      // Drag-and-drop state
+      let dragState = {
+        item: null,
+        startY: 0,
+        startIndex: 0,
+        offsetY: 0,
+        clone: null
+      };
+
+      function attachDragListeners() {
+        const handles = document.querySelectorAll('.admin-sensor-list .drag-handle');
+
+        handles.forEach(handle => {
+          // Mouse events
+          handle.addEventListener('mousedown', startDrag);
+          // Touch events
+          handle.addEventListener('touchstart', startDrag, { passive: false });
+        });
+      }
+
+      function startDrag(e) {
+        e.preventDefault();
+        const item = e.target.closest('.admin-sensor-item');
+        if (!item) return;
+
+        const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+        const rect = item.getBoundingClientRect();
+
+        dragState.item = item;
+        dragState.startY = clientY;
+        dragState.startIndex = parseInt(item.dataset.index);
+        dragState.offsetY = clientY - rect.top;
+
+        // Create visual clone for dragging
+        dragState.clone = item.cloneNode(true);
+        dragState.clone.classList.add('dragging');
+        dragState.clone.style.position = 'fixed';
+        dragState.clone.style.width = rect.width + 'px';
+        dragState.clone.style.left = rect.left + 'px';
+        dragState.clone.style.top = (clientY - dragState.offsetY) + 'px';
+        dragState.clone.style.pointerEvents = 'none';
+        document.body.appendChild(dragState.clone);
+
+        // Fade original
+        item.style.opacity = '0.3';
+
+        // Bind move/end events
+        if (e.type === 'touchstart') {
+          document.addEventListener('touchmove', onDrag, { passive: false });
+          document.addEventListener('touchend', endDrag);
+        } else {
+          document.addEventListener('mousemove', onDrag);
+          document.addEventListener('mouseup', endDrag);
+        }
+      }
+
+      function onDrag(e) {
+        if (!dragState.item) return;
+        e.preventDefault();
+
+        const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+        // Move clone
+        if (dragState.clone) {
+          dragState.clone.style.top = (clientY - dragState.offsetY) + 'px';
+        }
+
+        // Find drop target
+        const items = document.querySelectorAll('.admin-sensor-item:not(.dragging)');
+        items.forEach(item => {
+          item.classList.remove('drop-target-above', 'drop-target-below');
+        });
+
+        const target = getDropTarget(clientY);
+        if (target && target.element !== dragState.item) {
+          target.element.classList.add(target.position === 'above' ? 'drop-target-above' : 'drop-target-below');
+        }
+      }
+
+      function getDropTarget(clientY) {
+        const items = document.querySelectorAll('.admin-sensor-item');
+        for (const item of items) {
+          if (item === dragState.item) continue;
+          const rect = item.getBoundingClientRect();
+          const midY = rect.top + rect.height / 2;
+          if (clientY >= rect.top && clientY <= rect.bottom) {
+            return { element: item, position: clientY < midY ? 'above' : 'below' };
+          }
+        }
+        return null;
+      }
+
+      function endDrag(e) {
+        if (!dragState.item) return;
+
+        const clientY = e.type === 'touchend' ? e.changedTouches[0].clientY : e.clientY;
+        const target = getDropTarget(clientY);
+
+        // Clean up event listeners
+        document.removeEventListener('mousemove', onDrag);
+        document.removeEventListener('mouseup', endDrag);
+        document.removeEventListener('touchmove', onDrag);
+        document.removeEventListener('touchend', endDrag);
+
+        // Clean up visual elements
+        if (dragState.clone) {
+          dragState.clone.remove();
+        }
+        if (dragState.item) {
+          dragState.item.style.opacity = '';
+        }
+        document.querySelectorAll('.admin-sensor-item').forEach(item => {
+          item.classList.remove('drop-target-above', 'drop-target-below');
+        });
+
+        // Apply reorder if dropped on valid target
+        if (target && target.element !== dragState.item) {
+          const config = machineParameterConfig[selectedMachineId];
+          const sensorName = dragState.item.dataset.sensor;
+          const targetSensor = target.element.dataset.sensor;
+
+          const oldIndex = config.sensorOrder.indexOf(sensorName);
+          let newIndex = config.sensorOrder.indexOf(targetSensor);
+          if (target.position === 'below') newIndex++;
+          if (oldIndex < newIndex) newIndex--;
+
+          // Reorder array
+          config.sensorOrder.splice(oldIndex, 1);
+          config.sensorOrder.splice(newIndex, 0, sensorName);
+
+          // Re-render and refresh
+          renderAdminSensorList();
+          refreshOperatorDashboard();
+        }
+
+        // Reset drag state
+        dragState = { item: null, startY: 0, startIndex: 0, offsetY: 0, clone: null };
+      }
+
+      // Refresh operator dashboard when config changes
+      function refreshOperatorDashboard() {
+        if (currentMode === 'operator') {
+          updateStats();
+          updateLiveSensorReadings();
+        }
+      }
+
       // Filter sensor data by machine and enabled state (non-destructive wrapper)
       function filterSensorData(data) {
         if (!data) return data;
