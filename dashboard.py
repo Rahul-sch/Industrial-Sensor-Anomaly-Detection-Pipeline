@@ -15,8 +15,8 @@ import threading
 import time
 import csv
 import io
+import logging
 from datetime import datetime
-import os
 try:
     from kafka.admin import KafkaAdminClient
 except ImportError:
@@ -652,15 +652,15 @@ def api_login():
         """, (user_id,))
         conn.commit()
         
-        cursor.close()
-        conn.close()
-        
-        # Create session
+        # Create session BEFORE closing connection
         session.permanent = True
         session['user_id'] = user_id
         session['username'] = db_username
         session['role'] = role
         session['accessible_machines'] = accessible_machines
+        
+        cursor.close()
+        conn.close()
         
         return jsonify({
             'success': True,
