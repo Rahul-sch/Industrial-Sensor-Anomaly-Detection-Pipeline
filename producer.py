@@ -10,12 +10,33 @@ import signal
 import sys
 import time
 import requests
+import os
 from datetime import datetime, timedelta
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 import psycopg2
 
 import config
+
+# Debug logging configuration
+DEBUG_LOG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.cursor', 'debug.log')
+
+def debug_log(location, message, data=None, hypothesis_id=None):
+    """Write debug log entry in NDJSON format"""
+    try:
+        log_entry = {
+            'sessionId': 'debug-session',
+            'runId': 'run1',
+            'hypothesisId': hypothesis_id,
+            'location': location,
+            'message': message,
+            'data': data or {},
+            'timestamp': int(time.time() * 1000)
+        }
+        with open(DEBUG_LOG_PATH, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(log_entry) + '\n')
+    except Exception:
+        pass  # Silently fail if logging fails
 
 # Dashboard API URL for injection settings
 DASHBOARD_API_URL = 'http://localhost:5001'
@@ -126,8 +147,17 @@ class SensorDataProducer:
             
             if custom_sensors:
                 self.logger.info(f"Loaded {len(custom_sensors)} custom sensors from database")
+                # #region agent log
+                debug_log('producer.py:load_custom_sensors', 'Custom sensors loaded', {
+                    'count': len(custom_sensors),
+                    'sensor_names': list(custom_sensors.keys())
+                }, 'H1')
+                # #endregion
             else:
                 self.logger.debug("No custom sensors found in database")
+                # #region agent log
+                debug_log('producer.py:load_custom_sensors', 'No custom sensors found', {}, 'H1')
+                # #endregion
             
             self.custom_sensors = custom_sensors
             self.last_config_reload = datetime.utcnow()
@@ -145,6 +175,60 @@ class SensorDataProducer:
             return True
         elapsed = (datetime.utcnow() - self.last_config_reload).total_seconds()
         return elapsed >= self.config_reload_interval
+
+    def get_enabled_custom_sensors_for_machine(self, machine_id):
+        """Get custom sensors enabled for a specific machine from machine_sensor_config."""
+        if not self.custom_sensors:
+            # #region agent log
+            debug_log('producer.py:get_enabled_custom_sensors_for_machine', 'No custom sensors available', {
+                'machine_id': machine_id
+            }, 'H2')
+            # #endregion
+            return {}
+        
+        try:
+            conn = psycopg2.connect(**config.DB_CONFIG)
+            cursor = conn.cursor()
+            
+            # Get enabled state for each custom sensor for this machine
+            # Default to enabled if not in machine_sensor_config
+            enabled_sensors = {}
+            for sensor_name in self.custom_sensors.keys():
+                cursor.execute("""
+                    SELECT enabled FROM machine_sensor_config
+                    WHERE machine_id = %s AND sensor_name = %s
+                """, (machine_id, sensor_name))
+                row = cursor.fetchone()
+                # Default to enabled (True) if not in config
+                is_enabled = row[0] if row else True
+                if is_enabled:
+                    enabled_sensors[sensor_name] = self.custom_sensors[sensor_name]
+            
+            cursor.close()
+            conn.close()
+            
+            # #region agent log
+            debug_log('producer.py:get_enabled_custom_sensors_for_machine', 'Enabled custom sensors for machine', {
+                'machine_id': machine_id,
+                'enabled_count': len(enabled_sensors),
+                'enabled_sensors': list(enabled_sensors.keys()),
+                'total_custom_sensors': len(self.custom_sensors)
+            }, 'H2')
+            # #endregion
+            
+            return enabled_sensors
+            
+        except Exception as e:
+            # Fallback: return all custom sensors if query fails
+            self.logger.warning(f"Failed to load machine-specific custom sensor config: {e}. Using all custom sensors.")
+            # #region agent log
+            debug_log('producer.py:get_enabled_custom_sensors_for_machine', 'Error loading machine config, using all', {
+                'machine_id': machine_id,
+                'error': str(e),
+                'fallback_count': len(self.custom_sensors)
+            }, 'H2')
+            # #endregion
+            return self.custom_sensors
 
     def generate_custom_sensors(self, machine_id='A'):
         """Generate values for custom sensors enabled for the specified machine."""
@@ -169,10 +253,25 @@ class SensorDataProducer:
             
             custom_sensor_values[sensor_name] = value
         
+        # #region agent log
+        debug_log('producer.py:generate_custom_sensors', 'Generated custom sensor values', {
+            'machine_id': machine_id,
+            'count': len(custom_sensor_values),
+            'values': custom_sensor_values
+        }, 'H3')
+        # #endregion
+        
         return custom_sensor_values
 
     def generate_sensor_reading(self):
         """Generate a correlated sensor reading with all 50 parameters."""
+        # #region agent log
+        debug_log('producer.py:generate_sensor_reading', 'Function entry', {
+            'has_custom_sensors': len(self.custom_sensors) > 0,
+            'custom_sensors_count': len(self.custom_sensors)
+        }, 'H1')
+        # #endregion
+        
         # Start with RPM as the base - machinery speed drives other values
         rpm = round(random.uniform(
             config.SENSOR_RANGES['rpm']['min'],
@@ -485,12 +584,37 @@ class SensorDataProducer:
             custom_values = self.generate_custom_sensors('A')
             if custom_values:
                 reading['custom_sensors'] = custom_values
+                # #region agent log
+                debug_log('producer.py:generate_sensor_reading', 'Added custom_sensors to reading', {
+                    'custom_sensors_count': len(custom_values),
+                    'custom_sensors': custom_values
+                }, 'H3')
+                # #endregion
+            else:
+                # #region agent log
+                debug_log('producer.py:generate_sensor_reading', 'No custom sensor values generated', {
+                    'has_custom_sensors_config': len(self.custom_sensors) > 0
+                }, 'H3')
+                # #endregion
+        else:
+            # #region agent log
+            debug_log('producer.py:generate_sensor_reading', 'No custom sensors configured', {}, 'H1')
+            # #endregion
         
         return reading
 
     def send_message(self, data):
         """Send message to Kafka topic."""
         try:
+            # #region agent log
+            custom_sensors_in_payload = data.get('custom_sensors', {})
+            debug_log('producer.py:send_message', 'Sending message to Kafka', {
+                'has_custom_sensors': 'custom_sensors' in data,
+                'custom_sensors_count': len(custom_sensors_in_payload) if custom_sensors_in_payload else 0,
+                'custom_sensors': custom_sensors_in_payload
+            }, 'H4')
+            # #endregion
+            
             # Serialize to JSON
             message = json.dumps(data)
 
@@ -622,6 +746,12 @@ class SensorDataProducer:
             while datetime.utcnow() < end_time and not self.should_shutdown:
                 # Reload custom sensor config if needed
                 if self.should_reload_config():
+                    # #region agent log
+                    debug_log('producer.py:run', 'Reloading custom sensor config', {
+                        'last_reload': str(self.last_config_reload),
+                        'elapsed_seconds': (datetime.utcnow() - self.last_config_reload).total_seconds() if self.last_config_reload else None
+                    }, 'H1')
+                    # #endregion
                     self.load_custom_sensors()
                 # Check if we should inject an anomaly
                 should_inject = self.check_injection_settings()
@@ -631,6 +761,13 @@ class SensorDataProducer:
                     reading = self.generate_anomalous_reading()
                 else:
                     reading = self.generate_sensor_reading()
+                
+                # #region agent log
+                debug_log('producer.py:run', 'Generated reading, about to send', {
+                    'has_custom_sensors': 'custom_sensors' in reading,
+                    'reading_keys': list(reading.keys())[:5]  # First 5 keys
+                }, 'H4')
+                # #endregion
 
                 # Send to Kafka
                 self.send_message(reading)

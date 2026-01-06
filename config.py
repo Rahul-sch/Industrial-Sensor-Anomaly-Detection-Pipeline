@@ -28,7 +28,7 @@ except ImportError:
 
 # Default configuration values so the dashboard can reset safely
 DEFAULT_DURATION_HOURS = 0.03333333333333333
-DEFAULT_INTERVAL_SECONDS = 10
+DEFAULT_INTERVAL_SECONDS = 1
 
 # Limits for dashboard config validation
 CONFIG_LIMITS = {
@@ -66,6 +66,7 @@ KAFKA_PRODUCER_CONFIG = {
     'retry_backoff_ms': 300,  # Wait 300ms between retries
     'request_timeout_ms': 30000,  # 30 second timeout
     'max_in_flight_requests_per_connection': 1,  # Preserve message ordering
+    'api_version_auto_timeout_ms': 10000,  # Time to negotiate API version with broker
     'value_serializer': lambda v: v.encode('utf-8')  # Encode JSON strings to bytes
 }
 
@@ -78,6 +79,7 @@ KAFKA_CONSUMER_CONFIG = {
     'max_poll_records': 100,
     'session_timeout_ms': 30000,  # 30 seconds
     'heartbeat_interval_ms': 10000,  # 10 seconds
+    'api_version_auto_timeout_ms': 10000,  # Time to negotiate API version with broker
     'value_deserializer': lambda v: v.decode('utf-8')  # Decode bytes to strings
 }
 
