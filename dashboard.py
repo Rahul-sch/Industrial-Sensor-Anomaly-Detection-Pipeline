@@ -705,23 +705,83 @@ def api_auth_me():
     })
 
 
+# ============================================================================
+# AUTHORIZATION DECORATORS
+# ============================================================================
+
+from functools import wraps
+
+def require_auth(f):
+    """Decorator to require authentication."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'error': 'Authentication required'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+def require_admin(f):
+    """Decorator to require admin role."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'error': 'Authentication required'}), 401
+        if session.get('role') != 'admin':
+            return jsonify({'success': False, 'error': 'Admin access required'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+def require_machine_access(machine_id_param='machine_id'):
+    """Decorator factory to require access to a specific machine.
+    
+    Args:
+        machine_id_param: Name of the parameter containing machine_id (default: 'machine_id')
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                return jsonify({'success': False, 'error': 'Authentication required'}), 401
+            
+            # Get machine_id from kwargs or route parameter
+            machine_id = kwargs.get(machine_id_param)
+            if not machine_id:
+                return jsonify({'success': False, 'error': 'Machine ID required'}), 400
+            
+            # Admins have access to all machines
+            if session.get('role') == 'admin':
+                return f(*args, **kwargs)
+            
+            # Check if user has access to this machine
+            accessible_machines = session.get('accessible_machines', [])
+            if machine_id not in accessible_machines:
+                return jsonify({'success': False, 'error': 'Access denied to this machine'}), 403
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
 def init_background_threads():
     """Ensure background monitors are running."""
     start_kafka_monitor()
 init_background_threads()
 
 @app.route('/api/stats')
+@require_auth
 def api_stats():
     """Get current stats"""
     return jsonify(get_stats())
 
 @app.route('/api/alerts')
+@require_auth
 def api_alerts():
     """Get recent alerts"""
     limit = request.args.get('limit', default=20, type=int)
     return jsonify({'alerts': get_alerts(limit)})
 
 @app.route('/api/config', methods=['GET', 'POST'])
+@require_auth
 def api_config():
     """Get or update configuration"""
     if request.method == 'POST':
@@ -739,6 +799,7 @@ def api_config():
         return jsonify(get_config())
 
 @app.route('/api/config/reset', methods=['POST'])
+@require_auth
 def reset_config():
     """Reset config.py to default values."""
     defaults = get_default_config_values()
@@ -753,6 +814,7 @@ def reset_config():
         return jsonify({'success': False, 'error': message})
 
 @app.route('/api/start/<component>', methods=['POST'])
+@require_auth
 def start_component(component):
     """Start producer or consumer"""
     if component not in ['producer', 'consumer']:
@@ -793,6 +855,7 @@ def start_component(component):
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/stop/<component>', methods=['POST'])
+@require_auth
 def stop_component(component):
     """Stop producer or consumer"""
     if component not in ['producer', 'consumer']:
@@ -958,6 +1021,7 @@ def is_component_running(component):
     return False
 
 @app.route('/api/status')
+@require_auth
 def api_status():
     """Get status of components"""
     with kafka_health_lock:
@@ -974,6 +1038,7 @@ def api_status():
     })
 
 @app.route('/api/clear_data')
+@require_auth
 def clear_data():
     """Clear all data from database"""
     conn = get_db_connection()
@@ -991,6 +1056,7 @@ def clear_data():
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/anomalies')
+@require_auth
 def api_anomalies():
     """Get ML-detected anomalies."""
     limit = request.args.get('limit', default=50, type=int)
@@ -1050,6 +1116,7 @@ def api_anomalies():
 
 
 @app.route('/api/anomalies/<int:anomaly_id>')
+@require_auth
 def api_anomaly_detail(anomaly_id):
     """Get details of a specific anomaly."""
     if not ML_REPORTS_AVAILABLE:
@@ -1063,6 +1130,7 @@ def api_anomaly_detail(anomaly_id):
 
 
 @app.route('/api/generate-report/<int:anomaly_id>', methods=['POST'])
+@require_auth
 def api_generate_report(anomaly_id):
     """Generate an analysis report for an anomaly."""
     if not ML_REPORTS_AVAILABLE:
@@ -1089,6 +1157,7 @@ def api_generate_report(anomaly_id):
 
 
 @app.route('/api/reports/<int:report_id>')
+@require_auth
 def api_get_report(report_id):
     """Get a generated report."""
     if not ML_REPORTS_AVAILABLE:
@@ -1102,6 +1171,7 @@ def api_get_report(report_id):
 
 
 @app.route('/api/reports/by-anomaly/<int:anomaly_id>')
+@require_auth
 def api_get_report_by_anomaly(anomaly_id):
     """Get report for a specific anomaly."""
     if not ML_REPORTS_AVAILABLE:
@@ -1269,6 +1339,7 @@ def generate_pdf_from_markdown(markdown_text, title="Report"):
 
 
 @app.route('/api/reports/<int:report_id>/pdf')
+@require_auth
 def api_get_report_pdf(report_id):
     """Generate and download a PDF report."""
     if not ML_REPORTS_AVAILABLE:
@@ -1439,6 +1510,7 @@ def api_get_report_pdf(report_id):
 
 
 @app.route('/api/generate-full-report', methods=['POST'])
+@require_auth
 def api_generate_full_session_report():
     """Generate a comprehensive report for the entire monitoring session."""
     if not ML_REPORTS_AVAILABLE:
@@ -1454,6 +1526,7 @@ def api_generate_full_session_report():
 
 
 @app.route('/api/ml-stats')
+@require_auth
 def api_ml_stats():
     """Get ML detection statistics."""
     conn = get_db_connection()
@@ -1532,6 +1605,7 @@ injection_settings = {
 
 
 @app.route('/api/thresholds', methods=['GET'])
+@require_auth
 def api_get_thresholds():
     """Get all custom thresholds and default safe operating limits."""
     import config
@@ -1557,6 +1631,7 @@ def api_get_thresholds():
 
 
 @app.route('/api/thresholds', methods=['POST'])
+@require_auth
 def api_set_threshold():
     """Set custom threshold for a sensor."""
     data = request.get_json()
@@ -1602,6 +1677,7 @@ def api_set_threshold():
 
 
 @app.route('/api/injection-settings', methods=['GET'])
+@require_auth
 def api_get_injection_settings():
     """Get anomaly injection settings for producer."""
     # Return inject_now flag and clear it immediately (one-time trigger)
@@ -1619,6 +1695,7 @@ def api_get_injection_settings():
 
 
 @app.route('/api/injection-settings', methods=['POST'])
+@require_auth
 def api_set_injection_settings():
     """Update anomaly injection settings."""
     data = request.get_json()
@@ -1653,6 +1730,7 @@ def api_set_injection_settings():
 
 
 @app.route('/api/inject-anomaly', methods=['POST'])
+@require_auth
 def api_inject_anomaly_now():
     """Trigger immediate anomaly injection."""
     injection_settings['inject_now'] = True
@@ -1663,6 +1741,7 @@ def api_inject_anomaly_now():
 
 
 @app.route('/api/export')
+@require_auth
 def export_data():
     """Export recent readings as CSV with all 50 parameters."""
     limit = request.args.get('limit', default=500, type=int)
@@ -1727,6 +1806,7 @@ def export_data():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/generate-future-report', methods=['POST'])
+@require_auth
 def api_generate_future_report():
     """Generate and download LSTM future anomaly prediction report as PDF."""
     if not ML_REPORTS_AVAILABLE:
@@ -1759,6 +1839,7 @@ def api_generate_future_report():
 
 
 @app.route('/api/lstm-predictions')
+@require_auth
 def api_lstm_predictions():
     """Get LSTM future anomaly predictions with detailed sensor analysis."""
     if not LSTM_AVAILABLE:
@@ -1793,6 +1874,7 @@ def api_lstm_predictions():
 
 
 @app.route('/api/lstm-status')
+@require_auth
 def api_lstm_status():
     """Get LSTM model training status and quality metrics."""
     if not LSTM_AVAILABLE:
@@ -1919,6 +2001,7 @@ def api_machines():
         })
 
 @app.route('/api/machines/<machine_id>/start', methods=['POST'])
+@require_machine_access('machine_id')
 def api_start_machine(machine_id):
     """Start a machine (set running state)"""
     if machine_id not in ['A', 'B', 'C']:
@@ -1930,6 +2013,7 @@ def api_start_machine(machine_id):
     return jsonify({'success': True, 'machine_id': machine_id, 'running': True})
 
 @app.route('/api/machines/<machine_id>/stop', methods=['POST'])
+@require_machine_access('machine_id')
 def api_stop_machine(machine_id):
     """Stop a machine (set running state)"""
     if machine_id not in ['A', 'B', 'C']:
@@ -1941,6 +2025,7 @@ def api_stop_machine(machine_id):
     return jsonify({'success': True, 'machine_id': machine_id, 'running': False})
 
 @app.route('/api/machines/<machine_id>/sensors/<sensor_name>/toggle', methods=['POST'])
+@require_machine_access('machine_id')
 def api_toggle_sensor(machine_id, sensor_name):
     """Toggle sensor enabled/disabled state (built-in sensors only)"""
     if machine_id not in ['A', 'B', 'C']:
@@ -1965,6 +2050,7 @@ def api_toggle_sensor(machine_id, sensor_name):
 
 
 @app.route('/api/machines/<machine_id>/custom-sensors/<sensor_name>/toggle', methods=['POST'])
+@require_machine_access('machine_id')
 def api_toggle_custom_sensor(machine_id, sensor_name):
     """Toggle custom sensor enabled/disabled state for a specific machine (uses machine_sensor_config)"""
     if machine_id not in ['A', 'B', 'C']:
@@ -2031,6 +2117,7 @@ def api_toggle_custom_sensor(machine_id, sensor_name):
 
 
 @app.route('/api/machines/<machine_id>/custom-sensors', methods=['GET'])
+@require_machine_access('machine_id')
 def api_get_machine_custom_sensors(machine_id):
     """Get enabled/disabled state of custom sensors for a specific machine"""
     if machine_id not in ['A', 'B', 'C']:
@@ -2203,6 +2290,7 @@ def resolve_sensor_frequency(machine_id, sensor_name):
 
 
 @app.route('/api/machines/<machine_id>/sensors/<sensor_name>/baseline', methods=['POST'])
+@require_machine_access('machine_id')
 def api_set_baseline(machine_id, sensor_name):
     """Set baseline value for a sensor (in-memory only)"""
     if machine_id not in ['A', 'B', 'C']:
@@ -2234,6 +2322,7 @@ def api_set_baseline(machine_id, sensor_name):
             return jsonify({'success': False, 'error': 'Sensor not found'}), 404
 
 @app.route('/api/machines/<machine_id>/sensors/<sensor_name>/frequency', methods=['GET', 'POST'])
+@require_machine_access('machine_id')
 def api_sensor_frequency(machine_id, sensor_name):
     """Get or set frequency for a sensor on a specific machine"""
     if machine_id not in ['A', 'B', 'C']:
@@ -2307,6 +2396,7 @@ def api_sensor_frequency(machine_id, sensor_name):
 
 
 @app.route('/api/sensors/<sensor_name>/frequency', methods=['GET', 'POST'])
+@require_admin
 def api_global_sensor_frequency(sensor_name):
     """Get or set global frequency for a built-in sensor (uses global_sensor_config)"""
     conn = get_db_connection()
@@ -2391,6 +2481,7 @@ def api_global_sensor_frequency(sensor_name):
 
 
 @app.route('/api/machines/<machine_id>/stats', methods=['GET'])
+@require_machine_access('machine_id')
 def api_machine_stats(machine_id):
     """Get stats filtered by machine and enabled sensors only"""
     if machine_id not in ['A', 'B', 'C']:
@@ -2446,6 +2537,7 @@ def api_machine_stats(machine_id):
 # ============================================================================
 
 @app.route('/api/admin/custom-sensors', methods=['GET'])
+@require_admin
 def api_list_custom_sensors():
     """List all custom sensors (active and inactive)."""
     conn = get_db_connection()
@@ -2507,6 +2599,7 @@ def api_list_custom_sensors():
 
 
 @app.route('/api/admin/custom-sensors', methods=['POST'])
+@require_admin
 def api_create_custom_sensor():
     """Create a new custom sensor."""
     data = request.get_json()
@@ -2611,6 +2704,7 @@ def api_create_custom_sensor():
 
 
 @app.route('/api/admin/custom-sensors/<int:sensor_id>', methods=['GET'])
+@require_admin
 def api_get_custom_sensor(sensor_id):
     """Get a specific custom sensor by ID."""
     conn = get_db_connection()
@@ -2652,6 +2746,7 @@ def api_get_custom_sensor(sensor_id):
 
 
 @app.route('/api/admin/custom-sensors/<int:sensor_id>', methods=['PUT'])
+@require_admin
 def api_update_custom_sensor(sensor_id):
     """Update a custom sensor."""
     data = request.get_json()
@@ -2772,6 +2867,7 @@ def api_update_custom_sensor(sensor_id):
 
 
 @app.route('/api/admin/custom-sensors/<int:sensor_id>', methods=['DELETE'])
+@require_admin
 def api_delete_custom_sensor(sensor_id):
     """Soft delete a custom sensor (set is_active=false)."""
     conn = get_db_connection()
