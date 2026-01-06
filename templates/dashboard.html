@@ -2840,6 +2840,30 @@
         refreshOperatorDashboard();
       }
 
+      // ========== Toggle Sensor Enable/Disable ==========
+
+      function toggleSensorEnabledNew(sensorName) {
+        const config = machineParameterConfig[selectedMachineId];
+        if (!config) return;
+
+        // Toggle in machineParameterConfig
+        if (config.enabledSensors.has(sensorName)) {
+          config.enabledSensors.delete(sensorName);
+        } else {
+          config.enabledSensors.add(sensorName);
+        }
+
+        // Sync with existing machineSensorState for backward compatibility
+        if (!machineSensorState[selectedMachineId][sensorName]) {
+          machineSensorState[selectedMachineId][sensorName] = { enabled: true, baseline: null };
+        }
+        machineSensorState[selectedMachineId][sensorName].enabled = config.enabledSensors.has(sensorName);
+
+        // Re-render and refresh
+        renderAdminSensorList();
+        refreshOperatorDashboard();
+      }
+
       // Filter sensor data by machine and enabled state (non-destructive wrapper)
       function filterSensorData(data) {
         if (!data) return data;
