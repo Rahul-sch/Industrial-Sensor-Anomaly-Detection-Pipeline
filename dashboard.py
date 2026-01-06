@@ -37,6 +37,12 @@ except ImportError as e:
 
 app = Flask(__name__)
 
+# Session configuration
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'change-me-in-production-secret-key-12345')
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
+
 # Store process IDs
 processes = {
     'producer': None,
