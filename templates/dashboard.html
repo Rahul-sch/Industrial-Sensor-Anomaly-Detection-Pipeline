@@ -2864,6 +2864,32 @@
         refreshOperatorDashboard();
       }
 
+      // ========== Reset to Defaults ==========
+
+      function resetMachineConfig() {
+        if (!confirm(`Reset all sensor settings for Machine ${selectedMachineId} to defaults?`)) {
+          return;
+        }
+
+        // Get all sensors in original category order
+        const allSensors = Object.values(sensorsByCategory).flat();
+
+        // Reset machineParameterConfig
+        machineParameterConfig[selectedMachineId] = {
+          sensorOrder: [...allSensors],
+          enabledSensors: new Set(allSensors)
+        };
+
+        // Sync machineSensorState
+        for (const sensor of allSensors) {
+          machineSensorState[selectedMachineId][sensor] = { enabled: true, baseline: null };
+        }
+
+        // Re-render and refresh
+        renderAdminSensorList();
+        refreshOperatorDashboard();
+      }
+
       // Filter sensor data by machine and enabled state (non-destructive wrapper)
       function filterSensorData(data) {
         if (!data) return data;
