@@ -1921,6 +1921,135 @@ def api_get_machine_custom_sensors(machine_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# ============================================================================
+# RESOLUTION HELPER FUNCTIONS
+# ============================================================================
+
+def resolve_sensor_enabled(machine_id, sensor_name):
+    """
+    Resolve enabled state for a sensor using resolution order:
+    machine_sensor_config.enabled (if exists) → 
+    global_sensor_config.enabled (built-in) OR custom_sensors.is_active (custom) → 
+    default True
+    
+    Returns: (enabled: bool, source: str)
+    """
+    conn = get_db_connection()
+    if not conn:
+        return True, 'default'  # Safe default
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Check machine-specific override first
+        cursor.execute("""
+            SELECT enabled FROM machine_sensor_config
+            WHERE machine_id = %s AND sensor_name = %s
+        """, (machine_id, sensor_name))
+        row = cursor.fetchone()
+        if row is not None:
+            cursor.close()
+            conn.close()
+            return row[0], 'machine'
+        
+        # Check if it's a built-in sensor (check global_sensor_config)
+        cursor.execute("""
+            SELECT enabled FROM global_sensor_config
+            WHERE sensor_name = %s
+        """, (sensor_name,))
+        row = cursor.fetchone()
+        if row is not None:
+            cursor.close()
+            conn.close()
+            return row[0], 'global'
+        
+        # Check if it's a custom sensor (check custom_sensors.is_active)
+        cursor.execute("""
+            SELECT is_active FROM custom_sensors
+            WHERE sensor_name = %s
+        """, (sensor_name,))
+        row = cursor.fetchone()
+        if row is not None:
+            cursor.close()
+            conn.close()
+            return row[0], 'global'
+        
+        # Default: enabled
+        cursor.close()
+        conn.close()
+        return True, 'default'
+        
+    except Exception as e:
+        logging.error(f"Error resolving sensor enabled state: {e}")
+        if conn:
+            cursor.close()
+            conn.close()
+        return True, 'default'  # Safe default
+
+
+def resolve_sensor_frequency(machine_id, sensor_name):
+    """
+    Resolve frequency (seconds) for a sensor using resolution order:
+    machine_sensor_config.frequency_seconds (if set) → 
+    global_sensor_config.default_frequency_seconds (built-in) OR custom_sensors.default_frequency_seconds (custom) → 
+    config.INTERVAL_SECONDS (system default)
+    
+    Returns: (frequency_seconds: int, source: str)
+    """
+    import config
+    conn = get_db_connection()
+    if not conn:
+        return config.INTERVAL_SECONDS, 'default'  # Safe default
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Check machine-specific override first
+        cursor.execute("""
+            SELECT frequency_seconds FROM machine_sensor_config
+            WHERE machine_id = %s AND sensor_name = %s AND frequency_seconds IS NOT NULL
+        """, (machine_id, sensor_name))
+        row = cursor.fetchone()
+        if row is not None and row[0] is not None:
+            cursor.close()
+            conn.close()
+            return row[0], 'machine'
+        
+        # Check if it's a built-in sensor (check global_sensor_config)
+        cursor.execute("""
+            SELECT default_frequency_seconds FROM global_sensor_config
+            WHERE sensor_name = %s AND default_frequency_seconds IS NOT NULL
+        """, (sensor_name,))
+        row = cursor.fetchone()
+        if row is not None and row[0] is not None:
+            cursor.close()
+            conn.close()
+            return row[0], 'global'
+        
+        # Check if it's a custom sensor (check custom_sensors.default_frequency_seconds)
+        cursor.execute("""
+            SELECT default_frequency_seconds FROM custom_sensors
+            WHERE sensor_name = %s AND default_frequency_seconds IS NOT NULL
+        """, (sensor_name,))
+        row = cursor.fetchone()
+        if row is not None and row[0] is not None:
+            cursor.close()
+            conn.close()
+            return row[0], 'global'
+        
+        # Default: system INTERVAL_SECONDS
+        cursor.close()
+        conn.close()
+        return config.INTERVAL_SECONDS, 'default'
+        
+    except Exception as e:
+        logging.error(f"Error resolving sensor frequency: {e}")
+        if conn:
+            cursor.close()
+            conn.close()
+        return config.INTERVAL_SECONDS, 'default'  # Safe default
+
+
 @app.route('/api/machines/<machine_id>/sensors/<sensor_name>/baseline', methods=['POST'])
 def api_set_baseline(machine_id, sensor_name):
     """Set baseline value for a sensor (in-memory only)"""
@@ -1951,6 +2080,163 @@ def api_set_baseline(machine_id, sensor_name):
             })
         else:
             return jsonify({'success': False, 'error': 'Sensor not found'}), 404
+
+@app.route('/api/machines/<machine_id>/sensors/<sensor_name>/frequency', methods=['GET', 'POST'])
+def api_sensor_frequency(machine_id, sensor_name):
+    """Get or set frequency for a sensor on a specific machine"""
+    if machine_id not in ['A', 'B', 'C']:
+        return jsonify({'success': False, 'error': 'Invalid machine ID'}), 400
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'error': 'Database not connected'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        
+        if request.method == 'GET':
+            # Get resolved frequency
+            frequency, source = resolve_sensor_frequency(machine_id, sensor_name)
+            cursor.close()
+            conn.close()
+            return jsonify({
+                'success': True,
+                'machine_id': machine_id,
+                'sensor_name': sensor_name,
+                'frequency_seconds': frequency,
+                'source': source
+            })
+        
+        else:  # POST
+            data = request.json or {}
+            frequency = data.get('frequency_seconds')
+            
+            if frequency is None:
+                cursor.close()
+                conn.close()
+                return jsonify({'success': False, 'error': 'frequency_seconds required'}), 400
+            
+            try:
+                frequency = int(frequency)
+                if frequency < 1 or frequency > 3600:
+                    cursor.close()
+                    conn.close()
+                    return jsonify({'success': False, 'error': 'frequency_seconds must be between 1 and 3600'}), 400
+            except (ValueError, TypeError):
+                cursor.close()
+                conn.close()
+                return jsonify({'success': False, 'error': 'frequency_seconds must be an integer'}), 400
+            
+            # Upsert into machine_sensor_config
+            cursor.execute("""
+                INSERT INTO machine_sensor_config (machine_id, sensor_name, frequency_seconds, updated_at)
+                VALUES (%s, %s, %s, NOW())
+                ON CONFLICT (machine_id, sensor_name)
+                DO UPDATE SET frequency_seconds = %s, updated_at = NOW()
+            """, (machine_id, sensor_name, frequency, frequency))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return jsonify({
+                'success': True,
+                'machine_id': machine_id,
+                'sensor_name': sensor_name,
+                'frequency_seconds': frequency
+            })
+            
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            cursor.close()
+            conn.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/sensors/<sensor_name>/frequency', methods=['GET', 'POST'])
+def api_global_sensor_frequency(sensor_name):
+    """Get or set global frequency for a built-in sensor (uses global_sensor_config)"""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'error': 'Database not connected'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Check if it's a built-in sensor
+        import config
+        if sensor_name not in config.SENSOR_RANGES:
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'error': 'Sensor not found or not a built-in sensor'}), 404
+        
+        if request.method == 'GET':
+            # Get global frequency
+            cursor.execute("""
+                SELECT default_frequency_seconds FROM global_sensor_config
+                WHERE sensor_name = %s
+            """, (sensor_name,))
+            row = cursor.fetchone()
+            
+            import config
+            frequency = row[0] if row and row[0] is not None else config.INTERVAL_SECONDS
+            source = 'global' if row and row[0] is not None else 'default'
+            
+            cursor.close()
+            conn.close()
+            return jsonify({
+                'success': True,
+                'sensor_name': sensor_name,
+                'frequency_seconds': frequency,
+                'source': source
+            })
+        
+        else:  # POST
+            data = request.json or {}
+            frequency = data.get('frequency_seconds')
+            
+            if frequency is None:
+                cursor.close()
+                conn.close()
+                return jsonify({'success': False, 'error': 'frequency_seconds required'}), 400
+            
+            try:
+                frequency = int(frequency)
+                if frequency < 1 or frequency > 3600:
+                    cursor.close()
+                    conn.close()
+                    return jsonify({'success': False, 'error': 'frequency_seconds must be between 1 and 3600'}), 400
+            except (ValueError, TypeError):
+                cursor.close()
+                conn.close()
+                return jsonify({'success': False, 'error': 'frequency_seconds must be an integer'}), 400
+            
+            # Upsert into global_sensor_config
+            cursor.execute("""
+                INSERT INTO global_sensor_config (sensor_name, default_frequency_seconds, enabled, updated_at)
+                VALUES (%s, %s, TRUE, NOW())
+                ON CONFLICT (sensor_name)
+                DO UPDATE SET default_frequency_seconds = %s, updated_at = NOW()
+            """, (sensor_name, frequency, frequency))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return jsonify({
+                'success': True,
+                'sensor_name': sensor_name,
+                'frequency_seconds': frequency
+            })
+            
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            cursor.close()
+            conn.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @app.route('/api/machines/<machine_id>/stats', methods=['GET'])
 def api_machine_stats(machine_id):
