@@ -4054,6 +4054,9 @@
                 // Ensure operator mode is active
                 switchMode('operator');
               }
+              
+              // Initialize left sidebar
+              initializeAdminSidebar();
               return;
             }
           }
@@ -6600,7 +6603,46 @@
             if (kafkaModal && kafkaModal.style.display === 'flex') {
               updateKafkaModalStatus();
             }
+            
+            // Update Controls section status if visible
+            updateControlsSectionStatus(data);
           });
+      }
+      
+      // Update Controls section status indicators
+      function updateControlsSectionStatus(statusData) {
+        // Producer status
+        const producerStatus = document.getElementById('producerStatus');
+        const sectionProducerStatus = document.getElementById('sectionProducerStatus');
+        const sectionProducerStatusText = document.getElementById('sectionProducerStatusText');
+        if (producerStatus && sectionProducerStatus && sectionProducerStatusText) {
+          const isRunning = producerStatus.classList.contains('status-running');
+          sectionProducerStatus.className = 'scada-status-dot-indicator ' + (isRunning ? 'nom' : '');
+          sectionProducerStatusText.textContent = isRunning ? 'RUNNING' : 'STOPPED';
+        }
+        
+        // Consumer status
+        const consumerStatus = document.getElementById('consumerStatus');
+        const sectionConsumerStatus = document.getElementById('sectionConsumerStatus');
+        const sectionConsumerStatusText = document.getElementById('sectionConsumerStatusText');
+        if (consumerStatus && sectionConsumerStatus && sectionConsumerStatusText) {
+          const isRunning = consumerStatus.classList.contains('status-running');
+          sectionConsumerStatus.className = 'scada-status-dot-indicator ' + (isRunning ? 'nom' : '');
+          sectionConsumerStatusText.textContent = isRunning ? 'RUNNING' : 'STOPPED';
+        }
+        
+        // Kafka status
+        const kafkaStatusDetails = document.getElementById('kafkaStatusDetails');
+        const sectionKafkaStatus = document.getElementById('sectionKafkaStatus');
+        const sectionKafkaStatusText = document.getElementById('sectionKafkaStatusText');
+        if (kafkaStatusDetails && sectionKafkaStatus && sectionKafkaStatusText) {
+          const kafkaStatus = document.getElementById('kafkaStatus');
+          if (kafkaStatus) {
+            const isHealthy = kafkaStatus.classList.contains('status-running');
+            sectionKafkaStatus.className = 'scada-status-dot-indicator ' + (isHealthy ? 'nom' : 'err');
+            sectionKafkaStatusText.textContent = kafkaStatusDetails.textContent || 'UNKNOWN';
+          }
+        }
       }
       
       // Update SCADA top bar system status dots
