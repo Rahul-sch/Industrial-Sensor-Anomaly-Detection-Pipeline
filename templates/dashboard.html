@@ -6752,26 +6752,32 @@
       }
 
       function injectAnomalyNow(button) {
-        button.disabled = true;
-        button.innerHTML =
-          '<span class="loading-spinner" style="width: 14px; height: 14px;"></span> Injecting...';
+        if (button) {
+          button.disabled = true;
+          button.innerHTML = 'INJECTING...';
+        }
 
         fetch("/api/inject-anomaly", { method: "POST" })
           .then((r) => r.json())
           .then((data) => {
-            if (data.success) {
-              button.innerHTML = "✓ Injection Triggered!";
-              button.style.background = "#10b981";
+            if (data.success && button) {
+              button.innerHTML = "INJECTED";
               setTimeout(() => {
-                button.innerHTML = "⚡ Inject Anomaly NOW";
-                button.style.background =
-                  "linear-gradient(135deg, #ef4444, #dc2626)";
-                button.disabled = false;
+                if (button) {
+                  button.innerHTML = "INJECT ANOMALY NOW";
+                  button.disabled = false;
+                }
               }, 2000);
+            } else if (button) {
+              button.innerHTML = "FAILED";
+              button.disabled = false;
             }
           })
           .catch((err) => {
-            button.innerHTML = "✗ Failed";
+            if (button) {
+              button.innerHTML = "FAILED";
+              button.disabled = false;
+            }
             button.disabled = false;
             setTimeout(() => {
               button.innerHTML = "⚡ Inject Anomaly NOW";
