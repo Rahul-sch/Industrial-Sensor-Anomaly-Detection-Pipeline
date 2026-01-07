@@ -286,13 +286,11 @@
          ============================================ */
       .scada-main {
         margin-top: 50px;
-        margin-bottom: 200px;
+        margin-bottom: 0;
         padding: var(--space-lg);
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: var(--space-lg);
-        height: calc(100vh - 250px);
+        height: calc(100vh - 50px);
         overflow-y: auto;
+        transition: margin-left var(--transition-normal);
       }
       
       .scada-left-panel {
