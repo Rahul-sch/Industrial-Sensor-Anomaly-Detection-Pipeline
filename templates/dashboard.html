@@ -376,6 +376,136 @@
         font-size: 12px;
         color: var(--text-secondary);
       }
+      
+      /* ============================================
+         TELEMETRY TILES - 8 Real-time Sensor Tiles
+         ============================================ */
+      .telemetry-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-lg);
+      }
+      
+      .telemetry-tile {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        padding: var(--space-lg);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+      }
+      
+      .telemetry-tile-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .telemetry-tile-name {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .telemetry-tile-unit {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        color: var(--text-muted);
+      }
+      
+      .telemetry-tile-value {
+        font-family: var(--font-mono);
+        font-size: 32px;
+        font-weight: 600;
+        color: var(--text-primary);
+        line-height: 1;
+      }
+      
+      .telemetry-tile-value.wrn {
+        color: var(--status-warning);
+      }
+      
+      .telemetry-tile-value.crit {
+        color: var(--status-error);
+      }
+      
+      .telemetry-tile-sparkline {
+        height: 40px;
+        width: 100%;
+        position: relative;
+        margin: var(--space-sm) 0;
+      }
+      
+      .telemetry-tile-sparkline svg {
+        width: 100%;
+        height: 100%;
+      }
+      
+      .telemetry-tile-sparkline-line {
+        fill: none;
+        stroke: var(--text-secondary);
+        stroke-width: 1.5;
+        vector-effect: non-scaling-stroke;
+      }
+      
+      .telemetry-tile-sparkline-line.wrn {
+        stroke: var(--status-warning);
+      }
+      
+      .telemetry-tile-sparkline-line.crit {
+        stroke: var(--status-error);
+      }
+      
+      .telemetry-tile-lstm {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        margin-top: var(--space-xs);
+      }
+      
+      .telemetry-tile-lstm-label {
+        font-family: var(--font-mono);
+        font-size: 8px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .telemetry-tile-lstm-dots {
+        display: flex;
+        gap: 2px;
+        flex: 1;
+      }
+      
+      .telemetry-tile-lstm-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        opacity: 0.3;
+      }
+      
+      .telemetry-tile-lstm-dot.predicted {
+        background: var(--status-info);
+        opacity: 0.6;
+      }
+      
+      .telemetry-tile-lstm-dot.anomaly {
+        background: var(--status-warning);
+        opacity: 1;
+      }
+      
+      .telemetry-tile-footer {
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+        color: var(--text-muted);
+        font-family: var(--font-mono);
+      }
       /* ============================================
          TYPOGRAPHY - Clean, Professional
          ============================================ */
@@ -5215,6 +5345,131 @@
         html += '</div>';
         container.innerHTML = html;
       }
+      
+      // ============================================
+      // TELEMETRY TILES - Sparklines + LSTM Predictions
+      // ============================================
+      
+      // Generate sparkline SVG from data points
+      function generateSparkline(values, width = 200, height = 40) {
+        if (!values || values.length === 0) {
+          return '<svg width="' + width + '" height="' + height + '"></svg>';
+        }
+        
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min || 1;
+        const padding = 4;
+        
+        const points = values.map((val, i) => {
+          const x = padding + (i / (values.length - 1 || 1)) * (width - 2 * padding);
+          const y = height - padding - ((val - min) / range) * (height - 2 * padding);
+          return `${x},${y}`;
+        }).join(' ');
+        
+        return `<svg width="${width}" height="${height}">
+          <polyline points="${points}" class="telemetry-tile-sparkline-line" fill="none" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+        </svg>`;
+      }
+      
+      // Render telemetry tiles (8 tiles with sparklines)
+      function renderTelemetryTiles(statsData, recentReadings, lstmPredictions) {
+        const container = document.getElementById('telemetryContainer');
+        if (!container) return;
+        
+        // Select top 8 sensors based on priority (voltage, current, temperature, pressure, etc.)
+        const prioritySensors = [
+          'voltage', 'current', 'temperature', 'pressure',
+          'rpm', 'vibration', 'coolant_temp', 'flow_rate'
+        ];
+        
+        let html = '<div class="telemetry-grid">';
+        
+        prioritySensors.forEach(sensorName => {
+          // Get current value from stats
+          let currentValue = null;
+          let unit = '';
+          let statusClass = '';
+          
+          if (statsData && statsData.stats_by_category) {
+            for (const cat in statsData.stats_by_category) {
+              const catData = statsData.stats_by_category[cat];
+              if (catData.sensors && catData.sensors[sensorName]) {
+                currentValue = catData.sensors[sensorName].current;
+                unit = catData.sensors[sensorName].unit || '';
+                
+                // Check threshold violation
+                const threshold = getThreshold(sensorName);
+                if (currentValue !== null && currentValue !== undefined) {
+                  if (currentValue < threshold.min || currentValue > threshold.max) {
+                    statusClass = currentValue < threshold.min * 0.8 || currentValue > threshold.max * 1.2 ? 'crit' : 'wrn';
+                  }
+                }
+                break;
+              }
+            }
+          }
+          
+          // Get historical values for sparkline (last 20 readings)
+          const historicalValues = [];
+          if (recentReadings && recentReadings.length > 0) {
+            recentReadings.slice(0, 20).forEach(reading => {
+              if (reading[sensorName] !== null && reading[sensorName] !== undefined) {
+                historicalValues.push(reading[sensorName]);
+              }
+            });
+          }
+          
+          // Reverse to show chronological order (oldest to newest)
+          historicalValues.reverse();
+          
+          // Get LSTM predictions for this sensor
+          const lstmDots = [];
+          if (lstmPredictions && lstmPredictions[sensorName]) {
+            const predictions = lstmPredictions[sensorName];
+            // Generate 10 dots representing future predictions
+            for (let i = 0; i < 10; i++) {
+              if (predictions[i]) {
+                lstmDots.push(predictions[i].anomaly_probability > 0.7 ? 'anomaly' : 'predicted');
+              } else {
+                lstmDots.push('');
+              }
+            }
+          }
+          
+          const displayName = sensorName.replace(/_/g, ' ').toUpperCase();
+          const sparkline = generateSparkline(historicalValues.length > 0 ? historicalValues : [currentValue || 0], 200, 40);
+          const sparklineClass = statusClass ? ` ${statusClass}` : '';
+          
+          html += `
+            <div class="telemetry-tile">
+              <div class="telemetry-tile-header">
+                <div class="telemetry-tile-name">${displayName}</div>
+                <div class="telemetry-tile-unit">${unit}</div>
+              </div>
+              <div class="telemetry-tile-value ${statusClass}">${formatNumber(currentValue, 1)}</div>
+              <div class="telemetry-tile-sparkline">
+                ${sparkline.replace('class="telemetry-tile-sparkline-line"', `class="telemetry-tile-sparkline-line${sparklineClass}"`)}
+              </div>
+              ${lstmDots.length > 0 ? `
+                <div class="telemetry-tile-lstm">
+                  <span class="telemetry-tile-lstm-label">LSTM:</span>
+                  <div class="telemetry-tile-lstm-dots">
+                    ${lstmDots.map(dot => `<div class="telemetry-tile-lstm-dot ${dot}"></div>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+              <div class="telemetry-tile-footer">
+                <span>MIN: ${formatNumber(historicalValues.length > 0 ? Math.min(...historicalValues) : currentValue, 1)}</span>
+                <span>MAX: ${formatNumber(historicalValues.length > 0 ? Math.max(...historicalValues) : currentValue, 1)}</span>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+      }
 
       function updateStats() {
         fetch("/api/stats")
@@ -5229,6 +5484,9 @@
             
             // Render health matrix
             renderHealthMatrix(data);
+            
+            // Render telemetry tiles
+            renderTelemetryTiles(data, currentMachine.recentReadings, currentMachine.lstmPredictions);
 
             // ========== GUARD: Only collect data if producer + machine are running ==========
             if (canCollectData()) {
