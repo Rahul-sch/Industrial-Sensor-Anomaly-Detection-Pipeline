@@ -2848,26 +2848,184 @@
           </form>
         </div>
 
-      <!-- SCADA Main Content Area (50/50 Split) -->
+      <!-- SCADA Main Content Area -->
       <div class="scada-main">
-        <!-- Left Panel: Health Matrix (will be populated in Phase 2) -->
-        <div class="scada-left-panel" id="scadaLeftPanel">
-          <!-- Health Matrix Grid - 6 cards will go here -->
-          <div id="healthMatrixContainer"></div>
+        <!-- Monitoring Section (Default) -->
+        <div class="scada-section active" id="section-monitoring">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg);">
+            <!-- Left Panel: Health Matrix -->
+            <div>
+              <div id="healthMatrixContainer"></div>
+            </div>
+            <!-- Right Panel: Real-time Telemetry -->
+            <div>
+              <div id="telemetryContainer"></div>
+            </div>
+          </div>
         </div>
         
-        <!-- Right Panel: Real-time Telemetry (will be populated in Phase 3) -->
-        <div class="scada-right-panel" id="scadaRightPanel">
-          <!-- Telemetry Tiles - 8 tiles will go here -->
-          <div id="telemetryContainer"></div>
+        <!-- Alarms Section -->
+        <div class="scada-section" id="section-alarms">
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 6px; height: calc(100vh - 250px); display: flex; flex-direction: column;">
+            <div class="scada-bottom-header">ALARM CONSOLE</div>
+            <div class="scada-bottom-content" id="alarmConsoleContent" style="flex: 1; overflow-y: auto;">
+              <!-- Alarm table will go here -->
+            </div>
+          </div>
         </div>
-      </div>
-      
-      <!-- SCADA Fixed Bottom: Alarm Console (will be populated in Phase 4) -->
-      <div class="scada-bottom">
-        <div class="scada-bottom-header">ALARM CONSOLE</div>
-        <div class="scada-bottom-content" id="alarmConsoleContent">
-          <!-- Alarm table will go here -->
+        
+        <!-- Controls Section -->
+        <div class="scada-section" id="section-controls">
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: var(--space-xl);">
+            <h2 style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-lg);">
+              KAFKA CONTROLS
+            </h2>
+            <div style="display: grid; gap: var(--space-lg);">
+              <!-- Producer Controls -->
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+                  <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-primary); text-transform: uppercase;">
+                    PRODUCER
+                  </div>
+                  <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                    <div class="scada-status-dot-indicator" id="sectionProducerStatus"></div>
+                    <span style="font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);" id="sectionProducerStatusText">STOPPED</span>
+                  </div>
+                </div>
+                <div style="display: flex; gap: var(--space-sm);">
+                  <button onclick="startComponent('producer')" class="scada-btn" style="flex: 1;">START</button>
+                  <button onclick="stopComponent('producer')" class="scada-btn" style="flex: 1;">STOP</button>
+                </div>
+              </div>
+              
+              <!-- Consumer Controls -->
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+                  <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-primary); text-transform: uppercase;">
+                    CONSUMER
+                  </div>
+                  <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                    <div class="scada-status-dot-indicator" id="sectionConsumerStatus"></div>
+                    <span style="font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);" id="sectionConsumerStatusText">STOPPED</span>
+                  </div>
+                </div>
+                <div style="display: flex; gap: var(--space-sm);">
+                  <button onclick="startComponent('consumer')" class="scada-btn" style="flex: 1;">START</button>
+                  <button onclick="stopComponent('consumer')" class="scada-btn" style="flex: 1;">STOP</button>
+                </div>
+              </div>
+              
+              <!-- Kafka Status -->
+              <div style="padding: var(--space-md); background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: 4px;">
+                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: var(--space-xs); text-transform: uppercase;">
+                  KAFKA BROKER
+                </div>
+                <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                  <div class="scada-status-dot-indicator" id="sectionKafkaStatus"></div>
+                  <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-primary);" id="sectionKafkaStatusText">Checking...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Configuration Section (Admin Only) -->
+        <div class="scada-section" id="section-configuration">
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: var(--space-xl); height: calc(100vh - 250px); overflow-y: auto;">
+            <div id="sectionConfigContent">
+              <!-- Custom sensor management will be populated here -->
+            </div>
+          </div>
+        </div>
+        
+        <!-- Analytics Section (Admin Only) -->
+        <div class="scada-section" id="section-analytics">
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: var(--space-xl);">
+            <h2 style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-lg);">
+              LSTM REPORTS
+            </h2>
+            <div style="display: grid; gap: var(--space-sm);">
+              <button onclick="generateFutureReport(this)" class="scada-btn" style="width: 100%;">
+                GENERATE FUTURE REPORT
+              </button>
+              <button onclick="generateFullSessionReport(this)" class="scada-btn" style="width: 100%;">
+                GENERATE FULL SESSION REPORT
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Anomaly Injection Section (Admin Only) -->
+        <div class="scada-section" id="section-injection">
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: var(--space-xl);">
+            <h2 style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-lg);">
+              ANOMALY INJECTION
+            </h2>
+            <div style="display: grid; gap: var(--space-lg);">
+              <!-- Manual Injection -->
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: var(--space-md); text-transform: uppercase;">
+                  MANUAL INJECTION
+                </div>
+                <button onclick="injectAnomalyNow(this)" class="scada-btn critical" style="width: 100%;">
+                  INJECT ANOMALY NOW
+                </button>
+              </div>
+              
+              <!-- Scheduled Injection -->
+              <div style="padding: var(--space-lg); background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: 4px;">
+                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: var(--space-md); text-transform: uppercase;">
+                  SCHEDULED INJECTION
+                </div>
+                <div style="display: grid; gap: var(--space-md);">
+                  <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
+                    <input type="checkbox" id="sectionInjectionEnabled" onchange="toggleInjection()" style="cursor: pointer; width: 18px; height: 18px;">
+                    <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-primary);">ENABLE SCHEDULED INJECTION</span>
+                  </label>
+                  <div>
+                    <label style="display: block; font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-bottom: var(--space-xs); text-transform: uppercase;">
+                      INTERVAL (MINUTES)
+                    </label>
+                    <input type="number" id="sectionInjectionInterval" value="30" min="1" max="1440" 
+                           style="width: 100%; padding: var(--space-sm); background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: 4px; color: var(--text-primary); font-family: var(--font-mono); font-size: 12px;"
+                           onchange="updateInjectionInterval()">
+                  </div>
+                  <button onclick="updateInjectionSettings()" class="scada-btn" style="width: 100%;">
+                    SAVE SETTINGS
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Export Section -->
+        <div class="scada-section" id="section-export">
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: var(--space-xl);">
+            <h2 style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-lg);">
+              EXPORT DATA
+            </h2>
+            <div style="display: grid; gap: var(--space-sm);">
+              <button onclick="exportData()" class="scada-btn" style="width: 100%;">
+                EXPORT CSV
+              </button>
+              <button onclick="generateFullSessionReport(this)" class="scada-btn" style="width: 100%;">
+                GENERATE SESSION REPORT
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Users Section (Admin Only) -->
+        <div class="scada-section" id="section-users">
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: var(--space-xl);">
+            <h2 style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-lg);">
+              USER MANAGEMENT
+            </h2>
+            <div id="sectionUsersContent">
+              <!-- User management will be populated here -->
+            </div>
+          </div>
         </div>
       </div>
       
