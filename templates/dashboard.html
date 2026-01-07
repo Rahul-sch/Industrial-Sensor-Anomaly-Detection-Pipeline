@@ -1348,95 +1348,126 @@
           transform: rotate(360deg);
         }
       }
-      /* Machine and Mode Controls */
+      /* ============================================
+         MACHINE & MODE CONTROLS
+         HP-HMI: Clear context indication
+         ============================================ */
       .machine-mode-controls {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 24px;
-        padding: 16px 24px;
-        background: rgba(30, 41, 59, 0.6);
-        border-radius: 16px;
-        border: 1px solid rgba(96, 165, 250, 0.2);
+        margin-bottom: var(--space-lg);
+        padding: var(--space-md) var(--space-lg);
+        background: var(--bg-secondary);
+        border-radius: 6px;
+        border: 1px solid var(--border-subtle);
         flex-wrap: wrap;
-        gap: 16px;
+        gap: var(--space-lg);
       }
+
       .machine-selector {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: var(--space-md);
       }
+
       .machine-selector label {
-        color: #94a3b8;
-        font-size: 13px;
+        color: var(--text-muted);
+        font-size: 11px;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
       }
+
       .machine-buttons {
         display: flex;
-        gap: 8px;
+        gap: var(--space-xs);
       }
+
       .machine-btn {
-        padding: 8px 16px;
-        border: 2px solid rgba(96, 165, 250, 0.3);
-        background: rgba(15, 23, 42, 0.6);
-        color: #cbd5e1;
-        border-radius: 8px;
+        padding: var(--space-sm) var(--space-md);
+        border: 1px solid var(--border-default);
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border-radius: 4px;
         cursor: pointer;
-        font-weight: 600;
-        font-size: 14px;
-        transition: all 0.3s;
+        font-weight: 500;
+        font-size: 13px;
+        transition: all var(--transition-normal);
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
       }
+
       .machine-btn:hover {
-        border-color: rgba(96, 165, 250, 0.5);
-        background: rgba(96, 165, 250, 0.1);
+        border-color: var(--border-strong);
+        background: var(--bg-elevated);
       }
+
       .machine-btn.active {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        border-color: #3b82f6;
-        color: white;
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        background: var(--interactive-primary);
+        border-color: var(--interactive-primary);
+        color: var(--bg-base);
       }
+
+      /* Machine status dot inside button */
+      .machine-btn .machine-status {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--status-normal);
+      }
+
+      .machine-btn .machine-status.running {
+        background: var(--status-running);
+      }
+
+      .machine-btn.active .machine-status {
+        background: var(--bg-base);
+      }
+
       .mode-toggle {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: var(--space-md);
       }
+
       .mode-toggle label {
-        color: #94a3b8;
-        font-size: 13px;
+        color: var(--text-muted);
+        font-size: 11px;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
       }
+
       .mode-buttons {
         display: flex;
-        gap: 8px;
-        background: rgba(15, 23, 42, 0.6);
-        padding: 4px;
-        border-radius: 10px;
-        border: 1px solid rgba(96, 165, 250, 0.2);
+        gap: 2px;
+        background: var(--bg-tertiary);
+        padding: 3px;
+        border-radius: 4px;
+        border: 1px solid var(--border-subtle);
       }
+
       .mode-btn {
-        padding: 8px 20px;
+        padding: var(--space-sm) var(--space-lg);
         border: none;
         background: transparent;
-        color: #94a3b8;
-        border-radius: 6px;
+        color: var(--text-muted);
+        border-radius: 3px;
         cursor: pointer;
-        font-weight: 600;
-        font-size: 13px;
-        transition: all 0.3s;
+        font-weight: 500;
+        font-size: 12px;
+        transition: all var(--transition-normal);
       }
+
       .mode-btn:hover {
-        color: #cbd5e1;
-        background: rgba(96, 165, 250, 0.1);
+        color: var(--text-primary);
       }
+
       .mode-btn.active {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
-        box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+        background: var(--bg-elevated);
+        color: var(--text-primary);
       }
       /* Admin Panel */
       .admin-panel {
