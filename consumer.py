@@ -50,11 +50,6 @@ class SensorDataConsumer:
             signal.signal(signal.SIGBREAK, self.signal_handler)
 
         self.logger.info("Consumer initialized")
-        # #region agent log
-        debug_log('consumer.py:__init__', 'Consumer initialized', {
-            'debug_log_path': DEBUG_LOG_PATH
-        }, 'H5')
-        # #endregion
 
     def setup_logging(self):
         """Configure logging."""

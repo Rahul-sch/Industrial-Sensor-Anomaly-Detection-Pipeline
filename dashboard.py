@@ -596,6 +596,11 @@ def bootstrap_admin_user():
             conn.close()
 
 
+@app.route('/login')
+def login_page():
+    """Login page"""
+    return render_template('login.html')
+
 @app.route('/')
 def index():
     """Main dashboard page"""
