@@ -213,6 +213,48 @@
         letter-spacing: 0.5px;
       }
       
+      .scada-topbar-controls {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+      }
+      
+      .scada-btn {
+        padding: 4px 12px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-default);
+        border-radius: 4px;
+        color: var(--text-secondary);
+        font-size: 11px;
+        cursor: pointer;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all var(--transition-fast);
+      }
+      
+      .scada-btn:hover {
+        background: var(--bg-elevated);
+        color: var(--text-primary);
+        border-color: var(--border-strong);
+      }
+      
+      .scada-btn.active {
+        background: var(--bg-elevated);
+        color: var(--text-primary);
+        border-color: var(--border-strong);
+      }
+      
+      .scada-btn.critical {
+        background: var(--status-error);
+        color: white;
+        border-color: var(--status-error);
+      }
+      
+      .scada-btn.critical:hover {
+        background: var(--status-critical);
+      }
+      
       /* ============================================
          SCADA MAIN LAYOUT - 50/50 Split
          ============================================ */
@@ -2676,7 +2718,15 @@
               <span id="scadaAlertsCount">0</span>
             </div>
             <div class="scada-utc-time" id="scadaUTCTime">--:--:-- UTC</div>
-            <button onclick="handleLogout()" style="padding: 4px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px; color: var(--text-secondary); font-size: 11px; cursor: pointer; font-family: var(--font-mono);">LOGOUT</button>
+            <div class="scada-topbar-controls">
+              <button onclick="toggleKafkaControls()" class="scada-btn" id="kafkaControlBtn" title="Kafka Controls">
+                KAFKA
+              </button>
+              <button onclick="openAnomalyInjectionModal()" class="scada-btn" id="anomalyInjectionBtn" title="Anomaly Injection">
+                INJECT
+              </button>
+              <button onclick="handleLogout()" class="scada-btn">LOGOUT</button>
+            </div>
           </div>
         </div>
         
@@ -3641,6 +3691,113 @@
     <button id="adminSidebarToggleBtn" onclick="toggleAdminSidebar()" class="scada-sidebar-toggle-btn" style="display: none;">
       ⚙️
     </button>
+    
+    <!-- Kafka Controls Modal -->
+    <div id="kafkaControlsModal" class="scada-modal" style="display: none;">
+      <div class="scada-modal-overlay" onclick="closeKafkaControlsModal()"></div>
+      <div class="scada-modal-content" style="max-width: 600px;">
+        <div class="scada-modal-header">
+          <h3>KAFKA CONTROLS</h3>
+          <button onclick="closeKafkaControlsModal()" class="scada-modal-close">✕</button>
+        </div>
+        <div class="scada-modal-body">
+          <div style="display: grid; gap: var(--space-lg);">
+            <!-- Producer Controls -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+                <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-primary); text-transform: uppercase;">
+                  PRODUCER
+                </div>
+                <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                  <div class="scada-status-dot-indicator" id="modalProducerStatus"></div>
+                  <span style="font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);" id="modalProducerStatusText">STOPPED</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: var(--space-sm);">
+                <button onclick="startComponent('producer'); closeKafkaControlsModal();" class="scada-btn" style="flex: 1;">START</button>
+                <button onclick="stopComponent('producer'); closeKafkaControlsModal();" class="scada-btn" style="flex: 1;">STOP</button>
+              </div>
+            </div>
+            
+            <!-- Consumer Controls -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+                <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-primary); text-transform: uppercase;">
+                  CONSUMER
+                </div>
+                <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                  <div class="scada-status-dot-indicator" id="modalConsumerStatus"></div>
+                  <span style="font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);" id="modalConsumerStatusText">STOPPED</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: var(--space-sm);">
+                <button onclick="startComponent('consumer'); closeKafkaControlsModal();" class="scada-btn" style="flex: 1;">START</button>
+                <button onclick="stopComponent('consumer'); closeKafkaControlsModal();" class="scada-btn" style="flex: 1;">STOP</button>
+              </div>
+            </div>
+            
+            <!-- Kafka Status -->
+            <div style="padding: var(--space-md); background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: 4px;">
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: var(--space-xs); text-transform: uppercase;">
+                KAFKA BROKER
+              </div>
+              <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                <div class="scada-status-dot-indicator" id="modalKafkaStatus"></div>
+                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-primary);" id="modalKafkaStatusText">Checking...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Anomaly Injection Modal -->
+    <div id="anomalyInjectionModal" class="scada-modal" style="display: none;">
+      <div class="scada-modal-overlay" onclick="closeAnomalyInjectionModal()"></div>
+      <div class="scada-modal-content" style="max-width: 700px;">
+        <div class="scada-modal-header">
+          <h3>ANOMALY INJECTION</h3>
+          <button onclick="closeAnomalyInjectionModal()" class="scada-modal-close">✕</button>
+        </div>
+        <div class="scada-modal-body">
+          <div style="display: grid; gap: var(--space-lg);">
+            <!-- Manual Injection -->
+            <div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: var(--space-md); text-transform: uppercase;">
+                MANUAL INJECTION
+              </div>
+              <button onclick="injectAnomalyNow(this); closeAnomalyInjectionModal();" class="scada-btn critical" style="width: 100%;">
+                INJECT ANOMALY NOW
+              </button>
+            </div>
+            
+            <!-- Scheduled Injection -->
+            <div style="padding: var(--space-lg); background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: 4px;">
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: var(--space-md); text-transform: uppercase;">
+                SCHEDULED INJECTION
+              </div>
+              <div style="display: grid; gap: var(--space-md);">
+                <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
+                  <input type="checkbox" id="modalInjectionEnabled" onchange="toggleInjection()" style="cursor: pointer; width: 18px; height: 18px;">
+                  <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-primary);">ENABLE SCHEDULED INJECTION</span>
+                </label>
+                <div>
+                  <label style="display: block; font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-bottom: var(--space-xs); text-transform: uppercase;">
+                    INTERVAL (MINUTES)
+                  </label>
+                  <input type="number" id="modalInjectionInterval" value="30" min="1" max="1440" 
+                         style="width: 100%; padding: var(--space-sm); background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: 4px; color: var(--text-primary); font-family: var(--font-mono); font-size: 12px;"
+                         onchange="updateInjectionInterval()">
+                </div>
+                <button onclick="updateInjectionSettings(); closeAnomalyInjectionModal();" class="scada-btn" style="width: 100%;">
+                  SAVE SETTINGS
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script>
       // ========== Authentication State ==========
@@ -5696,74 +5853,86 @@
         container.innerHTML = html;
       }
       
-      // Render telemetry tiles (8 tiles with sparklines)
+      // Render telemetry tiles (8 tiles with sparklines) - uses real sensor data
       function renderTelemetryTiles(statsData, recentReadings, lstmPredictions) {
         const container = document.getElementById('telemetryContainer');
         if (!container) return;
         
-        // Select top 8 sensors based on priority (voltage, current, temperature, pressure, etc.)
+        // Priority sensors across categories (real sensors from config)
         const prioritySensors = [
-          'voltage', 'current', 'temperature', 'pressure',
-          'rpm', 'vibration', 'coolant_temp', 'flow_rate'
+          { name: 'temperature', category: 'environmental' },
+          { name: 'pressure', category: 'environmental' },
+          { name: 'voltage', category: 'electrical' },
+          { name: 'current', category: 'electrical' },
+          { name: 'rpm', category: 'mechanical' },
+          { name: 'vibration', category: 'mechanical' },
+          { name: 'coolant_temp', category: 'thermal' },
+          { name: 'flow_rate', category: 'fluid' }
         ];
         
         let html = '<div class="telemetry-grid">';
         
-        prioritySensors.forEach(sensorName => {
+        prioritySensors.forEach(sensor => {
+          const sensorName = sensor.name;
           // Get current value from stats
           let currentValue = null;
           let unit = '';
           let statusClass = '';
           
           if (statsData && statsData.stats_by_category) {
-            for (const cat in statsData.stats_by_category) {
-              const catData = statsData.stats_by_category[cat];
-              if (catData.sensors && catData.sensors[sensorName]) {
-                currentValue = catData.sensors[sensorName].current;
-                unit = catData.sensors[sensorName].unit || '';
-                
-                // Check threshold violation
-                const threshold = getThreshold(sensorName);
-                if (currentValue !== null && currentValue !== undefined) {
-                  if (currentValue < threshold.min || currentValue > threshold.max) {
-                    statusClass = currentValue < threshold.min * 0.8 || currentValue > threshold.max * 1.2 ? 'crit' : 'wrn';
-                  }
+            const catData = statsData.stats_by_category[sensor.category];
+            if (catData && catData.sensors && catData.sensors[sensorName]) {
+              currentValue = catData.sensors[sensorName].current;
+              unit = catData.sensors[sensorName].unit || '';
+              
+              // Check threshold violation
+              const threshold = getThreshold(sensorName);
+              if (currentValue !== null && currentValue !== undefined) {
+                if (currentValue < threshold.min || currentValue > threshold.max) {
+                  statusClass = currentValue < threshold.min * 0.8 || currentValue > threshold.max * 1.2 ? 'crit' : 'wrn';
                 }
-                break;
               }
             }
           }
           
-          // Get historical values for sparkline (last 20 readings)
+          // Get historical values for sparkline (last 30 readings for better trend)
           const historicalValues = [];
           if (recentReadings && recentReadings.length > 0) {
-            recentReadings.slice(0, 20).forEach(reading => {
-              if (reading[sensorName] !== null && reading[sensorName] !== undefined) {
-                historicalValues.push(reading[sensorName]);
+            // Get last 30 readings, reverse for chronological order
+            const readings = recentReadings.slice(0, 30).reverse();
+            readings.forEach(reading => {
+              // Check both direct property and custom_sensors object
+              let value = reading[sensorName];
+              if (value === null || value === undefined) {
+                value = reading.custom_sensors && reading.custom_sensors[sensorName];
+              }
+              if (value !== null && value !== undefined && !isNaN(value)) {
+                historicalValues.push(parseFloat(value));
               }
             });
           }
           
-          // Reverse to show chronological order (oldest to newest)
-          historicalValues.reverse();
+          // If no historical data, use current value as single point
+          if (historicalValues.length === 0 && currentValue !== null) {
+            historicalValues.push(currentValue);
+          }
           
           // Get LSTM predictions for this sensor
           const lstmDots = [];
-          if (lstmPredictions && lstmPredictions[sensorName]) {
-            const predictions = lstmPredictions[sensorName];
-            // Generate 10 dots representing future predictions
-            for (let i = 0; i < 10; i++) {
-              if (predictions[i]) {
-                lstmDots.push(predictions[i].anomaly_probability > 0.7 ? 'anomaly' : 'predicted');
-              } else {
-                lstmDots.push('');
-              }
+          if (lstmPredictions && lstmPredictions.sensor_predictions) {
+            const sensorPreds = lstmPredictions.sensor_predictions[sensorName];
+            if (sensorPreds && sensorPreds.length > 0) {
+              sensorPreds.slice(0, 10).forEach(pred => {
+                lstmDots.push(pred.anomaly_probability > 0.7 ? 'anomaly' : 'predicted');
+              });
             }
           }
           
           const displayName = sensorName.replace(/_/g, ' ').toUpperCase();
           const sparkline = generateSparkline(historicalValues.length > 0 ? historicalValues : [currentValue || 0], 200, 40);
           const sparklineClass = statusClass ? ` ${statusClass}` : '';
+          const minVal = historicalValues.length > 0 ? Math.min(...historicalValues) : (currentValue || 0);
+          const maxVal = historicalValues.length > 0 ? Math.max(...historicalValues) : (currentValue || 0);
           
           html += `
             <div class="telemetry-tile">
@@ -5784,8 +5953,8 @@
                 </div>
               ` : ''}
               <div class="telemetry-tile-footer">
-                <span>MIN: ${formatNumber(historicalValues.length > 0 ? Math.min(...historicalValues) : currentValue, 1)}</span>
-                <span>MAX: ${formatNumber(historicalValues.length > 0 ? Math.max(...historicalValues) : currentValue, 1)}</span>
+                <span>MIN: ${formatNumber(minVal, 1)}</span>
+                <span>MAX: ${formatNumber(maxVal, 1)}</span>
               </div>
             </div>
           `;
@@ -6200,6 +6369,12 @@
             
             // Update SCADA top bar status dots
             updateSystemStatusDots(data);
+            
+            // Update Kafka modal if open
+            const kafkaModal = document.getElementById('kafkaControlsModal');
+            if (kafkaModal && kafkaModal.style.display === 'flex') {
+              updateKafkaModalStatus();
+            }
           });
       }
       
@@ -7624,10 +7799,132 @@ Report generated by Sensor Data Pipeline Dashboard
         // Clone admin panel content to sidebar
         sidebarContent.innerHTML = adminPanel.innerHTML;
         
+        // Add LSTM report generation section
+        const lstmSection = `
+          <div style="margin-top: var(--space-xl); padding-top: var(--space-xl); border-top: 1px solid var(--border-subtle);">
+            <h3 style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-primary); text-transform: uppercase; margin-bottom: var(--space-md);">
+              LSTM REPORTS
+            </h3>
+            <div style="display: grid; gap: var(--space-sm);">
+              <button onclick="generateFutureReport(this)" class="scada-btn" style="width: 100%;">
+                GENERATE FUTURE REPORT
+              </button>
+              <button onclick="generateFullSessionReport(this)" class="scada-btn" style="width: 100%;">
+                GENERATE FULL SESSION REPORT
+              </button>
+            </div>
+          </div>
+        `;
+        sidebarContent.innerHTML += lstmSection;
+        
         // Show toggle button only for admins
         if (currentUser && currentUser.role === 'admin' && toggleBtn) {
           toggleBtn.style.display = 'flex';
         }
+      }
+      
+      // ============================================
+      // KAFKA CONTROLS MODAL
+      // ============================================
+      
+      function toggleKafkaControls() {
+        const modal = document.getElementById('kafkaControlsModal');
+        if (modal) {
+          modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+          if (modal.style.display === 'flex') {
+            updateKafkaModalStatus();
+          }
+        }
+      }
+      
+      function closeKafkaControlsModal() {
+        const modal = document.getElementById('kafkaControlsModal');
+        if (modal) {
+          modal.style.display = 'none';
+        }
+      }
+      
+      function updateKafkaModalStatus() {
+        // Update producer status
+        const producerStatus = document.getElementById('producerStatus');
+        const modalProducerStatus = document.getElementById('modalProducerStatus');
+        const modalProducerStatusText = document.getElementById('modalProducerStatusText');
+        if (producerStatus && modalProducerStatus && modalProducerStatusText) {
+          const isRunning = producerStatus.classList.contains('status-running');
+          modalProducerStatus.className = 'scada-status-dot-indicator ' + (isRunning ? 'nom' : '');
+          modalProducerStatusText.textContent = isRunning ? 'RUNNING' : 'STOPPED';
+        }
+        
+        // Update consumer status
+        const consumerStatus = document.getElementById('consumerStatus');
+        const modalConsumerStatus = document.getElementById('modalConsumerStatus');
+        const modalConsumerStatusText = document.getElementById('modalConsumerStatusText');
+        if (consumerStatus && modalConsumerStatus && modalConsumerStatusText) {
+          const isRunning = consumerStatus.classList.contains('status-running');
+          modalConsumerStatus.className = 'scada-status-dot-indicator ' + (isRunning ? 'nom' : '');
+          modalConsumerStatusText.textContent = isRunning ? 'RUNNING' : 'STOPPED';
+        }
+        
+        // Update Kafka status
+        const kafkaStatusDetails = document.getElementById('kafkaStatusDetails');
+        const modalKafkaStatus = document.getElementById('modalKafkaStatus');
+        const modalKafkaStatusText = document.getElementById('modalKafkaStatusText');
+        if (kafkaStatusDetails && modalKafkaStatus && modalKafkaStatusText) {
+          const kafkaStatus = document.getElementById('kafkaStatus');
+          if (kafkaStatus) {
+            const isHealthy = kafkaStatus.classList.contains('status-running');
+            modalKafkaStatus.className = 'scada-status-dot-indicator ' + (isHealthy ? 'nom' : 'err');
+            modalKafkaStatusText.textContent = kafkaStatusDetails.textContent || 'UNKNOWN';
+          }
+        }
+      }
+      
+      // ============================================
+      // ANOMALY INJECTION MODAL
+      // ============================================
+      
+      function openAnomalyInjectionModal() {
+        const modal = document.getElementById('anomalyInjectionModal');
+        if (modal) {
+          modal.style.display = 'flex';
+          // Load current injection settings
+          fetch("/api/injection-settings")
+            .then((r) => r.json())
+            .then((data) => {
+              if (data.settings) {
+                const enabled = document.getElementById('modalInjectionEnabled');
+                const interval = document.getElementById('modalInjectionInterval');
+                if (enabled) enabled.checked = data.settings.enabled || false;
+                if (interval) interval.value = data.settings.interval_minutes || 30;
+              }
+            })
+            .catch(console.error);
+        }
+      }
+      
+      function closeAnomalyInjectionModal() {
+        const modal = document.getElementById('anomalyInjectionModal');
+        if (modal) {
+          modal.style.display = 'none';
+        }
+      }
+      
+      function updateInjectionSettings() {
+        const enabled = document.getElementById('modalInjectionEnabled')?.checked || false;
+        const interval = parseInt(document.getElementById('modalInjectionInterval')?.value || 30);
+        
+        fetch("/api/injection-settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled, interval_minutes: interval }),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.settings) {
+              // Success - settings updated
+            }
+          })
+          .catch(console.error);
       }
       
       // Close modal on escape key or clicking outside
@@ -7636,6 +7933,8 @@ Report generated by Sensor Data Pipeline Dashboard
           closeReportModal();
           closeFullReportModal();
           closeHealthCardModal();
+          closeKafkaControlsModal();
+          closeAnomalyInjectionModal();
         }
       });
 
