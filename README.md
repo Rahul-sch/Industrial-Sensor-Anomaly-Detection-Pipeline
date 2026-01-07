@@ -200,6 +200,83 @@ All API endpoints are protected:
 
 ---
 
+## Dashboard UI & Layout
+
+### 2-Panel Monitoring Layout
+
+The dashboard features a **compact 2-panel layout** optimized for industrial monitoring:
+
+**Left Panel (320px fixed width):**
+- **Health Matrix**: 6 category cards (Environmental, Electrical, Fluid, Mechanical, Thermal, Custom) displayed in a 2-column grid
+  - Each card shows health percentage, status indicator (NOM/WRN/CRIT), anomaly log, and uptime
+  - **Anomaly Log**: Displays last 3 anomalies per category with sensor name and timestamp
+  - Status LEDs change to Yellow (PAUSED) when system is stopped
+- **System Command Deck**: Compact control panel with:
+  - **START/STOP buttons**: Large, easy-to-click controls
+  - **Sampling Speed slider**: Adjust MPS (Messages Per Second) from 1-20
+  - **Anomaly Simulation**: Dropdown to select anomaly type + INJECT button
+  - **NOM status indicator**: Matches theme of other cards
+
+**Right Panel (Flexible width):**
+- **Telemetry Grid**: Responsive grid of sensor cards showing:
+  - Real-time sensor values (CURR) and calculated averages (AVG)
+  - Dynamic threshold coloring (Green = Normal, Yellow = Near Threshold, Red = Over Threshold)
+  - Sparkline graphs with color-coded lines based on threshold violations
+  - Sensor metadata and status indicators
+
+### Header Features
+
+**Clean, Minimal Header:**
+- **Logo & Branding**: ITHENA SCADA branding
+- **Machine Selector**: Dropdown to switch between Machine A, B, or C
+- **Status Dots**: 4 status indicators (SYSTEM, COMM, POWER, SAFETY)
+  - SYSTEM: Green when running, Yellow when paused, Red when stopped
+  - COMM: Kafka/communication status
+  - POWER: Electrical/power status
+  - SAFETY: Safety interlock status
+- **Pipeline Health**: 
+  - **TOTAL**: Large odometer-style counter for total messages
+  - **MPS**: Message velocity (messages per second)
+- **Alerts Badge**: Shows count of active alerts
+- **UTC Time**: Current UTC timestamp
+- **LOGOUT**: User logout button
+
+### Category Cards
+
+Each category card in the Health Matrix displays:
+
+- **Header**: Category name (ENVIRON, ELECTRIC, FLUID, MECH, THERMAL, CUSTOM) + Status indicator
+- **Health Percentage**: Large percentage value with color coding
+- **Anomaly Log**: 
+  - Shows "No Recent Anomalies" (green) when no issues
+  - Lists last 3 anomalies with format: `Sensor Name @ HH:MM`
+  - Filters anomalies by category automatically
+- **Uptime**: Session uptime timer (pauses when system is stopped)
+
+### Stop Button Behavior
+
+When **STOP** is clicked:
+
+- **SYSTEM LED**: Changes to **Yellow (PAUSED)** - not red
+- **Category LEDs**: All category status indicators change to Yellow (except CRIT)
+- **Uptime Timer**: **Pauses** (does not reset to 00:00)
+- **Status Labels**: Display "PAUSED" instead of "NOM" or "WRN"
+
+The system maintains its state when paused, allowing you to resume without losing session data.
+
+### Theme & Styling
+
+- **Deep Space Industrial Theme**: Ultra-dark backgrounds (#0a0a0a) with neon accents
+- **Consistent Card Design**: All cards use the same dark theme, borders, and typography
+- **Color-Coded Status**: 
+  - Green (NOM): Normal operation
+  - Yellow (WRN): Warning/Paused state
+  - Red (CRIT): Critical/Error state
+- **Monospace Fonts**: All numerical values and labels use monospace for readability
+- **Responsive Grid**: Telemetry cards automatically adjust to available space
+
+---
+
 ## LSTM Future Anomaly Prediction 🔮
 
 The dashboard includes a new **LSTM Future Anomaly Prediction** card that predicts when anomalies might occur in the future and **identifies which specific sensor parameters will cause problems and why**.
