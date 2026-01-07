@@ -268,6 +268,114 @@
         overflow-y: auto;
         padding: var(--space-sm) var(--space-lg);
       }
+      
+      /* ============================================
+         HEALTH MATRIX GRID - 6 Category Cards
+         ============================================ */
+      .health-matrix {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-lg);
+      }
+      
+      .health-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        padding: var(--space-xl);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+      }
+      
+      .health-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .health-card-name {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      
+      .health-card-status {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        font-family: var(--font-mono);
+        font-size: 10px;
+      }
+      
+      .health-card-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--status-normal);
+      }
+      
+      .health-card-status-dot.nom {
+        background: var(--status-running);
+      }
+      
+      .health-card-status-dot.wrn {
+        background: var(--status-warning);
+      }
+      
+      .health-card-status-dot.crit {
+        background: var(--status-error);
+      }
+      
+      .health-card-status-label {
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .health-card-value {
+        font-family: var(--font-mono);
+        font-size: 48px;
+        font-weight: 600;
+        color: var(--text-primary);
+        line-height: 1;
+      }
+      
+      .health-card-value.wrn {
+        color: var(--status-warning);
+      }
+      
+      .health-card-value.crit {
+        color: var(--status-error);
+      }
+      
+      .health-card-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--text-muted);
+        font-family: var(--font-mono);
+      }
+      
+      .health-card-meta-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      
+      .health-card-meta-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .health-card-meta-value {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
       /* ============================================
          TYPOGRAPHY - Clean, Professional
          ============================================ */
@@ -2476,8 +2584,8 @@
         </div>
       </details>
 
-      <div class="grid">
-        <!-- Stats Card -->
+      <div class="grid" style="display: none;">
+        <!-- Stats Card (hidden - replaced by SCADA layout) -->
         <div class="card">
           <h2>📊 Statistics</h2>
           <p class="card-intro">
@@ -5004,6 +5112,110 @@
           });
       }
 
+      // ============================================
+      // HEALTH MATRIX CALCULATION & RENDERING
+      // ============================================
+      
+      // Calculate health percentage for a category based on threshold violations
+      function calculateCategoryHealth(categoryName, statsData) {
+        if (!statsData || !statsData.stats_by_category) {
+          return { health: 100, status: 'nom', violations: 0, total: 0 };
+        }
+        
+        const categoryData = statsData.stats_by_category[categoryName];
+        if (!categoryData || !categoryData.sensors) {
+          return { health: 100, status: 'nom', violations: 0, total: 0 };
+        }
+        
+        const sensors = Object.keys(categoryData.sensors);
+        if (sensors.length === 0) {
+          return { health: 100, status: 'nom', violations: 0, total: 0 };
+        }
+        
+        let violations = 0;
+        let total = 0;
+        
+        sensors.forEach(sensorName => {
+          total++;
+          const sensorData = categoryData.sensors[sensorName];
+          const currentValue = sensorData.current;
+          
+          if (currentValue !== null && currentValue !== undefined) {
+            const threshold = getThreshold(sensorName);
+            const min = threshold.min;
+            const max = threshold.max;
+            
+            // Check if value violates threshold
+            if (currentValue < min || currentValue > max) {
+              violations++;
+            }
+          }
+        });
+        
+        const health = total > 0 ? Math.round(((total - violations) / total) * 100) : 100;
+        let status = 'nom';
+        if (health < 70) {
+          status = 'crit';
+        } else if (health < 90) {
+          status = 'wrn';
+        }
+        
+        return { health, status, violations, total };
+      }
+      
+      // Render health matrix grid (6 cards)
+      function renderHealthMatrix(statsData) {
+        const container = document.getElementById('healthMatrixContainer');
+        if (!container) return;
+        
+        const categories = [
+          { key: 'environmental', name: 'ENVIRON' },
+          { key: 'electrical', name: 'ELECTRIC' },
+          { key: 'fluid', name: 'FLUID' },
+          { key: 'mechanical', name: 'MECH' },
+          { key: 'thermal', name: 'THERMAL' },
+          { key: 'custom', name: 'CUSTOM' }
+        ];
+        
+        let html = '<div class="health-matrix">';
+        
+        categories.forEach(cat => {
+          const healthData = calculateCategoryHealth(cat.key, statsData);
+          const statusClass = healthData.status;
+          const statusLabel = statusClass === 'nom' ? 'NOM' : statusClass === 'wrn' ? 'WRN' : 'CRIT';
+          
+          // Calculate uptime (time since last anomaly or system start)
+          // For now, use a placeholder - will be enhanced later
+          const uptime = '--:--:--';
+          
+          html += `
+            <div class="health-card">
+              <div class="health-card-header">
+                <div class="health-card-name">${cat.name}</div>
+                <div class="health-card-status">
+                  <div class="health-card-status-dot ${statusClass}"></div>
+                  <span class="health-card-status-label">${statusLabel}</span>
+                </div>
+              </div>
+              <div class="health-card-value ${statusClass}">${healthData.health}%</div>
+              <div class="health-card-meta">
+                <div class="health-card-meta-item">
+                  <div class="health-card-meta-label">ALARMS</div>
+                  <div class="health-card-meta-value">${healthData.violations}</div>
+                </div>
+                <div class="health-card-meta-item">
+                  <div class="health-card-meta-label">UPTIME</div>
+                  <div class="health-card-meta-value">${uptime}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+      }
+
       function updateStats() {
         fetch("/api/stats")
           .then((r) => r.json())
@@ -5014,6 +5226,9 @@
 
             // Apply machine filtering (non-destructive wrapper)
             data = filterSensorData(data);
+            
+            // Render health matrix
+            renderHealthMatrix(data);
 
             // ========== GUARD: Only collect data if producer + machine are running ==========
             if (canCollectData()) {
