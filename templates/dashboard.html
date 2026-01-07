@@ -584,6 +584,179 @@
       .alarm-message {
         color: var(--text-primary);
       }
+      
+      /* ============================================
+         MODAL & SIDEBAR - Progressive Disclosure
+         ============================================ */
+      .scada-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .scada-modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+      }
+      
+      .scada-modal-content {
+        position: relative;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-default);
+        border-radius: 6px;
+        width: 90%;
+        max-width: 1200px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        z-index: 2001;
+      }
+      
+      .scada-modal-header {
+        padding: var(--space-lg);
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .scada-modal-header h3 {
+        font-family: var(--font-mono);
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0;
+      }
+      
+      .scada-modal-close {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .scada-modal-close:hover {
+        color: var(--text-primary);
+      }
+      
+      .scada-modal-body {
+        padding: var(--space-lg);
+        overflow-y: auto;
+        flex: 1;
+      }
+      
+      /* Admin Sidebar */
+      .scada-sidebar {
+        position: fixed;
+        top: 50px;
+        right: -400px;
+        width: 400px;
+        height: calc(100vh - 50px);
+        background: var(--bg-secondary);
+        border-left: 1px solid var(--border-default);
+        z-index: 1500;
+        transition: right 0.3s ease;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .scada-sidebar.open {
+        right: 0;
+      }
+      
+      .scada-sidebar-header {
+        padding: var(--space-lg);
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .scada-sidebar-header h3 {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0;
+      }
+      
+      .scada-sidebar-toggle {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 18px;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .scada-sidebar-toggle:hover {
+        color: var(--text-primary);
+      }
+      
+      .scada-sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: var(--space-lg);
+      }
+      
+      .scada-sidebar-toggle-btn {
+        position: fixed;
+        top: 60px;
+        right: var(--space-lg);
+        width: 40px;
+        height: 40px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-default);
+        border-radius: 4px;
+        color: var(--text-primary);
+        font-size: 18px;
+        cursor: pointer;
+        z-index: 1400;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-mono);
+      }
+      
+      .scada-sidebar-toggle-btn:hover {
+        background: var(--bg-tertiary);
+      }
+      
+      /* Make health cards clickable */
+      .health-card {
+        cursor: pointer;
+        transition: border-color var(--transition-normal);
+      }
+      
+      .health-card:hover {
+        border-color: var(--border-default);
+      }
       /* ============================================
          TYPOGRAPHY - Clean, Professional
          ============================================ */
@@ -2598,8 +2771,8 @@
         </div>
       </div>
 
-      <!-- Admin Panel (hidden by default) -->
-      <div class="admin-panel" id="adminPanel">
+      <!-- Admin Panel (moved to collapsible sidebar) -->
+      <div class="admin-panel" id="adminPanel" style="display: none;">
         <div class="admin-section">
           <h3>⚙️ Sensor Management - Machine <span id="adminMachineLabel">A</span></h3>
           <p class="card-intro" style="margin-bottom: 16px;">
@@ -2964,8 +3137,8 @@
         </div>
       </div>
 
-      <!-- LSTM Future Prediction Card -->
-      <div class="card" style="margin-bottom: 24px">
+      <!-- LSTM Future Prediction Card (hidden - moved to admin sidebar) -->
+      <div class="card" style="display: none; margin-bottom: 24px">
         <h2>🔮 LSTM Future Anomaly Prediction</h2>
         <p class="card-intro">
           LSTM Autoencoder analyzes temporal patterns to predict potential future anomalies.
@@ -3085,8 +3258,8 @@
         </button>
       </div>
 
-      <!-- ML Anomaly Detection Card -->
-      <div class="card" style="margin-bottom: 24px">
+      <!-- ML Anomaly Detection Card (hidden - moved to admin sidebar) -->
+      <div class="card" style="display: none; margin-bottom: 24px">
         <div
           style="
             display: flex;
@@ -3176,15 +3349,10 @@
           </div>
         </div>
 
-        <!-- Anomaly Injection Controls -->
+        <!-- Anomaly Injection Controls (hidden - moved to admin sidebar) -->
         <div
-          style="
-            margin-top: 24px;
-            padding: 20px;
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 12px;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-          "
+          id="injectionControls"
+          style="display: none; margin-top: 24px; padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);"
         >
           <h3 style="margin: 0 0 16px 0; color: #f87171; font-size: 16px">
             🎯 Anomaly Injection Controls
@@ -3396,8 +3564,8 @@
         </div>
       </div>
 
-      <!-- 50 Parameters by Category -->
-      <div class="card">
+      <!-- 50 Parameters by Category (hidden - moved to health card modal) -->
+      <div class="card" style="display: none;">
         <h2>🎯 All Sensor Parameters (50)</h2>
         <p class="card-intro">
           Grouped by category so you can see how the 50 different readings are
@@ -3408,8 +3576,8 @@
         <div id="categoryContent"></div>
       </div>
 
-      <!-- Readings History Card -->
-      <div class="card">
+      <!-- Readings History Card (hidden - moved to health card modal) -->
+      <div class="card" style="display: none;">
         <h2>📡 Live Sensor Readings</h2>
         <p class="card-intro">
           A rolling timeline of raw values pulled straight from the database.
@@ -3441,6 +3609,36 @@
         <div class="history-container" id="readingsHistory"></div>
       </div>
     </div>
+    
+    <!-- Health Card Detail Modal -->
+    <div id="healthCardModal" class="scada-modal" style="display: none;">
+      <div class="scada-modal-overlay" onclick="closeHealthCardModal()"></div>
+      <div class="scada-modal-content">
+        <div class="scada-modal-header">
+          <h3 id="healthModalTitle">CATEGORY DETAILS</h3>
+          <button onclick="closeHealthCardModal()" class="scada-modal-close">✕</button>
+        </div>
+        <div class="scada-modal-body" id="healthModalContent">
+          <!-- Sensor list will be populated here -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- Admin Sidebar (collapsible) -->
+    <div id="adminSidebar" class="scada-sidebar">
+      <div class="scada-sidebar-header">
+        <h3>ADMIN PANEL</h3>
+        <button onclick="toggleAdminSidebar()" class="scada-sidebar-toggle">✕</button>
+      </div>
+      <div class="scada-sidebar-content" id="adminSidebarContent">
+        <!-- Admin content will be moved here -->
+      </div>
+    </div>
+    
+    <!-- Admin Sidebar Toggle Button (only visible to admins) -->
+    <button id="adminSidebarToggleBtn" onclick="toggleAdminSidebar()" class="scada-sidebar-toggle-btn" style="display: none;">
+      ⚙️
+    </button>
 
     <script>
       // ========== Authentication State ==========
@@ -3460,13 +3658,8 @@
               filterMachineSelector();
               updateUserInfo();
               if (currentUser.role === 'admin') {
-                // Hide mode toggle for admins (they only see admin panel)
-                const modeToggle = document.querySelector('.mode-toggle');
-                if (modeToggle) {
-                  modeToggle.style.display = 'none';
-                }
-                // Auto-switch to admin mode for admins (permanent admin mode)
-                switchMode('admin');
+                // Initialize admin sidebar for admins
+                initializeAdminSidebar();
               } else {
                 // Hide admin panel and mode toggle for operators
                 document.getElementById('adminPanel').style.display = 'none';
@@ -5397,7 +5590,7 @@
           const uptime = '--:--:--';
           
           html += `
-            <div class="health-card">
+            <div class="health-card" onclick="openHealthCardModal('${cat.key}', '${cat.name}')">
               <div class="health-card-header">
                 <div class="health-card-name">${cat.name}</div>
                 <div class="health-card-status">
@@ -7334,11 +7527,113 @@ Report generated by Sensor Data Pipeline Dashboard
         URL.revokeObjectURL(url);
       }
 
+      // ============================================
+      // HEALTH CARD MODAL - Progressive Disclosure
+      // ============================================
+      
+      function openHealthCardModal(categoryKey, categoryName) {
+        const modal = document.getElementById('healthCardModal');
+        const title = document.getElementById('healthModalTitle');
+        const content = document.getElementById('healthModalContent');
+        
+        if (!modal || !title || !content) return;
+        
+        title.textContent = categoryName.toUpperCase() + ' DETAILS';
+        
+        // Get sensor data for this category
+        const currentMachine = machineData[selectedMachineId];
+        const statsData = currentMachine.statsData;
+        
+        if (!statsData || !statsData.stats_by_category || !statsData.stats_by_category[categoryKey]) {
+          content.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">No data available for this category.</div>';
+          modal.style.display = 'flex';
+          return;
+        }
+        
+        const categoryData = statsData.stats_by_category[categoryKey];
+        const sensors = Object.keys(categoryData.sensors || {});
+        
+        if (sensors.length === 0) {
+          content.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">No sensors in this category.</div>';
+          modal.style.display = 'flex';
+          return;
+        }
+        
+        // Render sensor list
+        let html = '<div style="display: grid; gap: var(--space-md);">';
+        
+        sensors.forEach(sensorName => {
+          const sensorData = categoryData.sensors[sensorName];
+          const currentValue = sensorData.current;
+          const unit = sensorData.unit || '';
+          const threshold = getThreshold(sensorName);
+          const isViolation = currentValue !== null && currentValue !== undefined && 
+                             (currentValue < threshold.min || currentValue > threshold.max);
+          const statusClass = isViolation ? (currentValue < threshold.min * 0.8 || currentValue > threshold.max * 1.2 ? 'crit' : 'wrn') : '';
+          
+          html += `
+            <div style="padding: var(--space-md); background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+                <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-primary); text-transform: uppercase;">
+                  ${sensorName.replace(/_/g, ' ')}
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 18px; font-weight: 600; color: ${statusClass === 'crit' ? 'var(--status-error)' : statusClass === 'wrn' ? 'var(--status-warning)' : 'var(--text-primary)'};">
+                  ${formatNumber(currentValue, 2)} ${unit}
+                </div>
+              </div>
+              <div style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono);">
+                Threshold: ${formatNumber(threshold.min, 2)} - ${formatNumber(threshold.max, 2)} ${unit}
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        content.innerHTML = html;
+        modal.style.display = 'flex';
+      }
+      
+      function closeHealthCardModal() {
+        const modal = document.getElementById('healthCardModal');
+        if (modal) {
+          modal.style.display = 'none';
+        }
+      }
+      
+      // ============================================
+      // ADMIN SIDEBAR - Progressive Disclosure
+      // ============================================
+      
+      function toggleAdminSidebar() {
+        const sidebar = document.getElementById('adminSidebar');
+        if (sidebar) {
+          sidebar.classList.toggle('open');
+        }
+      }
+      
+      function initializeAdminSidebar() {
+        // Move admin panel content to sidebar
+        const adminPanel = document.getElementById('adminPanel');
+        const sidebarContent = document.getElementById('adminSidebarContent');
+        const toggleBtn = document.getElementById('adminSidebarToggleBtn');
+        
+        if (!adminPanel || !sidebarContent) return;
+        
+        // Clone admin panel content to sidebar
+        sidebarContent.innerHTML = adminPanel.innerHTML;
+        
+        // Show toggle button only for admins
+        if (currentUser && currentUser.role === 'admin' && toggleBtn) {
+          toggleBtn.style.display = 'flex';
+        }
+      }
+      
       // Close modal on escape key or clicking outside
       document.addEventListener("keydown", function (e) {
         if (e.key === "Escape") {
           closeReportModal();
           closeFullReportModal();
+          closeHealthCardModal();
         }
       });
 
