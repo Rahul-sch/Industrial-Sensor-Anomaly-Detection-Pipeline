@@ -694,192 +694,217 @@
       .tab-content.active {
         display: block;
       }
+      /* ============================================
+         SENSOR ITEMS
+         HP-HMI: Values neutral, deviations colored
+         ============================================ */
       .sensor-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 16px;
+        gap: var(--space-sm);
       }
+
       .sensor-item {
-        background: rgba(15, 23, 42, 0.6);
-        border-radius: 12px;
-        padding: 16px;
-        border: 1px solid rgba(96, 165, 250, 0.1);
-        transition: all 0.3s;
+        background: var(--bg-tertiary);
+        border-radius: 4px;
+        padding: var(--space-md);
+        border: 1px solid var(--border-subtle);
+        transition: border-color var(--transition-normal);
+        position: relative;
       }
+
       .sensor-item:hover {
-        border-color: rgba(96, 165, 250, 0.3);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(96, 165, 250, 0.1);
+        border-color: var(--border-default);
       }
+
+      .sensor-item.threshold-active {
+        border-color: var(--status-running);
+      }
+
+      .sensor-item.warning {
+        border-left: 3px solid var(--status-warning);
+      }
+
+      .sensor-item.error {
+        border-left: 3px solid var(--status-error);
+      }
+
       .sensor-name {
-        color: #94a3b8;
-        font-size: 11px;
+        color: var(--text-muted);
+        font-size: 10px;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 8px;
+        letter-spacing: 0.5px;
+        margin-bottom: var(--space-sm);
         font-weight: 600;
       }
+
       .sensor-value {
-        font-size: 24px;
-        font-weight: 900;
-        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        font-family: var(--font-mono);
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
       }
+
+      .sensor-value.warning {
+        color: var(--status-warning);
+      }
+
+      .sensor-value.error {
+        color: var(--status-error);
+      }
+
       .sensor-unit {
-        color: #94a3b8;
-        font-size: 12px;
-        margin-left: 4px;
+        color: var(--text-muted);
+        font-size: 11px;
+        margin-left: 2px;
       }
+
       .sensor-toggle {
         position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 16px;
-        height: 16px;
+        top: var(--space-sm);
+        right: var(--space-sm);
+        width: 14px;
+        height: 14px;
         cursor: pointer;
-        opacity: 0.5;
-        transition: opacity 0.3s;
+        opacity: 0.4;
+        transition: opacity var(--transition-normal);
+        accent-color: var(--status-running);
       }
+
       .sensor-toggle:hover {
         opacity: 1;
       }
+
       .sensor-item.hidden-sensor {
-        opacity: 0.3;
-        filter: grayscale(100%);
+        opacity: 0.25;
       }
-      .sensor-item {
-        position: relative;
-      }
-      /* Threshold Controls */
+      /* ============================================
+         THRESHOLD CONTROLS
+         ============================================ */
       .threshold-toggle {
-        color: #60a5fa;
-        font-size: 12px;
+        color: var(--interactive-primary);
+        font-size: 11px;
         cursor: pointer;
-        margin-top: 10px;
+        margin-top: var(--space-sm);
         display: flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 10px;
-        background: rgba(96, 165, 250, 0.1);
-        border-radius: 6px;
-        transition: all 0.2s;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-sm);
+        background: var(--bg-elevated);
+        border-radius: 3px;
+        transition: all var(--transition-fast);
       }
+
       .threshold-toggle:hover {
-        color: #93c5fd;
-        background: rgba(96, 165, 250, 0.2);
+        background: var(--bg-primary);
       }
+
       .threshold-controls {
         display: none;
-        margin-top: 14px;
-        padding: 16px;
-        background: rgba(15, 23, 42, 0.6);
-        border-radius: 10px;
-        border: 1px solid rgba(148, 163, 184, 0.2);
+        margin-top: var(--space-sm);
+        padding: var(--space-md);
+        background: var(--bg-primary);
+        border-radius: 4px;
+        border: 1px solid var(--border-default);
       }
+
       .threshold-controls.expanded {
         display: block;
-        animation: slideDown 0.2s ease-out;
       }
-      @keyframes slideDown {
-        from {
-          opacity: 0;
-          transform: translateY(-8px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
+
       .threshold-row {
         display: flex;
-        gap: 12px;
+        gap: var(--space-sm);
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: var(--space-sm);
         flex-wrap: wrap;
       }
+
       .threshold-field {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: var(--space-xs);
       }
+
       .threshold-input {
-        width: 100px;
-        padding: 10px 12px;
-        background: rgba(30, 41, 59, 0.8);
-        border: 1px solid rgba(148, 163, 184, 0.3);
-        border-radius: 8px;
-        color: #e2e8f0;
-        font-size: 14px;
+        width: 90px;
+        padding: var(--space-sm);
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-default);
+        border-radius: 3px;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-family: var(--font-mono);
         text-align: center;
-        transition: border-color 0.2s, box-shadow 0.2s;
+        transition: border-color var(--transition-fast);
       }
+
       .threshold-input:focus {
         outline: none;
-        border-color: #60a5fa;
-        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+        border-color: var(--interactive-primary);
       }
-      .threshold-input:hover {
-        border-color: rgba(148, 163, 184, 0.5);
-      }
+
       .threshold-label {
-        font-size: 11px;
-        color: #94a3b8;
+        font-size: 10px;
+        color: var(--text-muted);
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.3px;
       }
+
       .threshold-buttons {
         display: flex;
-        gap: 8px;
-        margin-top: 4px;
+        gap: var(--space-sm);
+        margin-top: var(--space-xs);
       }
+
       .threshold-save-btn {
-        background: #10b981;
+        background: var(--status-running);
         color: white;
         border: none;
-        padding: 10px 18px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 600;
+        padding: var(--space-sm) var(--space-md);
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: opacity var(--transition-fast);
       }
+
       .threshold-save-btn:hover {
-        background: #059669;
-        transform: translateY(-1px);
+        opacity: 0.9;
       }
       .threshold-reset-btn {
-        background: #475569;
-        color: white;
-        border: none;
-        padding: 10px 18px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 600;
+        background: var(--bg-elevated);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-default);
+        padding: var(--space-sm) var(--space-md);
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all var(--transition-fast);
       }
+
       .threshold-reset-btn:hover {
-        background: #64748b;
+        background: var(--bg-tertiary);
       }
+
       .threshold-default {
-        font-size: 11px;
-        color: #64748b;
-        margin-top: 8px;
-        padding: 8px 12px;
-        background: rgba(100, 116, 139, 0.1);
-        border-radius: 6px;
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: var(--space-sm);
+        padding: var(--space-sm);
+        background: var(--bg-tertiary);
+        border-radius: 3px;
         display: inline-block;
       }
+
       .threshold-active {
-        background: rgba(16, 185, 129, 0.1);
-        border-color: rgba(16, 185, 129, 0.3);
+        border-color: var(--status-running);
       }
+
       .threshold-active .threshold-toggle {
-        color: #10b981;
-        background: rgba(16, 185, 129, 0.15);
+        color: var(--status-running);
       }
       .card-intro {
         font-size: 14px;
