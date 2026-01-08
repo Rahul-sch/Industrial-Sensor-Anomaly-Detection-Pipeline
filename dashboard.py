@@ -17,14 +17,16 @@ import csv
 import io
 import logging
 from datetime import datetime
+from functools import wraps
 
 # Import PDF and AI libraries
 try:
     from PyPDF2 import PdfReader
     PDF_AVAILABLE = True
-except ImportError:
+    print("[OK] PyPDF2 loaded successfully")
+except ImportError as e:
     PDF_AVAILABLE = False
-    print("Warning: PyPDF2 not available. PDF parsing will not work.")
+    print(f"Warning: PyPDF2 not available. PDF parsing will not work. Error: {e}")
 
 try:
     from groq import Groq
@@ -34,8 +36,11 @@ except ImportError:
     print("Warning: groq library not available. AI parsing will use fallback.")
 try:
     from kafka.admin import KafkaAdminClient
+    from kafka import KafkaProducer
+    from kafka.errors import KafkaError
 except ImportError:
-    from kafka import KafkaAdminClient
+    from kafka import KafkaAdminClient, KafkaProducer
+    from kafka.errors import KafkaError
 
 # Import ML components
 try:
@@ -710,6 +715,27 @@ def api_login():
 @app.route('/api/auth/logout', methods=['POST'])
 def api_logout():
     """Destroy session."""
+    # #region agent log
+    import json as json_lib
+    log_data = {
+        'location': 'dashboard.py:711',
+        'message': 'api_logout: Logging out user',
+        'data': {
+            'had_session': 'user_id' in session,
+            'user_id': session.get('user_id'),
+            'username': session.get('username')
+        },
+        'timestamp': int(time.time() * 1000),
+        'sessionId': 'debug-session',
+        'runId': 'run1',
+        'hypothesisId': 'C'
+    }
+    try:
+        with open(r'c:\Users\rahul\Desktop\stubby\.cursor\debug.log', 'a', encoding='utf-8') as log_file:
+            log_file.write(json_lib.dumps(log_data) + '\n')
+    except: pass
+    # #endregion
+    
     session.clear()
     return jsonify({'success': True})
 
@@ -806,8 +832,6 @@ def api_signup():
 # AUTHORIZATION DECORATORS
 # ============================================================================
 
-from functools import wraps
-
 def require_auth(f):
     """Decorator to require authentication."""
     @wraps(f)
@@ -821,6 +845,29 @@ def require_admin(f):
     """Decorator to require admin role."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # #region agent log
+        import json as json_lib
+        log_data = {
+            'location': 'dashboard.py:824',
+            'message': 'require_admin: Checking session',
+            'data': {
+                'has_user_id': 'user_id' in session,
+                'user_id': session.get('user_id'),
+                'role': session.get('role'),
+                'username': session.get('username'),
+                'session_keys': list(session.keys())
+            },
+            'timestamp': int(time.time() * 1000),
+            'sessionId': 'debug-session',
+            'runId': 'run1',
+            'hypothesisId': 'B'
+        }
+        try:
+            with open(r'c:\Users\rahul\Desktop\stubby\.cursor\debug.log', 'a', encoding='utf-8') as log_file:
+                log_file.write(json_lib.dumps(log_data) + '\n')
+        except: pass
+        # #endregion
+        
         if 'user_id' not in session:
             return jsonify({'success': False, 'error': 'Authentication required'}), 401
         if session.get('role') != 'admin':
@@ -2983,6 +3030,8 @@ def api_parse_sensor_file():
             if not PDF_AVAILABLE:
                 return jsonify({'error': 'PDF parsing not available. Install PyPDF2.'}), 500
             
+            # Reset file pointer to beginning
+            file.seek(0)
             pdf_reader = PdfReader(file)
             # Extract text from first 2 pages
             for page_num in range(min(2, len(pdf_reader.pages))):
@@ -3187,6 +3236,88 @@ def check_custom_sensors_table():
         print(f"WARNING: Error checking custom_sensors table: {e}")
         conn.close()
         return False
+
+
+# ============================================================================
+# API V1 - External Data Ingestion Endpoint
+# ============================================================================
+
+# API Key for external ingestion (can be set via environment variable)
+INGEST_API_KEY = os.environ.get('INGEST_API_KEY', 'rig-alpha-secret')
+
+@app.route('/api/v1/ingest', methods=['POST'])
+def api_v1_ingest():
+    """
+    External API endpoint for ingesting sensor data.
+    Requires X-API-KEY header for authentication.
+    Accepts JSON payload with machine_id and sensor readings.
+    """
+    # Check API key
+    api_key = request.headers.get('X-API-KEY', '')
+    if api_key != INGEST_API_KEY:
+        return jsonify({'error': 'Invalid or missing API key'}), 401
+    
+    # Parse JSON body
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        machine_id = data.get('machine_id', 'A')
+        if not machine_id:
+            return jsonify({'error': 'machine_id is required'}), 400
+        
+        # Build sensor reading with timestamp
+        reading = {
+            'timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S'),
+            'machine_id': machine_id
+        }
+        
+        # Add all sensor values from request (excluding machine_id)
+        for key, value in data.items():
+            if key != 'machine_id':
+                reading[key] = value
+        
+        # Send to Kafka
+        try:
+            import config
+            producer = KafkaProducer(**config.KAFKA_PRODUCER_CONFIG)
+            
+            # Serialize to JSON string (matching producer format)
+            # The producer config already has value_serializer that encodes to bytes
+            message = json.dumps(reading)
+            
+            # Send to Kafka topic (value_serializer will handle encoding)
+            future = producer.send(config.KAFKA_TOPIC, value=message)
+            
+            # Wait for acknowledgment (with timeout)
+            record_metadata = future.get(timeout=10)
+            
+            producer.close()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Data ingested successfully',
+                'topic': record_metadata.topic,
+                'partition': record_metadata.partition,
+                'offset': record_metadata.offset,
+                'machine_id': machine_id,
+                'timestamp': reading['timestamp']
+            }), 200
+            
+        except KafkaError as e:
+            return jsonify({
+                'error': 'Failed to send data to Kafka',
+                'details': str(e)
+            }), 500
+        except Exception as e:
+            return jsonify({
+                'error': 'Failed to process ingestion request',
+                'details': str(e)
+            }), 500
+            
+    except Exception as e:
+        return jsonify({'error': 'Invalid request format', 'details': str(e)}), 400
 
 
 # Bootstrap admin user on module load
