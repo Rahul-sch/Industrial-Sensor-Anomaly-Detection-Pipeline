@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /b \"C:\\\\Users\\\\rahul\\\\Desktop\\\\stubby\\\\stub\\\\*.py\")",
+      "Bash(ls:*)"
+    ]
+  }
+}
