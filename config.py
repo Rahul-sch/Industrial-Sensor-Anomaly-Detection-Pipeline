@@ -28,7 +28,8 @@ except ImportError:
 # ============================================================================
 
 # Default configuration values so the dashboard can reset safely
-DEFAULT_DURATION_HOURS = 0.03333333333333333
+# Changed to 999 hours (effectively infinite) so producer runs continuously
+DEFAULT_DURATION_HOURS = 999
 DEFAULT_INTERVAL_SECONDS = 1
 
 # Limits for dashboard config validation
@@ -44,8 +45,8 @@ CONFIG_LIMITS = {
 }
 
 # Duration for data generation (hours)
-# Set to 0.01 for quick test (36 seconds, ~1-2 messages)
-# Set to 24 for production run (24 hours, 2,880 messages)
+# Set to 999 hours (effectively infinite) for continuous operation
+# User can stop via dashboard STOP button
 DURATION_HOURS = DEFAULT_DURATION_HOURS
 
 # Interval between sensor readings (seconds)
