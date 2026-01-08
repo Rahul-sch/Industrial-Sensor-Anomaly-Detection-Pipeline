@@ -3934,12 +3934,15 @@
       
       // Generate sparkline SVG from data points
       function generateSparkline(values, width = 200, height = 40, threshold = null, statusClass = '') {
-        if (!values || values.length === 0) {
+        // Filter out NaN, undefined, and null values
+        const cleanValues = (values || []).filter(v => v !== null && v !== undefined && !isNaN(v) && isFinite(v));
+        
+        if (cleanValues.length === 0) {
           return '<svg width="' + width + '" height="' + height + '"></svg>';
         }
         
-        const min = Math.min(...values);
-        const max = Math.max(...values);
+        const min = Math.min(...cleanValues);
+        const max = Math.max(...cleanValues);
         const range = max - min || 1;
         const padding = 4;
         
@@ -3953,14 +3956,14 @@
         
         // Check if any values violate threshold
         if (threshold && threshold.min !== undefined && threshold.max !== undefined) {
-          const hasViolation = values.some(val => val < threshold.min || val > threshold.max);
+          const hasViolation = cleanValues.some(val => val < threshold.min || val > threshold.max);
           if (hasViolation) {
             strokeColor = 'var(--status-error)'; // Neon Red for violations
           }
         }
         
-        const points = values.map((val, i) => {
-          const x = padding + (i / (values.length - 1 || 1)) * (width - 2 * padding);
+        const points = cleanValues.map((val, i) => {
+          const x = padding + (i / (cleanValues.length - 1 || 1)) * (width - 2 * padding);
           const y = height - padding - ((val - min) / range) * (height - 2 * padding);
           return `${x},${y}`;
         }).join(' ');

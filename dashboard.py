@@ -116,7 +116,8 @@ if TALISMAN_AVAILABLE:
             "'self'",
             "'unsafe-inline'",
             "'unsafe-eval'",  # Required for Three.js and dynamic JavaScript
-            'https://cdnjs.cloudflare.com'  # For Three.js library
+            'https://cdnjs.cloudflare.com',  # For Three.js library
+            'https://cdn.jsdelivr.net'  # For OrbitControls
         ],
         'style-src': [
             "'self'",
@@ -2333,6 +2334,14 @@ def api_audit_logs():
         return jsonify({'success': True, 'logs': []})
 
 
+# Alias for audit-log (singular) - frontend sometimes calls this
+@app.route('/api/audit-log', methods=['GET', 'POST'])
+@require_auth
+def api_audit_log_alias():
+    """Alias for /api/audit-logs"""
+    return api_audit_logs()
+
+
 # ============================================================================
 # THRESHOLD AND ANOMALY INJECTION APIs
 # ============================================================================
@@ -2922,7 +2931,7 @@ def api_get_machine_custom_sensors(machine_id):
             }
         
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
         
         return jsonify({
             'success': True,
@@ -2930,6 +2939,8 @@ def api_get_machine_custom_sensors(machine_id):
             'sensors': sensors
         })
     except Exception as e:
+        if conn:
+            return_db_connection(conn)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ============================================================================
@@ -2960,7 +2971,7 @@ def resolve_sensor_enabled(machine_id, sensor_name):
         row = cursor.fetchone()
         if row is not None:
             cursor.close()
-            conn.close()
+            return_db_connection(conn)
             return row[0], 'machine'
         
         # Check if it's a built-in sensor (check global_sensor_config)
