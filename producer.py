@@ -789,6 +789,13 @@ class SensorDataProducer:
                         'loop_iteration': loop_iteration,
                         'should_shutdown': self.should_shutdown
                     }, 'H2')
+                if loop_iteration % 10 == 0:  # Log every 10 iterations
+                    debug_log('producer.py:run', 'Loop still running', {
+                        'loop_iteration': loop_iteration,
+                        'message_count': self.message_count,
+                        'should_shutdown': self.should_shutdown,
+                        'time_remaining': (end_time - datetime.utcnow()).total_seconds()
+                    }, 'H2')
                 # #endregion
                 # Reload custom sensor config if needed
                 if self.should_reload_config():
@@ -816,19 +823,29 @@ class SensorDataProducer:
                 # #endregion
 
                 # Send to Kafka
-                self.send_message(reading)
+                send_success = self.send_message(reading)
+                
+                # #region agent log
+                if not send_success:
+                    debug_log('producer.py:run', 'Message send FAILED', {
+                        'loop_iteration': loop_iteration,
+                        'message_count': self.message_count
+                    }, 'H4')
+                # #endregion
 
                 # Sleep until next interval
                 time.sleep(config.INTERVAL_SECONDS)
 
             # #region agent log
-            debug_log('producer.py:run', 'Loop exited', {
+            debug_log('producer.py:run', 'Loop exited - CHECKING WHY', {
                 'loop_iteration_count': loop_iteration,
                 'should_shutdown': self.should_shutdown,
                 'current_time': datetime.utcnow().isoformat(),
                 'end_time': end_time.isoformat(),
                 'time_expired': datetime.utcnow() >= end_time,
-                'message_count': self.message_count
+                'time_check': datetime.utcnow() < end_time,
+                'message_count': self.message_count,
+                'reason': 'time_expired' if datetime.utcnow() >= end_time else ('shutdown' if self.should_shutdown else 'unknown')
             }, 'H2')
             # #endregion
 
@@ -840,9 +857,28 @@ class SensorDataProducer:
 
         except KeyboardInterrupt:
             self.logger.info("Keyboard interrupt received. Shutting down...")
+            # #region agent log
+            debug_log('producer.py:run', 'KeyboardInterrupt caught', {
+                'message_count': self.message_count
+            }, 'H2')
+            # #endregion
         except Exception as e:
             self.logger.error(f"Unexpected error in producer: {e}", exc_info=True)
+            # #region agent log
+            import traceback
+            debug_log('producer.py:run', 'EXCEPTION in producer loop', {
+                'error': str(e),
+                'error_type': type(e).__name__,
+                'message_count': self.message_count,
+                'traceback': traceback.format_exc()[:500]
+            }, 'H2')
+            # #endregion
         finally:
+            # #region agent log
+            debug_log('producer.py:run', 'Entering shutdown()', {
+                'message_count': self.message_count
+            }, 'H2')
+            # #endregion
             self.shutdown()
 
     def shutdown(self):
