@@ -626,6 +626,14 @@ class SensorDataProducer:
 
             self.message_count += 1
 
+            # #region agent log
+            debug_log('producer.py:send_message', 'Message sent successfully to Kafka', {
+                'message_count': self.message_count,
+                'partition': record_metadata.partition,
+                'offset': record_metadata.offset
+            }, 'H4')
+            # #endregion
+
             # Log message sent with key parameters
             self.logger.info(f"Message {self.message_count}/{self.total_messages} sent: "
                            f"timestamp={data['timestamp']}, "
@@ -642,6 +650,12 @@ class SensorDataProducer:
             return True
 
         except Exception as e:
+            # #region agent log
+            debug_log('producer.py:send_message', 'ERROR sending message to Kafka', {
+                'error_type': type(e).__name__,
+                'error_message': str(e)
+            }, 'H4')
+            # #endregion
             self.logger.error(f"Failed to send message: {e}")
             return False
 
@@ -729,21 +743,53 @@ class SensorDataProducer:
     def run(self):
         """Main producer loop."""
         try:
+            # #region agent log
+            debug_log('producer.py:run', 'Producer run() started', {
+                'DURATION_HOURS': config.DURATION_HOURS,
+                'INTERVAL_SECONDS': config.INTERVAL_SECONDS
+            }, 'H1')
+            # #endregion
+            
             # Connect to Kafka
             self.producer = self.connect_to_kafka()
             if not self.producer:
                 self.logger.error("Could not establish Kafka connection. Exiting.")
+                # #region agent log
+                debug_log('producer.py:run', 'Kafka connection FAILED, exiting', {}, 'H4')
+                # #endregion
                 return
+
+            # #region agent log
+            debug_log('producer.py:run', 'Kafka connected successfully', {}, 'H4')
+            # #endregion
 
             # Load custom sensors at startup
             self.load_custom_sensors()
 
             # Calculate end time
             end_time = datetime.utcnow() + timedelta(hours=config.DURATION_HOURS)
+            current_time = datetime.utcnow()
+            # #region agent log
+            debug_log('producer.py:run', 'Calculated loop end time', {
+                'current_time': current_time.isoformat(),
+                'end_time': end_time.isoformat(),
+                'duration_seconds': (end_time - current_time).total_seconds()
+            }, 'H1')
+            # #endregion
+            
             self.logger.info(f"Starting data generation. Will run until {end_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
 
             # Main loop
+            loop_iteration = 0
             while datetime.utcnow() < end_time and not self.should_shutdown:
+                loop_iteration += 1
+                # #region agent log
+                if loop_iteration == 1:
+                    debug_log('producer.py:run', 'Entered main loop (first iteration)', {
+                        'loop_iteration': loop_iteration,
+                        'should_shutdown': self.should_shutdown
+                    }, 'H2')
+                # #endregion
                 # Reload custom sensor config if needed
                 if self.should_reload_config():
                     # #region agent log
@@ -774,6 +820,17 @@ class SensorDataProducer:
 
                 # Sleep until next interval
                 time.sleep(config.INTERVAL_SECONDS)
+
+            # #region agent log
+            debug_log('producer.py:run', 'Loop exited', {
+                'loop_iteration_count': loop_iteration,
+                'should_shutdown': self.should_shutdown,
+                'current_time': datetime.utcnow().isoformat(),
+                'end_time': end_time.isoformat(),
+                'time_expired': datetime.utcnow() >= end_time,
+                'message_count': self.message_count
+            }, 'H2')
+            # #endregion
 
             # Log completion
             if not self.should_shutdown:

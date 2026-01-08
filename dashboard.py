@@ -1256,6 +1256,16 @@ def reset_config():
 @require_auth
 def start_component(component):
     """Start producer or consumer"""
+    # #region agent log
+    import json
+    import time
+    debug_log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.cursor', 'debug.log')
+    try:
+        with open(debug_log_path, 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'H3', 'location': 'dashboard.py:1257', 'message': 'START endpoint called', 'data': {'component': component}, 'timestamp': int(time.time() * 1000)}) + '\n')
+    except: pass
+    # #endregion
+    
     if component not in ['producer', 'consumer']:
         return jsonify({'success': False, 'error': 'Invalid component'})
 
@@ -1278,6 +1288,13 @@ def start_component(component):
             else:
                 python_exe = sys.executable  # Use current Python
 
+        # #region agent log
+        try:
+            with open(debug_log_path, 'a', encoding='utf-8') as f:
+                f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'H3', 'location': 'dashboard.py:1282', 'message': 'About to spawn subprocess', 'data': {'python_exe': python_exe, 'script_path': script_path}, 'timestamp': int(time.time() * 1000)}) + '\n')
+        except: pass
+        # #endregion
+
         # Prepare subprocess arguments
         popen_args = [python_exe, script_path]
         popen_kwargs = {}
@@ -1289,8 +1306,21 @@ def start_component(component):
         proc = subprocess.Popen(popen_args, **popen_kwargs)
         processes[component] = proc  # Store the process object, not just PID
 
+        # #region agent log
+        try:
+            with open(debug_log_path, 'a', encoding='utf-8') as f:
+                f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'H3', 'location': 'dashboard.py:1290', 'message': 'Subprocess spawned successfully', 'data': {'pid': proc.pid, 'component': component}, 'timestamp': int(time.time() * 1000)}) + '\n')
+        except: pass
+        # #endregion
+
         return jsonify({'success': True, 'pid': proc.pid})
     except Exception as e:
+        # #region agent log
+        try:
+            with open(debug_log_path, 'a', encoding='utf-8') as f:
+                f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'H3', 'location': 'dashboard.py:1294', 'message': 'ERROR spawning subprocess', 'data': {'error': str(e), 'component': component}, 'timestamp': int(time.time() * 1000)}) + '\n')
+        except: pass
+        # #endregion
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/stop/<component>', methods=['POST'])
