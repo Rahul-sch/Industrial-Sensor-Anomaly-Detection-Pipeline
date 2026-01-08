@@ -114,11 +114,18 @@ if KAFKA_USE_SASL:
 # Check for DATABASE_URL environment variable (for Neon/Render)
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
+# Debug: Print first 20 characters of DATABASE_URL (masked for security)
+if DATABASE_URL:
+    masked_url = DATABASE_URL[:20] + '...' if len(DATABASE_URL) > 20 else DATABASE_URL
+    print(f"Connecting to: {masked_url}")
+    logging.info(f"Connecting to: {masked_url}")
+
 if DATABASE_URL:
     # Parse DATABASE_URL (format: postgresql://user:password@host:port/dbname)
     # Render/Neon compatibility: replace postgres:// with postgresql://
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+        logging.info("Converted postgres:// to postgresql:// for compatibility")
     
     # Parse the URL
     parsed = urlparse(DATABASE_URL)
@@ -150,6 +157,10 @@ DB_CONFIG = {
     'user': DB_USER,
     'password': DB_PASSWORD
 }
+
+# Add SSL for Neon/cloud databases
+if DATABASE_URL and ('neon' in DATABASE_URL.lower() or 'sslmode' in DATABASE_URL.lower()):
+    DB_CONFIG['sslmode'] = 'require'
 
 # ============================================================================
 # RETRY CONFIGURATION
