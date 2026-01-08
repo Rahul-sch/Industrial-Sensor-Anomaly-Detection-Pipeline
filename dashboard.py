@@ -1269,6 +1269,10 @@ def start_component(component):
     if component not in ['producer', 'consumer']:
         return jsonify({'success': False, 'error': 'Invalid component'})
 
+    # Check if component is already running
+    if is_component_running(component):
+        return jsonify({'success': False, 'error': f'{component.capitalize()} is already running'})
+
     try:
         # Determine Python executable path (cross-platform)
         script_path = os.path.join(os.path.dirname(__file__), f'{component}.py')
