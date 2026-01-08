@@ -3642,19 +3642,128 @@ input:checked + .toggle-slider:before {
 /* Scrollbar styling for internal scroll areas */
 .monitoring-left-panel::-webkit-scrollbar,
 #healthMatrixContainer::-webkit-scrollbar,
-#telemetryContainer::-webkit-scrollbar {
+#telemetryContainer::-webkit-scrollbar,
+.config-sensor-list-column::-webkit-scrollbar,
+.config-edit-form-column::-webkit-scrollbar {
   width: 4px;
 }
 .monitoring-left-panel::-webkit-scrollbar-thumb,
 #healthMatrixContainer::-webkit-scrollbar-thumb,
-#telemetryContainer::-webkit-scrollbar-thumb {
+#telemetryContainer::-webkit-scrollbar-thumb,
+.config-sensor-list-column::-webkit-scrollbar-thumb,
+.config-edit-form-column::-webkit-scrollbar-thumb {
   background: var(--border-default);
   border-radius: 2px;
 }
 .monitoring-left-panel::-webkit-scrollbar-track,
 #healthMatrixContainer::-webkit-scrollbar-track,
-#telemetryContainer::-webkit-scrollbar-track {
+#telemetryContainer::-webkit-scrollbar-track,
+.config-sensor-list-column::-webkit-scrollbar-track,
+.config-edit-form-column::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* ============================================
+   CONFIG PAGE - 2 COLUMN LAYOUT
+   ============================================ */
+.config-two-column-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: var(--space-lg);
+  height: calc(100vh - 60px);
+  overflow: hidden;
+  padding: var(--space-lg);
+}
+
+.config-sensor-list-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.config-edit-form-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.config-section-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-sm);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.config-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  display: block;
+}
+
+.config-value {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-primary);
+}
+
+.config-table-header {
+  padding: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  text-align: left;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-default);
+}
+
+/* SCADA Input Styling for Config Forms */
+.scada-input {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.scada-input:focus {
+  outline: none;
+  border-color: var(--interactive-primary);
+  box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.1);
+}
+
+.scada-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* ============================================
+   3D RIG CONTROLS
+   ============================================ */
+#resetViewBtn:hover {
+  background: rgba(0, 191, 255, 0.2);
+  border-color: var(--interactive-primary);
+  color: var(--interactive-primary);
+}
+
+#rigCanvas:active {
+  cursor: grabbing !important;
 }
 
 /* ============================================
