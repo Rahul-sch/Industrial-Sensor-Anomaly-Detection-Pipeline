@@ -327,7 +327,7 @@ def get_alerts(limit=20):
         )
         records = cursor.fetchall()
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
         return [
             {
                 'alert_type': row[0],
@@ -338,6 +338,8 @@ def get_alerts(limit=20):
             } for row in records
         ]
     except Exception:
+        if conn:
+            return_db_connection(conn)
         return []
 
 def check_kafka_health():
@@ -836,7 +838,7 @@ def api_login():
         
         if not row:
             cursor.close()
-            conn.close()
+            return_db_connection(conn)
             return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
         
         user_id, db_username, password_hash, role = row
@@ -844,7 +846,7 @@ def api_login():
         # Verify password
         if not check_password_hash(password_hash, password):
             cursor.close()
-            conn.close()
+            return_db_connection(conn)
             return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
         
         # Get user's accessible machines
@@ -874,7 +876,7 @@ def api_login():
         session['accessible_machines'] = accessible_machines
         
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
         
         return jsonify({
             'success': True,
@@ -889,8 +891,9 @@ def api_login():
     except Exception as e:
         if conn:
             conn.rollback()
-            cursor.close()
-            conn.close()
+            if cursor:
+                cursor.close()
+            return_db_connection(conn)
         logging.error(f"Login error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -970,7 +973,7 @@ def api_signup():
         cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
         if cursor.fetchone():
             cursor.close()
-            conn.close()
+            return_db_connection(conn)
             return jsonify({'success': False, 'error': 'Username already exists'}), 400
         
         # Create user
@@ -994,7 +997,7 @@ def api_signup():
         
         conn.commit()
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
         
         return jsonify({
             'success': True,
@@ -1005,8 +1008,9 @@ def api_signup():
     except Exception as e:
         if conn:
             conn.rollback()
-            cursor.close()
-            conn.close()
+            if cursor:
+                cursor.close()
+            return_db_connection(conn)
         logging.error(f"Signup error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
