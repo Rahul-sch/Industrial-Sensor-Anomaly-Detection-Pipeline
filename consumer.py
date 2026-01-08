@@ -49,16 +49,23 @@ class SensorDataConsumer:
         if sys.platform == 'win32':
             signal.signal(signal.SIGBREAK, self.signal_handler)
 
-        self.logger.info("Consumer initialized")
+            self.logger.info("Consumer initialized")
+            self.logger.info("Consumer initialized - ready to connect")
 
     def setup_logging(self):
-        """Configure logging."""
+        """Configure structured logging."""
         logging.basicConfig(
             level=config.LOG_LEVEL,
-            format=config.LOG_FORMAT,
-            datefmt=config.LOG_DATE_FORMAT
+            format='[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
+            handlers=[
+                logging.StreamHandler(sys.stdout)
+            ]
         )
         self.logger = logging.getLogger(__name__)
+        self.logger.info("=" * 60)
+        self.logger.info("CONSUMER STARTING")
+        self.logger.info("=" * 60)
 
     def signal_handler(self, signum, frame):
         """Handle shutdown signals gracefully."""
@@ -80,6 +87,7 @@ class SensorDataConsumer:
                     **config.KAFKA_CONSUMER_CONFIG
                 )
                 self.logger.info(f"Successfully connected to Kafka and subscribed to topic: {config.KAFKA_TOPIC}")
+                self.logger.info(f"[SUCCESS] Connected to Kafka topic: {config.KAFKA_TOPIC}")
                 return consumer
 
             except KafkaError as e:
@@ -114,6 +122,7 @@ class SensorDataConsumer:
                 cursor.fetchone()
 
                 self.logger.info(f"Successfully connected to PostgreSQL database: {config.DB_NAME}")
+                self.logger.info(f"[SUCCESS] Connected to database: {config.DB_NAME}")
                 return conn, cursor
 
             except OperationalError as e:
@@ -321,9 +330,12 @@ class SensorDataConsumer:
             return reading_id
 
         except Exception as e:
-            self.logger.error(f"Failed to insert reading into database: {e}")
+            error_msg = f"Failed to insert reading into database: {e}"
+            self.logger.error(error_msg)
+            self.logger.error(f"[ERROR] {error_msg}", exc_info=True)
             self.record_alert('DB_WRITE_FAILURE', str(e), severity='ERROR')
-            self.db_conn.rollback()
+            if self.db_conn:
+                self.db_conn.rollback()
             return None
 
     def run_ml_detection(self, reading, reading_id):
@@ -403,11 +415,14 @@ class SensorDataConsumer:
                 self.message_count += 1
 
                 # Log message processed with key parameters
-                self.logger.info(f"Message {self.message_count} processed: "
-                               f"timestamp={data['timestamp']}, "
-                               f"rpm={data['rpm']}, "
-                               f"temp={data['temperature']}°F, "
-                               f"vibration={data['vibration']}mm/s")
+                log_msg = (f"Message {self.message_count} processed: "
+                          f"timestamp={data['timestamp']}, "
+                          f"rpm={data['rpm']}, "
+                          f"temp={data['temperature']}°F, "
+                          f"vibration={data['vibration']}mm/s, "
+                          f"DB_ID={reading_id}")
+                self.logger.info(log_msg)
+                self.logger.info(f"[OK] {log_msg}")
 
                 # Run ML-based anomaly detection (non-blocking)
                 self.run_ml_detection(data, reading_id)
@@ -418,6 +433,9 @@ class SensorDataConsumer:
 
                 return True
             else:
+                error_msg = f"Failed to insert reading - insert_reading returned None"
+                self.logger.error(error_msg)
+                self.logger.error(f"[ERROR] {error_msg}")
                 return False
 
         except json.JSONDecodeError as e:
@@ -443,6 +461,8 @@ class SensorDataConsumer:
                 return
 
             self.logger.info("Consumer ready. Waiting for messages...")
+            self.logger.info("[READY] Consumer is running and waiting for messages from Kafka...")
+            self.logger.info("        (Messages will appear here as they are processed)")
 
             # Main loop - continuously poll for messages
             while not self.should_shutdown:

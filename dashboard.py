@@ -19,6 +19,7 @@ import logging
 import psutil
 from datetime import datetime
 from functools import wraps
+from psycopg2 import pool
 
 # Import PDF and AI libraries
 try:
@@ -57,6 +58,39 @@ except ImportError as e:
     print(f"ML report generation not available: {e}")
 
 app = Flask(__name__)
+
+# ============================================================================
+# STRUCTURED LOGGING CONFIGURATION
+# ============================================================================
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# DATABASE CONNECTION POOL
+# ============================================================================
+db_pool = None
+
+def init_db_pool():
+    """Initialize database connection pool."""
+    global db_pool
+    try:
+        import config
+        db_pool = pool.ThreadedConnectionPool(
+            minconn=1,
+            maxconn=15,  # pool_size=5 + max_overflow=10 = 15 total
+            **config.DB_CONFIG
+        )
+        logger.info("Database connection pool initialized (pool_size=5, max_overflow=10)")
+    except Exception as e:
+        logger.error(f"Failed to initialize database connection pool: {e}")
+        db_pool = None
+
+# Initialize pool on module load
+init_db_pool()
 
 # Session configuration
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'change-me-in-production-secret-key-12345')
@@ -120,21 +154,45 @@ heartbeat_thread_started = False
 heartbeat_lock = threading.Lock()
 
 def get_db_connection():
-    """Get PostgreSQL connection"""
-    try:
-        import config
-        conn = psycopg2.connect(**config.DB_CONFIG)
-        return conn
-    except Exception as e:
-        return None
+    """Get PostgreSQL connection from pool."""
+    global db_pool
+    if db_pool:
+        try:
+            return db_pool.getconn()
+        except Exception as e:
+            logger.error(f"Failed to get connection from pool: {e}")
+            return None
+    else:
+        # Fallback to direct connection if pool not available
+        try:
+            import config
+            return psycopg2.connect(**config.DB_CONFIG)
+        except Exception as e:
+            logger.error(f"Failed to create direct database connection: {e}")
+            return None
+
+def return_db_connection(conn):
+    """Return connection to pool."""
+    global db_pool
+    if db_pool and conn:
+        try:
+            db_pool.putconn(conn)
+        except Exception as e:
+            logger.error(f"Failed to return connection to pool: {e}")
+            try:
+                conn.close()
+            except:
+                pass
 
 def record_alert(alert_type, message, severity='INFO', source='dashboard'):
     """Persist alert messages for dashboard display."""
     conn = None
     cursor = None
     try:
-        import config
-        conn = psycopg2.connect(**config.DB_CONFIG)
+        conn = get_db_connection()
+        if not conn:
+            logger.error("Failed to get database connection for alert recording")
+            return
         cursor = conn.cursor()
         cursor.execute(
             """
@@ -144,14 +202,15 @@ def record_alert(alert_type, message, severity='INFO', source='dashboard'):
             (alert_type, source, severity, message)
         )
         conn.commit()
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to record alert: {e}")
         if conn:
             conn.rollback()
     finally:
         if cursor:
             cursor.close()
         if conn:
-            conn.close()
+            return_db_connection(conn)
 
 def get_alerts(limit=20):
     """Fetch recent alerts."""
@@ -593,8 +652,8 @@ def bootstrap_admin_user():
         cursor.execute("SELECT id FROM users WHERE username = %s", (admin_username,))
         if cursor.fetchone():
             cursor.close()
-            conn.close()
-            logging.info(f"Admin user '{admin_username}' already exists")
+            return_db_connection(conn)
+            logger.info(f"Admin user '{admin_username}' already exists")
             return
         
         # Create admin user
@@ -606,9 +665,9 @@ def bootstrap_admin_user():
         
         conn.commit()
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
         
-        logging.info(f"Created initial admin user '{admin_username}'")
+        logger.info(f"Created initial admin user '{admin_username}'")
     except Exception as e:
         logging.error(f"Failed to bootstrap admin user: {e}")
         if conn:
@@ -621,6 +680,33 @@ def bootstrap_admin_user():
 def login_page():
     """Login page"""
     return render_template('login.html')
+
+@app.route('/health')
+def health():
+    """Health check endpoint - returns 200 OK if service is running."""
+    return jsonify({"status": "healthy"}), 200
+
+@app.route('/ready')
+def ready():
+    """Readiness check endpoint - verifies database connection is live."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({"status": "not ready", "error": "Database connection failed"}), 503
+        
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.fetchone()
+        cursor.close()
+        return_db_connection(conn)
+        
+        return jsonify({"status": "ready"}), 200
+    except Exception as e:
+        logger.error(f"Readiness check failed: {e}")
+        if conn:
+            return_db_connection(conn)
+        return jsonify({"status": "not ready", "error": str(e)}), 503
 
 @app.route('/')
 def index():
@@ -1489,6 +1575,20 @@ def api_anomalies():
     try:
         cursor = conn.cursor()
         
+        # Check if tables exist first
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'anomaly_detections'
+            )
+        """)
+        table_exists = cursor.fetchone()[0]
+        
+        if not table_exists:
+            cursor.close()
+            conn.close()
+            return jsonify({'anomalies': []})
+        
         query = """
             SELECT 
                 ad.id, ad.reading_id, ad.detection_method, ad.anomaly_score,
@@ -1532,7 +1632,8 @@ def api_anomalies():
         return jsonify({'anomalies': anomalies})
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logging.error(f"Error fetching anomalies: {e}")
+        return jsonify({'anomalies': []})
 
 
 @app.route('/api/anomalies/<int:anomaly_id>')
@@ -1956,6 +2057,30 @@ def api_ml_stats():
     try:
         cursor = conn.cursor()
         
+        # Check if anomaly_detections table exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'anomaly_detections'
+            )
+        """)
+        table_exists = cursor.fetchone()[0]
+        
+        if not table_exists:
+            cursor.close()
+            conn.close()
+            return jsonify({
+                'total_detections': 0,
+                'total_anomalies': 0,
+                'avg_score': 0,
+                'min_score': 0,
+                'max_score': 0,
+                'recent_anomaly_rate': 0,
+                'total_reports': 0,
+                'completed_reports': 0,
+                'ml_available': ML_REPORTS_AVAILABLE
+            })
+        
         # Total detections and anomalies
         cursor.execute("""
             SELECT 
@@ -1980,14 +2105,17 @@ def api_ml_stats():
         """)
         recent_rate = cursor.fetchone()[0] or 0
         
-        # Reports generated
-        cursor.execute("""
-            SELECT 
-                COUNT(*) as total_reports,
-                COUNT(*) FILTER (WHERE status = 'completed') as completed_reports
-            FROM analysis_reports
-        """)
-        report_stats = cursor.fetchone()
+        # Reports generated (check if table exists)
+        try:
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total_reports,
+                    COUNT(*) FILTER (WHERE status = 'completed') as completed_reports
+                FROM analysis_reports
+            """)
+            report_stats = cursor.fetchone()
+        except:
+            report_stats = (0, 0)
         
         cursor.close()
         conn.close()
@@ -2005,7 +2133,68 @@ def api_ml_stats():
         })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logging.error(f"Error fetching ML stats: {e}")
+        return jsonify({
+            'total_detections': 0,
+            'total_anomalies': 0,
+            'avg_score': 0,
+            'min_score': 0,
+            'max_score': 0,
+            'recent_anomaly_rate': 0,
+            'total_reports': 0,
+            'completed_reports': 0,
+            'ml_available': False,
+            'error': str(e)
+        })
+
+
+@app.route('/api/audit-logs')
+@require_auth
+def api_audit_logs():
+    """Get audit logs from audit_logs_v2 table."""
+    limit = request.args.get('limit', default=100, type=int)
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'error': 'Database not connected'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Try to query audit_logs_v2 table
+        cursor.execute("""
+            SELECT 
+                id, user_id, username, role, action_type, resource_type, 
+                resource_id, timestamp, ip_address
+            FROM audit_logs_v2
+            ORDER BY timestamp DESC
+            LIMIT %s
+        """, (limit,))
+        
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        logs = []
+        for row in rows:
+            logs.append({
+                'id': row[0],
+                'user_id': row[1],
+                'operator_name': row[2] or 'system',
+                'role': row[3],
+                'action': f"{row[4]} {row[5] or ''}".strip(),
+                'resource_id': row[6],
+                'timestamp': str(row[7]),
+                'ip_address': str(row[8]) if row[8] else None,
+                'machine_id': None  # Not stored in audit_logs_v2
+            })
+        
+        return jsonify({'success': True, 'logs': logs})
+        
+    except Exception as e:
+        # If table doesn't exist or other error, return empty logs
+        logging.warning(f"Failed to fetch audit logs: {e}")
+        return jsonify({'success': True, 'logs': []})
 
 
 # ============================================================================
