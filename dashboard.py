@@ -1269,10 +1269,51 @@ def start_component(component):
     if component not in ['producer', 'consumer']:
         return jsonify({'success': False, 'error': 'Invalid component'})
 
-    # Check if component is already running
-    if is_component_running(component):
-        logger.warning(f"{component.capitalize()} is already running")
-        return jsonify({'success': False, 'error': f'{component.capitalize()} is already running'}), 409
+    # ALWAYS kill existing processes first to prevent duplicates
+    logger.info(f"Killing any existing {component} processes before starting...")
+    try:
+        script_name = f'{component}.py'
+        if os.name == 'nt':
+            # Windows: Use WMIC to find and kill all processes
+            result = subprocess.run(
+                ['wmic', 'process', 'where', f"CommandLine like '%{script_name}%'", 'get', 'ProcessId'],
+                capture_output=True, text=True, timeout=3
+            )
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                for line in lines[1:]:  # Skip header
+                    line = line.strip()
+                    if line and line.isdigit() and 'wmic' not in line.lower():
+                        pid = int(line)
+                        try:
+                            subprocess.run(['taskkill', '/F', '/T', '/PID', str(pid)],
+                                         capture_output=True, timeout=2)
+                            logger.info(f"Killed existing {component} process PID {pid}")
+                        except Exception as e:
+                            logger.warning(f"Failed to kill PID {pid}: {e}")
+    except Exception as e:
+        logger.warning(f"Error killing existing {component} processes: {e}")
+    
+    # Also kill tracked process
+    proc = processes.get(component)
+    if proc:
+        try:
+            if os.name == 'nt':
+                subprocess.run(['taskkill', '/F', '/T', '/PID', str(proc.pid)],
+                             capture_output=True, timeout=2)
+            else:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+        except Exception:
+            pass
+        processes[component] = None
+    
+    # Wait a moment for processes to die
+    import time
+    time.sleep(0.5)
 
     try:
         # Determine Python executable path (cross-platform)
