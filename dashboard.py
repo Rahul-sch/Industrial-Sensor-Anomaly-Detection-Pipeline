@@ -2681,9 +2681,23 @@ def api_machines():
 @app.route('/api/machines/<machine_id>/start', methods=['POST'])
 @require_machine_access('machine_id')
 def api_start_machine(machine_id):
-    """Start a machine (set running state)"""
+    """Start a machine (set running state and start producer/consumer)"""
     if machine_id not in ['A', 'B', 'C']:
         return jsonify({'success': False, 'error': 'Invalid machine ID'}), 400
+    
+    # Start producer if not running
+    if not is_component_running('producer'):
+        producer_result = start_component('producer')
+        producer_data = producer_result.get_json()
+        if not producer_data.get('success'):
+            return jsonify({'success': False, 'error': f"Failed to start producer: {producer_data.get('error')}"}), 500
+    
+    # Start consumer if not running
+    if not is_component_running('consumer'):
+        consumer_result = start_component('consumer')
+        consumer_data = consumer_result.get_json()
+        if not consumer_data.get('success'):
+            return jsonify({'success': False, 'error': f"Failed to start consumer: {consumer_data.get('error')}"}), 500
     
     with machine_state_lock:
         machine_state[machine_id]['running'] = True
@@ -2693,9 +2707,17 @@ def api_start_machine(machine_id):
 @app.route('/api/machines/<machine_id>/stop', methods=['POST'])
 @require_machine_access('machine_id')
 def api_stop_machine(machine_id):
-    """Stop a machine (set running state)"""
+    """Stop a machine (set running state and stop producer)"""
     if machine_id not in ['A', 'B', 'C']:
         return jsonify({'success': False, 'error': 'Invalid machine ID'}), 400
+    
+    # Stop producer if running
+    if is_component_running('producer'):
+        stop_result = stop_component('producer')
+        stop_data = stop_result.get_json()
+        if not stop_data.get('success'):
+            logger.warning(f"Failed to stop producer: {stop_data.get('error')}")
+            # Continue anyway - we'll still set the state
     
     with machine_state_lock:
         machine_state[machine_id]['running'] = False
