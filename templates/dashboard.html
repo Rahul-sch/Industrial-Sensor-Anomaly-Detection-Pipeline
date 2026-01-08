@@ -313,9 +313,27 @@
               </div>
             </div>
 
-            <!-- Right Panel: Telemetry Rail (4x2 Grid) -->
+            <!-- Right Panel: Telemetry Rail + Live Readings -->
             <div class="monitoring-right-panel">
+              <!-- Telemetry Rail (Top) -->
               <div id="telemetryContainer"></div>
+              
+              <!-- Live Sensor Readings (Bottom) -->
+              <div class="rig-card live-readings-card">
+                <div class="rig-card-header">
+                  <span>📡 LIVE SENSOR READINGS</span>
+                  <select id="historyCategory" onchange="changeHistoryCategory()" class="history-category-select">
+                    <option value="environmental">🌍 ENVIRON</option>
+                    <option value="mechanical">⚙️ MECH</option>
+                    <option value="thermal">🔥 THERMAL</option>
+                    <option value="electrical">⚡ ELECTRIC</option>
+                    <option value="fluid">💧 FLUID</option>
+                  </select>
+                </div>
+                <div class="rig-card-body live-readings-scroll">
+                  <div class="history-container" id="readingsHistory"></div>
+                </div>
+              </div>
             </div>
 
           </div>
