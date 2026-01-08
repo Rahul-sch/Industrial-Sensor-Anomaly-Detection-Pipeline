@@ -21,6 +21,15 @@ from datetime import datetime
 from functools import wraps
 from psycopg2 import pool
 
+# Flask-Talisman for CSP headers
+try:
+    from flask_talisman import Talisman
+    TALISMAN_AVAILABLE = True
+except ImportError:
+    TALISMAN_AVAILABLE = False
+    # Logger not yet initialized, use print for now
+    print("Warning: Flask-Talisman not available. CSP headers will not be set.")
+
 # Import PDF and AI libraries
 try:
     from PyPDF2 import PdfReader
@@ -79,6 +88,11 @@ def init_db_pool():
     global db_pool
     try:
         import config
+        # Debug: Print connection info
+        db_url_preview = os.environ.get('DATABASE_URL', '')[:20] + '...' if os.environ.get('DATABASE_URL', '') else 'local config'
+        logger.info(f"Initializing database pool. DATABASE_URL preview: {db_url_preview}")
+        logger.info(f"DB_CONFIG: host={config.DB_CONFIG.get('host', 'N/A')}, database={config.DB_CONFIG.get('database', 'N/A')}")
+        
         db_pool = pool.ThreadedConnectionPool(
             minconn=1,
             maxconn=15,  # pool_size=5 + max_overflow=10 = 15 total
@@ -91,6 +105,46 @@ def init_db_pool():
 
 # Initialize pool on module load
 init_db_pool()
+
+# ============================================================================
+# CONTENT SECURITY POLICY (CSP) CONFIGURATION
+# ============================================================================
+if TALISMAN_AVAILABLE:
+    csp = {
+        'default-src': "'self'",
+        'script-src': [
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",  # Required for Three.js and dynamic JavaScript
+            'https://cdnjs.cloudflare.com'  # For Three.js library
+        ],
+        'style-src': [
+            "'self'",
+            "'unsafe-inline'",  # Required for inline styles
+            'https://cdnjs.cloudflare.com',  # For Inter font
+            'https://fonts.googleapis.com'  # For Google Fonts if used
+        ],
+        'connect-src': [
+            "'self'",
+            'https://*.neon.tech',  # Allow Neon database connections
+            'https://*.aws.neon.tech'  # Allow AWS Neon connections
+        ],
+        'font-src': [
+            "'self'",
+            'https://cdnjs.cloudflare.com',
+            'https://fonts.gstatic.com'
+        ],
+        'img-src': "'self' data:",
+        'frame-ancestors': "'none'"
+    }
+    
+    Talisman(
+        app,
+        content_security_policy=csp,
+        force_https=False,  # Set to True in production with HTTPS
+        strict_transport_security=False  # Set to True in production
+    )
+    logger.info("Flask-Talisman initialized with CSP headers")
 
 # Session configuration
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'change-me-in-production-secret-key-12345')
