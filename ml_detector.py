@@ -275,8 +275,11 @@ class AnomalyDetector:
             # Convert reading to features
             features = self._reading_to_features(reading)
             
+            # Convert to DataFrame with column names to match training data format
+            features_df = pd.DataFrame(features, columns=self.SENSOR_COLUMNS)
+            
             # Scale features
-            scaled_features = self.scaler.transform(features)
+            scaled_features = self.scaler.transform(features_df)
             
             # Predict (-1 for anomaly, 1 for normal)
             prediction = self.model.predict(scaled_features)[0]

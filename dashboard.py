@@ -17,7 +17,7 @@ import csv
 import io
 import logging
 import psutil
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 from psycopg2 import pool
 
@@ -326,7 +326,7 @@ def check_kafka_health():
         with kafka_health_lock:
             kafka_health.update({
                 'status': 'healthy',
-                'checked_at': datetime.utcnow().isoformat(),
+                'checked_at': datetime.now(timezone.utc).isoformat(),
                 'latency_ms': latency_ms,
                 'error': None
             })
@@ -338,7 +338,7 @@ def check_kafka_health():
         with kafka_health_lock:
             kafka_health.update({
                 'status': 'unhealthy',
-                'checked_at': datetime.utcnow().isoformat(),
+                'checked_at': datetime.now(timezone.utc).isoformat(),
                 'latency_ms': None,
                 'error': error_message
             })
@@ -1583,7 +1583,7 @@ def api_system_metrics():
         'cpu_percent': cpu_percent,
         'db_latency_ms': db_latency_ms,
         'db_status': db_status,
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     })
 
 @app.route('/api/log-critical-alarm', methods=['POST'])
@@ -1652,7 +1652,7 @@ def api_log_critical_alarm():
                 json.dumps({
                     'risk_score': risk_score,
                     'machine_id': machine_id,
-                    'triggered_at': datetime.utcnow().isoformat(),
+                    'triggered_at': datetime.now(timezone.utc).isoformat(),
                     'severity': 'CRITICAL'
                 })
             ))
@@ -2456,9 +2456,9 @@ def api_set_injection_settings():
     
     # Calculate next injection time
     if injection_settings['enabled']:
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
         injection_settings['next_injection_time'] = (
-            datetime.utcnow() + timedelta(minutes=injection_settings['interval_minutes'])
+            datetime.now(timezone.utc) + timedelta(minutes=injection_settings['interval_minutes'])
         ).isoformat()
     else:
         injection_settings['next_injection_time'] = None
@@ -2538,7 +2538,7 @@ def export_data():
             writer.writerow(row)
 
         response = make_response(output.getvalue())
-        filename = f"sensor_readings_50params_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+        filename = f"sensor_readings_50params_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"
         response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
         response.headers['Content-Type'] = 'text/csv'
         return response
@@ -3899,7 +3899,7 @@ def api_v1_ingest():
         
         # Build sensor reading with timestamp
         reading = {
-            'timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S'),
+            'timestamp': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S'),
             'machine_id': machine_id
         }
         
