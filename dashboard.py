@@ -3524,6 +3524,59 @@ def api_predictive_health():
         return jsonify({'error': str(e)}), 500
 
 
+# ============================================================================
+# Database Info Endpoint (for debugging)
+# ============================================================================
+
+@app.route('/api/debug/db-info', methods=['GET'])
+@require_auth
+def api_db_info():
+    """Get database connection information and PostgreSQL version."""
+    import config
+    
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database not connected'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Get PostgreSQL version
+        cursor.execute("SELECT version();")
+        version = cursor.fetchone()[0]
+        
+        # Get database info
+        cursor.execute("SELECT current_database(), current_user, inet_server_addr(), inet_server_port();")
+        db_info = cursor.fetchone()
+        
+        # Check if it's remote
+        is_remote = config.DB_HOST not in ['localhost', '127.0.0.1']
+        
+        result = {
+            'version': version,
+            'database': db_info[0],
+            'user': db_info[1],
+            'server_address': db_info[2] or config.DB_HOST,
+            'server_port': db_info[3] or config.DB_PORT,
+            'is_remote': is_remote,
+            'config': {
+                'host': config.DB_HOST,
+                'port': config.DB_PORT,
+                'database': config.DB_NAME,
+                'user': config.DB_USER,
+                'has_database_url': bool(os.environ.get('DATABASE_URL', ''))
+            }
+        }
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # Bootstrap admin user on module load
 bootstrap_admin_user()
 
