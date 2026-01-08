@@ -3435,6 +3435,95 @@ def api_v1_ingest():
         return jsonify({'error': 'Invalid request format', 'details': str(e)}), 400
 
 
+# ============================================================================
+# Predictive Health API - RUL (Remaining Useful Life) Prediction
+# ============================================================================
+
+@app.route('/api/v1/predictive-health', methods=['GET'])
+@require_auth
+def api_predictive_health():
+    """
+    Get Remaining Useful Life (RUL) predictions for all machines.
+    Returns estimated hours until failure based on degradation trends.
+    """
+    try:
+        from analytics.prediction_engine import get_predictor
+        
+        predictor = get_predictor()
+        conn = get_db_connection()
+        
+        if not conn:
+            return jsonify({'error': 'Database not connected'}), 500
+        
+        results = {}
+        
+        # Get predictions for each machine
+        for machine_id in ['A', 'B', 'C']:
+            try:
+                cursor = conn.cursor()
+                
+                # Get last 100 readings for this machine (for trend analysis)
+                cursor.execute("""
+                    SELECT 
+                        timestamp,
+                        vibration, temperature, bearing_temp, rpm
+                    FROM sensor_readings
+                    WHERE machine_id = %s
+                    ORDER BY timestamp DESC
+                    LIMIT 100
+                """, (machine_id,))
+                
+                rows = cursor.fetchall()
+                cursor.close()
+                
+                if rows:
+                    # Convert to list of dicts
+                    sensor_sequence = []
+                    for row in reversed(rows):  # Oldest first
+                        sensor_sequence.append({
+                            'timestamp': row[0].isoformat() if hasattr(row[0], 'isoformat') else str(row[0]),
+                            'vibration': row[1],
+                            'temperature': row[2],
+                            'bearing_temp': row[3],
+                            'rpm': row[4]
+                        })
+                    
+                    # Get prediction
+                    prediction = predictor.predict_rul(sensor_sequence, machine_id)
+                    results[machine_id] = prediction
+                else:
+                    results[machine_id] = {
+                        'rul_hours': None,
+                        'confidence': 0.0,
+                        'degradation_trend': 'no_data',
+                        'critical_sensors': [],
+                        'estimated_failure_time': None,
+                        'machine_id': machine_id,
+                        'message': 'No sensor data available'
+                    }
+                    
+            except Exception as e:
+                logging.error(f"Error predicting RUL for machine {machine_id}: {e}")
+                results[machine_id] = {
+                    'rul_hours': None,
+                    'confidence': 0.0,
+                    'degradation_trend': 'error',
+                    'critical_sensors': [],
+                    'estimated_failure_time': None,
+                    'machine_id': machine_id,
+                    'error': str(e)
+                }
+        
+        conn.close()
+        return jsonify(results), 200
+        
+    except ImportError:
+        return jsonify({'error': 'Prediction engine not available'}), 500
+    except Exception as e:
+        logging.error(f"Error in predictive health endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 # Bootstrap admin user on module load
 bootstrap_admin_user()
 
