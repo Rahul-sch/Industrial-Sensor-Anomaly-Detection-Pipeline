@@ -94,11 +94,11 @@ def init_db_pool():
         logger.info(f"DB_CONFIG: host={config.DB_CONFIG.get('host', 'N/A')}, database={config.DB_CONFIG.get('database', 'N/A')}")
         
         db_pool = pool.ThreadedConnectionPool(
-            minconn=1,
-            maxconn=15,  # pool_size=5 + max_overflow=10 = 15 total
+            minconn=5,
+            maxconn=50,  # Increased to handle dashboard's concurrent API requests
             **config.DB_CONFIG
         )
-        logger.info("Database connection pool initialized (pool_size=5, max_overflow=10)")
+        logger.info("Database connection pool initialized (minconn=5, maxconn=50)")
     except Exception as e:
         logger.error(f"Failed to initialize database connection pool: {e}")
         db_pool = None
