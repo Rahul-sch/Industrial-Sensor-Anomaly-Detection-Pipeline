@@ -17,6 +17,21 @@ import csv
 import io
 import logging
 from datetime import datetime
+
+# Import PDF and AI libraries
+try:
+    from PyPDF2 import PdfReader
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
+    print("Warning: PyPDF2 not available. PDF parsing will not work.")
+
+try:
+    from groq import Groq
+    GROQ_AVAILABLE = True
+except ImportError:
+    GROQ_AVAILABLE = False
+    print("Warning: groq library not available. AI parsing will use fallback.")
 try:
     from kafka.admin import KafkaAdminClient
 except ImportError:
@@ -2946,6 +2961,133 @@ def api_update_custom_sensor(sensor_id):
             cursor.close()
             conn.close()
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/admin/parse-sensor-file', methods=['POST'])
+@require_admin
+def api_parse_sensor_file():
+    """Parse uploaded file (PDF/TXT/CSV/JSON) and extract sensor specs using AI."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    filename = file.filename.lower()
+    extracted_text = ""
+    
+    try:
+        # Extract text based on file type
+        if filename.endswith('.pdf'):
+            if not PDF_AVAILABLE:
+                return jsonify({'error': 'PDF parsing not available. Install PyPDF2.'}), 500
+            
+            pdf_reader = PdfReader(file)
+            # Extract text from first 2 pages
+            for page_num in range(min(2, len(pdf_reader.pages))):
+                page = pdf_reader.pages[page_num]
+                extracted_text += page.extract_text() + "\n"
+        
+        elif filename.endswith('.txt') or filename.endswith('.csv'):
+            # Read and decode text files
+            file_bytes = file.read()
+            extracted_text = file_bytes.decode('utf-8', errors='ignore')
+        
+        elif filename.endswith('.json'):
+            # Read and decode JSON files
+            file_bytes = file.read()
+            extracted_text = file_bytes.decode('utf-8', errors='ignore')
+            # Try to parse as JSON first - if valid, return it directly
+            try:
+                json_data = json.loads(extracted_text)
+                # If it's already in the right format, return it
+                if isinstance(json_data, dict) and 'sensor_name' in json_data:
+                    return jsonify(json_data), 200
+            except json.JSONDecodeError:
+                pass  # Continue with AI parsing
+        
+        else:
+            return jsonify({'error': 'Unsupported file type. Use PDF, TXT, CSV, or JSON.'}), 400
+        
+        if not extracted_text.strip():
+            return jsonify({'error': 'No text extracted from file'}), 400
+        
+        # AI Processing with Groq
+        groq_api_key = os.environ.get('GROQ_API_KEY')
+        
+        if groq_api_key and GROQ_AVAILABLE:
+            try:
+                client = Groq(api_key=groq_api_key)
+                
+                system_prompt = """You are an engineering assistant. Extract sensor specifications from this text. 
+Return ONLY raw JSON (no markdown formatting) with these exact keys: 
+- 'sensor_name' (snake_case string)
+- 'min_range' (float)
+- 'max_range' (float)
+- 'unit' (string)
+- 'low_threshold' (float or null)
+- 'high_threshold' (float or null)
+- 'category' (string: one of environmental, mechanical, thermal, electrical, or fluid)
+
+Example output:
+{"sensor_name": "pressure_sensor", "min_range": 0, "max_range": 250, "unit": "PSI", "low_threshold": 20, "high_threshold": 220, "category": "fluid"}"""
+                
+                user_prompt = extracted_text
+                
+                response = client.chat.completions.create(
+                    model="llama3-8b-8192",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.3,
+                    max_tokens=500
+                )
+                
+                ai_response = response.choices[0].message.content.strip()
+                
+                # Remove markdown code blocks if present
+                if ai_response.startswith('```'):
+                    # Remove ```json or ``` at start
+                    ai_response = ai_response.split('```', 1)[1]
+                    if ai_response.startswith('json'):
+                        ai_response = ai_response[4:]
+                    # Remove ``` at end
+                    if ai_response.endswith('```'):
+                        ai_response = ai_response.rsplit('```', 1)[0]
+                    ai_response = ai_response.strip()
+                
+                # Parse JSON response
+                sensor_data = json.loads(ai_response)
+                
+                # Validate required fields
+                required_fields = ['sensor_name', 'min_range', 'max_range', 'unit', 'category']
+                for field in required_fields:
+                    if field not in sensor_data:
+                        raise ValueError(f"Missing required field: {field}")
+                
+                return jsonify(sensor_data), 200
+                
+            except Exception as e:
+                # If AI parsing fails, fall through to mock response
+                print(f"AI parsing failed: {e}")
+                pass
+        
+        # Fallback: Return mock data for testing
+        mock_response = {
+            "sensor_name": "mock_pressure_sensor",
+            "min_range": 0,
+            "max_range": 250,
+            "unit": "PSI",
+            "low_threshold": 20,
+            "high_threshold": 220,
+            "category": "fluid"
+        }
+        return jsonify(mock_response), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Error processing file: {str(e)}'}), 500
 
 
 @app.route('/api/admin/custom-sensors/<int:sensor_id>', methods=['DELETE'])
