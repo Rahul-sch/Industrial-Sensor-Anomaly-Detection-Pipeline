@@ -1,520 +1,528 @@
-# Sensor Data Pipeline
+# Industrial Sensor Anomaly Detection Pipeline (Rig Alpha)
 
-A real-time industrial sensor monitoring system with ML anomaly detection and AI-powered analysis.
+A comprehensive real-time industrial IoT monitoring system with ML anomaly detection, AI-powered analysis, predictive maintenance, and enterprise-grade audit logging.
 
 ---
 
-## What Does It Do?
+## 🎯 Project Overview
+
+**Rig Alpha** is an end-to-end industrial sensor monitoring platform that:
+
+- **Ingests** real-time sensor data from 50+ parameters across 5 categories
+- **Streams** data reliably through Apache Kafka with exactly-once semantics
+- **Detects** anomalies using hybrid ML (Isolation Forest + LSTM Autoencoder)
+- **Predicts** future failures with Remaining Useful Life (RUL) estimation
+- **Analyzes** root causes using AI-powered natural language processing
+- **Monitors** everything through a modern, real-time web dashboard
+- **Audits** all actions with comprehensive logging for compliance
+
+---
+
+## 🏗️ System Architecture
 
 ```mermaid
-flowchart LR
-    subgraph Generate["🔧 Generate"]
-        Producer[Producer<br/>50 Sensors]
+flowchart TB
+    subgraph Edge["🔧 Edge Layer"]
+        Producer[Producer<br/>50+ Sensors]
+        API[External API<br/>/api/v1/ingest]
     end
 
-    subgraph Stream["📨 Stream"]
-        Kafka[(Kafka<br/>Message Broker)]
+    subgraph Stream["📨 Streaming Layer"]
+        Kafka[(Apache Kafka<br/>Message Broker)]
     end
 
-    subgraph Process["⚙️ Process"]
+    subgraph Process["⚙️ Processing Layer"]
         Consumer[Consumer]
-        ML[Hybrid ML Detector<br/>IF + LSTM]
+        IF[Isolation Forest<br/>Point Detection]
+        LSTM[LSTM Autoencoder<br/>Temporal Patterns]
+        RUL[Prediction Engine<br/>RUL Estimation]
     end
 
-    subgraph Store["💾 Store"]
-        DB[(PostgreSQL)]
+    subgraph Store["💾 Storage Layer"]
+        DB[(PostgreSQL<br/>Neon.tech Cloud)]
+        Audit[(Audit Logs<br/>audit_logs_v2)]
     end
 
-    subgraph Analyze["🤖 Analyze"]
-        AI[Groq AI<br/>Report Generator]
+    subgraph Analyze["🤖 AI Layer"]
+        Groq[Groq AI<br/>LLaMA 3.3]
+        Parser[AI Sensor Parser<br/>PDF/CSV/JSON]
     end
 
-    subgraph View["📊 View"]
-        Dashboard[Web Dashboard]
+    subgraph View["📊 Presentation Layer"]
+        Dashboard[Web Dashboard<br/>Flask + Real-time UI]
     end
 
     Producer -->|publish| Kafka
+    API -->|publish| Kafka
     Kafka -->|consume| Consumer
-    Consumer -->|detect| ML
+    Consumer -->|detect| IF
+    Consumer -->|detect| LSTM
+    Consumer -->|predict| RUL
     Consumer -->|INSERT| DB
-    ML -->|anomalies| DB
-    DB -->|context| AI
-    AI -->|reports| DB
+    IF -->|anomalies| DB
+    LSTM -->|predictions| DB
+    RUL -->|estimates| DB
+    DB -->|context| Groq
+    Groq -->|reports| DB
     DB -->|stats| Dashboard
     Dashboard -->|control| Producer
     Dashboard -->|control| Consumer
+    Dashboard -->|audit| Audit
+    Parser -->|sensor specs| DB
 ```
-
-### Features
-
-| Feature                          | Description                                                    |
-| -------------------------------- | -------------------------------------------------------------- |
-| **50 Sensor Parameters**         | Environmental, Mechanical, Thermal, Electrical, Fluid Dynamics |
-| **Real-time Streaming**          | Apache Kafka for reliable message delivery                     |
-| **Hybrid ML Detection**          | Isolation Forest (point-based) + LSTM Autoencoder (temporal)   |
-| **Future Anomaly Prediction**    | LSTM predicts anomalies before they occur                      |
-| **AI Analysis Reports**          | Groq/LLaMA generates root cause analysis                       |
-| **Training Quality Indicator**   | Visual bar showing model readiness and reliability             |
-| **Web Dashboard**                | Modern UI with live updates, charts, controls                  |
-| **User Authentication**          | Login/signup with role-based access control (admin/operator)   |
-| **Machine Access Control**       | Operators can only access assigned machines                    |
-| **Dynamic Custom Sensors**       | Add new sensor parameters at runtime via Admin UI              |
-| **Per-Sensor Frequency Control** | Configure sampling frequency per sensor (global + per-machine) |
 
 ---
 
-## Quick Start (3 Steps)
+## ✨ Key Features
 
-### Step 1: Start Everything
+### Core Capabilities
+
+| Feature | Description |
+|---------|-------------|
+| **50+ Sensor Parameters** | Environmental, Mechanical, Thermal, Electrical, Fluid Dynamics |
+| **Multi-Machine Support** | Monitor Machine A, B, C with per-machine configuration |
+| **Real-time Streaming** | Apache Kafka for reliable, fault-tolerant message delivery |
+| **Hybrid ML Detection** | Isolation Forest (point-based) + LSTM Autoencoder (temporal) |
+| **Future Anomaly Prediction** | LSTM predicts anomalies before they occur |
+| **Remaining Useful Life (RUL)** | Estimates hours until failure based on sensor trends |
+| **AI-Powered Analysis** | Groq/LLaMA generates root cause analysis and recommendations |
+| **AI Sensor Parser** | Automatically extracts sensor specs from PDF/CSV/JSON files |
+| **Custom Sensors** | Add new sensor parameters at runtime via Admin UI |
+| **Dynamic Thresholds** | Configure min/max thresholds per sensor |
+| **Per-Sensor Frequency Control** | Adjust sampling rate per sensor (global + per-machine) |
+| **User Authentication** | Login/signup with role-based access control (admin/operator) |
+| **Machine Access Control** | Operators can only access assigned machines |
+| **Comprehensive Audit Logging** | All actions logged to `audit_logs_v2` for compliance |
+| **Cloud-Ready** | Supports Neon.tech (PostgreSQL) and Upstash (Kafka) |
+| **Modern Dashboard** | Real-time updates, charts, controls, "Rig Alpha" industrial theme |
+
+### Advanced Features
+
+- **Predictive Maintenance**: RUL predictions show estimated hours until failure
+- **Anomaly Injection**: Simulate faults for testing and training
+- **State Capture**: Audit logs capture before/after states for UPDATE operations
+- **External API**: `/api/v1/ingest` endpoint for external sensor data ingestion
+- **Boot Animation**: Cinematic startup sequence
+- **Responsive UI**: 2-panel layout optimized for industrial monitoring
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Docker Desktop (for Kafka and PostgreSQL)
+- Python 3.13+
+- PowerShell (Windows) or Bash (Linux/Mac)
+
+### Step 1: Start Infrastructure
 
 ```powershell
 cd c:\Users\rahul\Desktop\stubby\stub
 docker-compose up -d
-Start-Sleep -Seconds 60
+Start-Sleep -Seconds 60  # Wait for Kafka to start
 ```
 
-### Step 2: Train ML Models (First Time)
+### Step 2: Apply Database Migrations
+
+```powershell
+# User authentication
+Get-Content migrations\add_user_auth.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb
+
+# Custom sensors
+Get-Content migrations\add_custom_sensors.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb
+
+# Frequency control
+Get-Content migrations\add_frequency_control.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb
+
+# Audit logging (v2)
+Get-Content migrations\add_audit_v2.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb
+```
+
+### Step 3: Install Dependencies
 
 ```powershell
 .\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+### Step 4: Train ML Models (First Time)
+
+```powershell
 python train_combined_detector.py
 ```
 
-This trains both Isolation Forest and LSTM models. Wait until you have at least 100 readings for Isolation Forest, and 500+ for LSTM.
+**Requirements:**
+- **Isolation Forest**: Minimum 100 readings (recommended: 500+)
+- **LSTM Autoencoder**: Minimum 100 readings (recommended: 500+ for best results)
 
-### Step 3: Apply Database Migrations
-
-```powershell
-# Apply user authentication migration
-Get-Content migrations\add_user_auth.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb
-
-# Apply custom sensors migration (if not already done)
-Get-Content migrations\add_custom_sensors.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb
-
-# Apply frequency control migration (if not already done)
-Get-Content migrations\add_frequency_control.sql | docker exec -i stub-postgres psql -U sensoruser -d sensordb
-```
-
-### Step 4: Open Dashboard
+### Step 5: Start Dashboard
 
 ```powershell
 python dashboard.py
 ```
 
-### Step 5: Open Browser and Login
+### Step 6: Open Browser
 
 Go to: **http://localhost:5000**
 
 **Default Admin Credentials:**
-
 - Username: `admin`
 - Password: `admin`
 
 **Or create a new account:**
-
 1. Click "Sign Up" on the login page
 2. Enter username and password
-3. Check "Create as Admin" for admin access, or leave unchecked and select machines for operator access
+3. Check "Create as Admin" for admin access
 4. Click "Sign Up"
-
-**That's it!** Use the dashboard to start/stop and monitor everything.
 
 ---
 
-## Authentication & User Management
+## 📊 Dashboard Overview
+
+### Layout
+
+**Left Panel (320px fixed width):**
+- **Health Matrix**: 6 category cards (Environmental, Electrical, Fluid, Mechanical, Thermal, Custom)
+  - Health percentage, status indicator (NOM/WRN/CRIT)
+  - Anomaly log (last 3 anomalies per category)
+  - Uptime timer (pauses when stopped)
+  - RUL countdown (estimated life remaining)
+- **System Command Deck**: Control panel with START/STOP, Sampling Speed slider, Anomaly Simulation
+
+**Right Panel (Flexible width):**
+- **Telemetry Grid**: Responsive grid of sensor cards
+  - Real-time values (CURR) and averages (AVG)
+  - Dynamic threshold coloring (Green/Yellow/Red)
+  - Sparkline graphs with color-coded lines
+  - Sensor metadata and status indicators
+
+**Header:**
+- Logo & branding
+- Machine selector (A, B, C)
+- Status dots (SYSTEM, COMM, POWER, SAFETY)
+- Pipeline health (TOTAL messages, MPS counter)
+- Alerts badge
+- UTC time
+- Logout button
+
+### Key Controls
+
+| Control | Function |
+|---------|----------|
+| **START** | Starts producer and consumer |
+| **STOP** | Pauses system (Yellow state, uptime pauses) |
+| **Sampling Speed** | Adjust MPS (Messages Per Second) from 1-20 |
+| **Anomaly Trigger** | Inject simulated faults for testing |
+| **Machine Selector** | Switch between Machine A, B, or C |
+
+---
+
+## 🔐 Authentication & Authorization
 
 ### User Roles
 
-| Role         | Access Level                                             |
-| ------------ | -------------------------------------------------------- |
-| **Admin**    | Full access to all machines (A, B, C) and admin features |
-| **Operator** | Access only to assigned machines                         |
+| Role | Access Level |
+|------|--------------|
+| **Admin** | Full access to all machines (A, B, C) and admin features |
+| **Operator** | Access only to assigned machines |
 
-### Default Admin User
+### Admin Features
 
-On first startup, an admin user is automatically created:
-
-- **Username**: `admin` (or value from `ADMIN_USERNAME` env var)
-- **Password**: `admin` (or value from `ADMIN_PASSWORD` env var)
-
-### Creating Users
-
-**Option 1: Sign Up (Public)**
-
-1. Go to login page
-2. Click "Sign Up" tab
-3. Enter username and password
-4. Toggle "Create as Admin":
-   - ✅ **Checked** = Admin user (access to all machines)
-   - ❌ **Unchecked** = Operator user (must select at least one machine)
-5. Click "Sign Up"
-
-**Option 2: Admin Panel (Admin Only)**
-
-1. Login as admin
-2. Click "➕ Create User" button in top right
-3. Fill out form and create user
-
-### Machine Access
-
-- **Admin users**: Automatically have access to all machines (A, B, C)
-- **Operator users**: Must be assigned specific machines via `user_machine_access` table
-- Operators can only view and control their assigned machines
-- Machine selector in dashboard only shows accessible machines
+- Create/edit/delete custom sensors
+- AI-powered sensor file parsing (PDF/CSV/JSON)
+- User management (create users, assign machines)
+- View audit logs
+- Configure global sensor frequencies
+- Access all machines
 
 ### API Endpoints
 
-| Endpoint           | Method | Auth Required | Description                     |
-| ------------------ | ------ | ------------- | ------------------------------- |
-| `/api/auth/login`  | POST   | No            | Authenticate and create session |
-| `/api/auth/logout` | POST   | Yes           | Destroy session                 |
-| `/api/auth/me`     | GET    | Yes           | Get current user info           |
-| `/api/auth/signup` | POST   | No            | Create new user account         |
-
-### Authorization
-
-All API endpoints are protected:
-
-- **Public endpoints**: `/api/auth/login`, `/api/auth/signup`
-- **Authenticated endpoints**: Most endpoints require login
-- **Admin-only endpoints**: `/api/admin/*`, `/api/sensors/<name>/frequency` (global)
-- **Machine-specific endpoints**: Require access to the specified machine
-
-### Session Management
-
-- Sessions last 24 hours
-- Session stored in secure HTTP-only cookies
-- Auto-logout on browser close (session cookie expires)
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/auth/login` | POST | No | Authenticate and create session |
+| `/api/auth/logout` | POST | Yes | Destroy session |
+| `/api/auth/me` | GET | Yes | Get current user info |
+| `/api/auth/signup` | POST | No | Create new user account |
+| `/api/v1/ingest` | POST | API Key | External sensor data ingestion |
+| `/api/admin/custom-sensors` | GET/POST | Admin | Manage custom sensors |
+| `/api/admin/parse-sensor-file` | POST | Admin | AI-powered sensor spec parsing |
+| `/api/v1/predictive-health` | GET | Yes | Get RUL predictions |
 
 ---
 
-## Dashboard Controls
+## 🤖 AI Integration
 
-| Button             | What It Does                 |
-| ------------------ | ---------------------------- |
-| **Start Consumer** | Click FIRST - waits for data |
-| **Start Producer** | Click SECOND - sends data    |
-| **Stop**           | Stops the process            |
-| **Clear All Data** | Deletes all readings         |
-| **Update Config**  | Changes duration/interval    |
+### Groq AI Configuration
 
----
+**File:** `stub/config.py`
 
-## Dashboard UI & Layout
-
-### 2-Panel Monitoring Layout
-
-The dashboard features a **compact 2-panel layout** optimized for industrial monitoring:
-
-**Left Panel (320px fixed width):**
-
-- **Health Matrix**: 6 category cards (Environmental, Electrical, Fluid, Mechanical, Thermal, Custom) displayed in a 2-column grid
-  - Each card shows health percentage, status indicator (NOM/WRN/CRIT), anomaly log, and uptime
-  - **Anomaly Log**: Displays last 3 anomalies per category with sensor name and timestamp
-  - Status LEDs change to Yellow (PAUSED) when system is stopped
-- **System Command Deck**: Compact control panel with:
-  - **START/STOP buttons**: Large, easy-to-click controls
-  - **Sampling Speed slider**: Adjust MPS (Messages Per Second) from 1-20
-  - **Anomaly Simulation**: Dropdown to select anomaly type + INJECT button
-  - **NOM status indicator**: Matches theme of other cards
-
-**Right Panel (Flexible width):**
-
-- **Telemetry Grid**: Responsive grid of sensor cards showing:
-  - Real-time sensor values (CURR) and calculated averages (AVG)
-  - Dynamic threshold coloring (Green = Normal, Yellow = Near Threshold, Red = Over Threshold)
-  - Sparkline graphs with color-coded lines based on threshold violations
-  - Sensor metadata and status indicators
-
-### Header Features
-
-**Clean, Minimal Header:**
-
-- **Logo & Branding**: ITHENA SCADA branding
-- **Machine Selector**: Dropdown to switch between Machine A, B, or C
-- **Status Dots**: 4 status indicators (SYSTEM, COMM, POWER, SAFETY)
-  - SYSTEM: Green when running, Yellow when paused, Red when stopped
-  - COMM: Kafka/communication status
-  - POWER: Electrical/power status
-  - SAFETY: Safety interlock status
-- **Pipeline Health**:
-  - **TOTAL**: Large odometer-style counter for total messages
-  - **MPS**: Message velocity (messages per second)
-- **Alerts Badge**: Shows count of active alerts
-- **UTC Time**: Current UTC timestamp
-- **LOGOUT**: User logout button
-
-### Category Cards
-
-Each category card in the Health Matrix displays:
-
-- **Header**: Category name (ENVIRON, ELECTRIC, FLUID, MECH, THERMAL, CUSTOM) + Status indicator
-- **Health Percentage**: Large percentage value with color coding
-- **Anomaly Log**:
-  - Shows "No Recent Anomalies" (green) when no issues
-  - Lists last 3 anomalies with format: `Sensor Name @ HH:MM`
-  - Filters anomalies by category automatically
-- **Uptime**: Session uptime timer (pauses when system is stopped)
-
-### Stop Button Behavior
-
-When **STOP** is clicked:
-
-- **SYSTEM LED**: Changes to **Yellow (PAUSED)** - not red
-- **Category LEDs**: All category status indicators change to Yellow (except CRIT)
-- **Uptime Timer**: **Pauses** (does not reset to 00:00)
-- **Status Labels**: Display "PAUSED" instead of "NOM" or "WRN"
-
-The system maintains its state when paused, allowing you to resume without losing session data.
-
-### Theme & Styling
-
-- **Deep Space Industrial Theme**: Ultra-dark backgrounds (#0a0a0a) with neon accents
-- **Consistent Card Design**: All cards use the same dark theme, borders, and typography
-- **Color-Coded Status**:
-  - Green (NOM): Normal operation
-  - Yellow (WRN): Warning/Paused state
-  - Red (CRIT): Critical/Error state
-- **Monospace Fonts**: All numerical values and labels use monospace for readability
-- **Responsive Grid**: Telemetry cards automatically adjust to available space
-
----
-
-## LSTM Future Anomaly Prediction 🔮
-
-The dashboard includes a new **LSTM Future Anomaly Prediction** card that predicts when anomalies might occur in the future and **identifies which specific sensor parameters will cause problems and why**.
-
-### What You'll See
-
-**Training Quality Bar:**
-
-- 🟢 **Green (80-100%)**: Excellent - Model is well-trained and reliable
-- 🟡 **Yellow (60-79%)**: Good - Model is adequately trained
-- 🔴 **Red (<60%)**: Fair/Poor - Needs more training data
-
-**Current Risk Assessment:**
-
-- **Risk Score**: 0-100% (color-coded by severity)
-- **Confidence**: How reliable the prediction is
-- **Predicted Window**: When anomaly might occur (e.g., "Likely in next 3-5 readings")
-- **Trend**: 📈 Increasing, 📉 Decreasing, or ➡️ Stable
-- **Contributing Sensors**: Which sensors are most likely to cause issues
-
-**Problematic Sensors Analysis:**
-
-- **Top 5 Most Problematic Sensors** with detailed analysis:
-  - **Sensor Name** with severity badge (CRITICAL/HIGH/MEDIUM/LOW)
-  - **Why It's Problematic**: Detailed explanation (e.g., "temperature is increasing at 0.46 per reading. At this rate, it will exceed normal range in approximately 15 readings")
-  - **Trend Information**: Shows if sensor is increasing/decreasing/stable with rate of change
-  - **Current Value**: Current sensor reading
-  - **Predicted Failure Reading**: When the sensor is predicted to fail (if applicable)
-  - **Reconstruction Error**: How much the sensor deviates from learned patterns
-
-**Generate PDF Report:**
-
-- Click "Generate Future Anomaly Report (PDF)" to download a comprehensive analysis
-- Includes detailed sensor analysis with explanations for each problematic sensor
-- Shows predicted failure readings for sensors trending toward problems
-- Includes risk assessment, action plan, and technical details
-- Works with or without Groq API (fallback included)
-
-### How It Works
-
-1. **LSTM Autoencoder** analyzes the last 20 sensor readings as a temporal sequence
-2. **Reconstruction Error** measures how well it can recreate the pattern for each sensor
-3. **Sensor Trend Analysis** calculates rate of change for each sensor (e.g., "temperature rising 2°F per reading")
-4. **Failure Prediction** estimates when each sensor will exceed normal ranges based on trend
-5. **Risk Scoring** combines all sensor analyses to calculate overall risk
-6. **Time Window** estimates when anomaly might occur
-
-### Sensor Analysis Features
-
-**The system identifies:**
-
-- **Which sensors** are trending toward problems (top 10 most problematic)
-- **Why each sensor is problematic**:
-  - Increasing trend with rate (e.g., "voltage increasing at 0.15 per reading")
-  - High reconstruction error (sensor deviating from learned patterns)
-  - Approaching normal range limits
-- **When sensors will fail** (predicted reading number where sensor exceeds normal range)
-- **Severity levels** (CRITICAL, HIGH, MEDIUM, LOW) based on error and trend
-
-**Example Analysis:**
-
-```
-🔴 voltage (CRITICAL)
-Why it's problematic:
-voltage is increasing at 0.15 per reading. At this rate, it will exceed
-normal range (130.0) in approximately 39 readings.
-
-Details:
-- Current Value: 124.00
-- Trend: increasing (+0.15 per reading)
-- Reconstruction Error: 1.3948 (97.3% percentile)
-- ⚠️ Predicted Failure: Reading #4728
+```python
+AI_PROVIDER = "groq"
+AI_MODEL_PARSING = "llama3-8b-8192"  # Fast, spec extraction
+AI_MODEL_REPORTS = "llama-3.3-70b-versatile"  # Deep analysis
 ```
 
-### Training the Models
-
-**First Time Setup:**
-
+**Environment Variable:**
 ```bash
+GROQ_API_KEY=gsk_...
+```
+
+### AI Sensor Parser
+
+**Endpoint:** `POST /api/admin/parse-sensor-file`
+
+**Supported Formats:**
+- PDF (PyPDF2 - extracts first 2 pages)
+- CSV (direct text parsing)
+- TXT (raw specification sheets)
+- JSON (passthrough or AI enhancement)
+
+**Features:**
+- Automatically extracts sensor specifications
+- Auto-fills "Add New Sensor" form
+- Handles missing API key with fallback mock data
+
+### AI Report Generation
+
+- Root cause analysis of anomalies
+- Prevention recommendations
+- Sensor correlation insights
+- Natural language explanations
+
+---
+
+## 📈 ML & Predictive Analytics
+
+### Hybrid Detection System
+
+**1. Isolation Forest (Point-Based)**
+- Detects single abnormal readings
+- Fast and effective for instant anomalies
+- Identifies contributing sensors
+
+**2. LSTM Autoencoder (Temporal)**
+- Analyzes sequences of readings over time
+- Detects gradual degradation and pattern changes
+- Predicts future anomalies before they occur
+- Identifies which sensors will cause problems and why
+
+### Remaining Useful Life (RUL) Prediction
+
+**Endpoint:** `GET /api/v1/predictive-health`
+
+**Features:**
+- Estimates hours until failure based on sensor trends
+- Uses linear regression/exponential decay model
+- Displays countdown in health cards (EST. LIFE)
+- Color-coded by severity (Green/Yellow/Red)
+
+**Display Format:**
+- `< 24 hours`: Shows "X HRS" (Red)
+- `< 1 week`: Shows "X DAYS" (Yellow)
+- `>= 1 week`: Shows "X WEEKS" (Green)
+
+### Training Models
+
+```powershell
+# Train both models
 python train_combined_detector.py
-```
 
-**Retrain with New Data:**
+# Train only one
+python train_combined_detector.py --if-only    # Only Isolation Forest
+python train_combined_detector.py --lstm-only  # Only LSTM
 
-```bash
+# Force retrain
 python train_combined_detector.py --force
 ```
 
-**Train Only One Model:**
+---
+
+## 🔍 Audit Logging
+
+### Comprehensive Action Tracking
+
+All actions are logged to `audit_logs_v2` table:
+
+| Action Type | Endpoints | Resource Type |
+|-------------|-----------|---------------|
+| `INGEST` | `/api/v1/ingest` | `ingest` |
+| `CREATE` | `POST /api/admin/custom-sensors` | `custom_sensor` |
+| `READ` | `GET /api/admin/custom-sensors` | `custom_sensor` |
+| `UPDATE` | `PUT /api/admin/custom-sensors/<id>` | `custom_sensor` |
+| `DELETE` | `DELETE /api/admin/custom-sensors/<id>` | `custom_sensor` |
+| `PARSE` | `POST /api/admin/parse-sensor-file` | `sensor_file` |
+
+### Audit Log Schema
+
+```sql
+CREATE TABLE audit_logs_v2 (
+    id BIGSERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    username VARCHAR(64) NOT NULL,
+    role VARCHAR(16),
+    ip_address INET,
+    user_agent TEXT,
+    action_type VARCHAR(32) NOT NULL,
+    resource_type VARCHAR(64),
+    resource_id VARCHAR(128),
+    previous_state JSONB,
+    new_state JSONB,
+    timestamp TIMESTAMPTZ DEFAULT NOW(),
+    retention_until TIMESTAMPTZ,
+    hash_chain VARCHAR(64)
+);
+```
+
+### Default User Handling
+
+When no session exists (e.g., API key auth), the system automatically uses `admin_rahul` (ID: 1) as the default operator.
+
+**Query Audit Logs:**
+```sql
+SELECT id, user_id, username, action_type, resource_type, timestamp
+FROM audit_logs_v2
+ORDER BY timestamp DESC
+LIMIT 10;
+```
+
+---
+
+## ☁️ Cloud Deployment
+
+### Database (Neon.tech)
+
+**Configuration:**
+1. Add `DATABASE_URL` to `.env`:
+   ```bash
+   DATABASE_URL=postgresql://user:password@ep-xxx.aws.neon.tech/neondb?sslmode=require
+   ```
+2. Restart Flask server
+3. The app automatically detects and uses Neon database
+
+**Verify Connection:**
+```powershell
+.\venv\Scripts\python.exe check_db_version.py
+```
+
+### Kafka (Upstash)
+
+**Configuration:**
+1. Add to `.env`:
+   ```bash
+   KAFKA_BROKER_URL=your-upstash-endpoint:9092
+   KAFKA_SASL_USERNAME=your-username
+   KAFKA_SASL_PASSWORD=your-password
+   ```
+2. Restart Flask server
+3. The app automatically uses SASL_SSL authentication
+
+### Deployment Files
+
+- **`requirements.txt`**: All Python dependencies
+- **`Procfile`**: Gunicorn + Eventlet for production
+- **`docker-compose.yml`**: Local development setup
+
+**Deploy to Render:**
+1. Connect GitHub repository
+2. Set environment variables (DATABASE_URL, KAFKA_BROKER_URL, etc.)
+3. Deploy automatically on push
+
+---
+
+## 📁 Project Structure
+
+```
+stub/
+├── dashboard.py              # Flask web application
+├── producer.py               # Sensor data generator
+├── consumer.py               # Kafka consumer + ML detection
+├── config.py                 # Configuration (Kafka, DB, AI)
+├── ml_detector.py           # Isolation Forest detector
+├── lstm_detector.py         # LSTM Autoencoder
+├── lstm_predictor.py        # Future anomaly prediction
+├── analytics/
+│   └── prediction_engine.py # RUL prediction engine
+├── analysis_engine.py       # Context & correlation analysis
+├── report_generator.py      # AI-powered report generation
+├── train_combined_detector.py # ML model training
+├── migrations/              # Database migrations
+│   ├── add_user_auth.sql
+│   ├── add_custom_sensors.sql
+│   ├── add_frequency_control.sql
+│   └── add_audit_v2.sql
+├── templates/
+│   ├── dashboard.html       # Main dashboard UI
+│   └── login.html          # Authentication UI
+├── static/
+│   └── css/
+│       └── style.css       # "Rig Alpha" industrial theme
+├── requirements.txt         # Python dependencies
+├── Procfile                # Production deployment
+└── docker-compose.yml      # Local infrastructure
+```
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+**File:** `stub/.env`
 
 ```bash
-python train_combined_detector.py --if-only    # Only Isolation Forest
-python train_combined_detector.py --lstm-only  # Only LSTM
+# AI/LLM Configuration
+GROQ_API_KEY=gsk_...
+
+# Security
+API_SECRET_KEY=rig-alpha-secret
+SECRET_KEY=change-me-in-production
+
+# Database (Cloud)
+DATABASE_URL=postgresql://user:password@host:port/dbname?sslmode=require
+
+# Kafka (Cloud)
+KAFKA_BROKER_URL=your-endpoint:9092
+KAFKA_SASL_USERNAME=your-username
+KAFKA_SASL_PASSWORD=your-password
+
+# External API
+INGEST_API_KEY=rig-alpha-secret
 ```
 
-**Requirements:**
+### Database Configuration
 
-- **Isolation Forest**: Minimum 100 readings (recommended: 500+)
-- **LSTM Autoencoder**: Minimum 100 readings (recommended: 500+ for best results)
+The app uses `config.py` (NOT SQLAlchemy) to manage connections:
 
-### Understanding the Predictions
+1. **First Priority:** `DATABASE_URL` environment variable
+2. **Fallback:** Local defaults (`localhost:5432`)
 
-**Risk Score:**
-
-- **0-40%**: Low risk - Normal operation
-- **40-70%**: Medium risk - Monitor closely
-- **70-100%**: High risk - Take immediate action
-
-**Trend Indicators:**
-
-- 📈 **Increasing**: Risk is rising - anomaly more likely
-- 📉 **Decreasing**: Risk is falling - system recovering
-- ➡️ **Stable**: Risk level unchanged
-
-**Predicted Windows:**
-
-- "Very likely in next 1-3 readings" - High urgency
-- "Likely in next 3-5 readings" - Medium urgency
-- "Possible in next 5-10 readings" - Low urgency
-- "Decreasing risk - unlikely in next 10 readings" - Low risk
-
-**Sensor Severity Levels:**
-
-- 🔴 **CRITICAL**: High reconstruction error + increasing trend - immediate attention needed
-- 🟠 **HIGH**: High error or concerning trend - monitor closely
-- 🟡 **MEDIUM**: Moderate deviation from normal - watch for changes
-- 🟢 **LOW**: Minor deviations - continue normal monitoring
-
-**Predicted Failure Readings:**
-
-- Shows the reading number where a sensor is predicted to exceed normal range
-- Based on current trend rate and distance to threshold
-- Example: "Predicted Failure: Reading #4728" means sensor will likely fail at that reading
+**Check Current Config:**
+```powershell
+.\venv\Scripts\python.exe check_db_version.py
+```
 
 ---
 
-## Quick Presets
+## 🧪 Testing
 
-| Preset     | Duration | Interval | Messages |
-| ---------- | -------- | -------- | -------- |
-| Quick Test | 2 min    | 10 sec   | 12       |
-| 1 Minute   | 1 min    | 5 sec    | 12       |
-| 1 Hour     | 1 hour   | 30 sec   | 120      |
-| 24 Hours   | 24 hours | 30 sec   | 2,880    |
-
----
-
-## Common Issues
-
-### "Docker not recognized"
-
-- Open Docker Desktop first
-- Wait for it to fully start
-
-### "Kafka connection failed"
-
-- Wait 60 seconds after starting Docker
-- Run: `Start-Sleep -Seconds 60`
-
-### "Consumer not receiving"
-
-- Always start Consumer BEFORE Producer
-
-### "Execution policy error"
+### Test Audit Logging
 
 ```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+.\venv\Scripts\python.exe test_audit_logging.py
 ```
 
----
-
-## Stop Everything
+### Test External API
 
 ```powershell
-docker-compose down
+Invoke-RestMethod -Uri "http://localhost:5000/api/v1/ingest" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers @{ "X-API-KEY" = "rig-alpha-secret" } `
+  -Body '{"machine_id": "A", "temperature": 75.5, "pressure": 120.3}'
 ```
 
-To delete all data too:
-
-```powershell
-docker-compose down -v
-```
-
----
-
-## Files
-
-| File                         | Purpose                                |
-| ---------------------------- | -------------------------------------- |
-| `dashboard.py`               | Web control panel                      |
-| `producer.py`                | Makes sensor data                      |
-| `consumer.py`                | Saves to database                      |
-| `config.py`                  | Settings                               |
-| `ml_detector.py`             | Isolation Forest anomaly detection     |
-| `lstm_detector.py`           | LSTM Autoencoder for temporal patterns |
-| `lstm_predictor.py`          | Future anomaly prediction logic        |
-| `combined_pipeline.py`       | Hybrid detection (IF + LSTM)           |
-| `train_combined_detector.py` | Train both ML models                   |
-| `analysis_engine.py`         | Context & correlation analysis         |
-| `report_generator.py`        | AI-powered report generation           |
-| `docker-compose.yml`         | Starts Kafka & Database                |
-
-📖 **Documentation:**
-
-- [`docs/FINAL_PROJECT_REPORT.md`](docs/FINAL_PROJECT_REPORT.md) - **Final Report** (concept, market, risks, revenue)
-- [`docs/ARCHITECTURE_AND_DEVELOPMENT_PLAN.md`](docs/ARCHITECTURE_AND_DEVELOPMENT_PLAN.md) - Architecture & development roadmap
-- [`docs/uml_diagrams.md`](docs/uml_diagrams.md) - Comprehensive UML diagrams
-
----
-
-## Manual Mode (Without Dashboard)
-
-If you prefer command line:
-
-**Terminal 1 - Consumer:**
-
-```powershell
-cd c:\Users\rahul\Desktop\stubby\stub
-.\venv\Scripts\Activate.ps1
-python consumer.py
-```
-
-**Terminal 2 - Producer:**
-
-```powershell
-cd c:\Users\rahul\Desktop\stubby\stub
-.\venv\Scripts\Activate.ps1
-python producer.py
-```
-
-**Stop:** Press `Ctrl+C` in each window
-
----
-
-## Check Database
+### Check Database
 
 ```powershell
 docker exec stub-postgres psql -U sensoruser -d sensordb -c "SELECT COUNT(*) FROM sensor_readings;"
@@ -522,420 +530,152 @@ docker exec stub-postgres psql -U sensoruser -d sensordb -c "SELECT COUNT(*) FRO
 
 ---
 
-## Need Help?
+## 📚 Documentation
 
-1. Is Docker Desktop running?
-2. Did you wait 60 seconds?
-3. Did you start Consumer before Producer?
-
-Most problems are solved by waiting for Kafka to start!
-
----
-
-## Interview Questions & Answers
-
-Questions someone might ask you about this project:
+- **[AUDIT_LOGGING_UPDATE.md](AUDIT_LOGGING_UPDATE.md)** - Audit logging system details
+- **[DATABASE_CONFIG.md](DATABASE_CONFIG.md)** - Database configuration guide
+- **[docs/FINAL_PROJECT_REPORT.md](docs/FINAL_PROJECT_REPORT.md)** - Complete project report
+- **[docs/ARCHITECTURE_AND_DEVELOPMENT_PLAN.md](docs/ARCHITECTURE_AND_DEVELOPMENT_PLAN.md)** - Architecture details
+- **[docs/uml_diagrams.md](docs/uml_diagrams.md)** - UML diagrams
+- **[PROJECT_MANIFEST.md](../PROJECT_MANIFEST.md)** - Technical DNA and roadmap
 
 ---
 
-### Q: What is Kafka and why did you use it?
+## 🐛 Troubleshooting
 
-**A:** Kafka is a message broker - it sits between the producer and consumer so they don't have to talk directly. I used it because:
+### Common Issues
 
-- If the database goes down, messages are saved in Kafka until it comes back
-- Multiple consumers can read the same data
-- It handles high-speed data better than direct database writes
-- It's the industry standard for real-time data pipelines
+**"Docker not recognized"**
+- Open Docker Desktop first
+- Wait for it to fully start
 
----
+**"Kafka connection failed"**
+- Wait 60 seconds after starting Docker
+- Run: `Start-Sleep -Seconds 60`
 
-### Q: What is a Producer and Consumer?
+**"Consumer not receiving"**
+- Always start Consumer BEFORE Producer
 
-**A:**
+**"Execution policy error"**
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
 
-- **Producer** = Creates data and sends it TO Kafka
-- **Consumer** = Reads data FROM Kafka and does something with it (saves to database)
+**"PDF parsing not available"**
+- Install PyPDF2: `pip install PyPDF2`
+- Restart Flask server
 
-Think of it like a mailbox: Producer puts letters in, Consumer takes letters out.
-
----
-
-### Q: Why start Consumer before Producer?
-
-**A:** The Consumer needs to "subscribe" to the Kafka topic first. If the Producer sends messages before the Consumer is listening, those messages might be missed. It's like turning on your TV before the show starts.
-
----
-
-### Q: What is Docker and why use it?
-
-**A:** Docker runs applications in "containers" - isolated boxes with everything they need. I used it because:
-
-- Don't need to install Kafka, Zookeeper, or PostgreSQL on my computer
-- One command (`docker-compose up`) starts everything
-- Works the same on any computer
-- Easy to delete everything and start fresh
+**"Session expired"**
+- Clear browser cookies
+- Login again
 
 ---
 
-### Q: What is Zookeeper?
-
-**A:** Zookeeper is Kafka's helper - it keeps track of which Kafka servers are running, who the leader is, and coordinates everything. Kafka needs it to function (though newer Kafka versions are removing this requirement).
-
----
-
-### Q: What is PostgreSQL?
-
-**A:** PostgreSQL is a database - it stores the sensor data permanently in tables. It's like a spreadsheet that can hold millions of rows and lets you search/filter quickly.
-
----
-
-### Q: What does "exactly-once semantics" mean?
-
-**A:** It means each message is processed exactly one time - not zero, not twice. I achieved this by:
-
-1. Consumer reads message from Kafka
-2. Consumer saves to database
-3. Only THEN does Consumer tell Kafka "I got it" (commits offset)
-
-If step 2 fails, the message stays in Kafka and gets retried.
-
----
-
-### Q: Why are the sensor values correlated?
-
-**A:** In real machinery:
-
-- Higher **RPM** (speed) = More heat = Higher **temperature**
-- Higher **RPM** = More shaking = Higher **vibration**
-- Higher **temperature** = Drier air = Lower **humidity**
-- Higher **temperature** = Gas expands = Higher **pressure**
-
-Random values wouldn't be realistic for testing analytics.
-
----
-
-### Q: What is exponential backoff?
-
-**A:** When a connection fails, instead of retrying immediately (which could overload the server), we wait:
-
-- 1st retry: wait 1 second
-- 2nd retry: wait 2 seconds
-- 3rd retry: wait 4 seconds
-- ...up to 60 seconds max
-
-This gives the server time to recover.
-
----
-
-### Q: What happens if the database goes down during a run?
-
-**A:**
-
-1. Consumer tries to save, fails
-2. Consumer does NOT commit to Kafka (message stays)
-3. Consumer retries with exponential backoff
-4. When database comes back, message is saved
-5. No data is lost
-
----
-
-### Q: Why use a virtual environment (venv)?
-
-**A:** It keeps this project's Python packages separate from other projects. If another project needs a different version of a package, they won't conflict.
-
----
-
-### Q: What is an API endpoint?
-
-**A:** It's a URL that does something when you visit it. The dashboard uses these:
-
-- `/api/stats` - Returns current statistics
-- `/api/start/producer` - Starts the producer
-- `/api/config` - Gets or updates settings
-
----
-
-### Q: How would you scale this for more data?
-
-**A:**
-
-- Add more Kafka partitions (parallel processing)
-- Run multiple consumers (each handles different partitions)
-- Use a connection pool for database
-- Add database replicas for reads
-- Use Kafka clusters instead of single broker
-
----
-
-### Q: What's the difference between Kafka and a regular database?
-
-**A:**
-| Kafka | Database |
-|-------|----------|
-| Temporary storage | Permanent storage |
-| Optimized for streaming | Optimized for queries |
-| Messages flow through | Data sits and waits |
-| Append-only (fast writes) | Read/write/update/delete |
-
-They work together: Kafka handles the flow, Database stores the result.
-
----
-
-### Q: Why Flask for the dashboard?
-
-**A:** Flask is a simple Python web framework. I used it because:
-
-- Easy to create REST APIs
-- Built-in development server
-- Minimal code needed
-- Same language as Producer/Consumer (Python)
-
----
-
-### Q: What is LSTM and why use it?
-
-**A:** LSTM (Long Short-Term Memory) is a type of neural network that remembers patterns over time. I use it because:
-
-- **Temporal Awareness**: Sees how sensors change together over time
-- **Predictive**: Can forecast future anomalies before they happen
-- **Pattern Learning**: Learns normal behavior and flags deviations
-- **Gradual Detection**: Catches slow degradation that point-based methods miss
-- **Sensor-Specific Analysis**: Identifies which exact sensors will cause problems and why
-
-**Example:**
-
-- Isolation Forest: "Temperature is 200°F - that's abnormal!"
-- LSTM: "Temperature has been rising 2°F per reading for 10 readings - will hit 200°F in 5 more readings"
-- LSTM Sensor Analysis: "voltage sensor is increasing at 0.15 per reading. At this rate, it will exceed normal range (130.0) in approximately 39 readings. Predicted failure at reading #4728"
-
-### Q: What's the difference between Isolation Forest and LSTM?
-
-**A:**
-
-| Feature             | Isolation Forest                | LSTM Autoencoder                                         |
-| ------------------- | ------------------------------- | -------------------------------------------------------- |
-| **What it detects** | Single abnormal readings        | Temporal pattern changes                                 |
-| **Speed**           | Instant                         | Analyzes sequences                                       |
-| **Use case**        | "Is this reading abnormal?"     | "Will this pattern lead to an anomaly?"                  |
-| **Data needed**     | 100+ readings                   | 500+ readings (recommended)                              |
-| **Output**          | Anomaly now                     | Future anomaly prediction + which sensors will fail      |
-| **Sensor Analysis** | Identifies contributing sensors | Identifies problematic sensors + why + when they'll fail |
-
-**Together they provide:**
-
-- Current anomaly detection (IF)
-- Future anomaly prediction (LSTM)
-- **Which sensors will cause problems** (LSTM sensor analysis)
-- **Why each sensor is problematic** (LSTM trend analysis)
-- **When sensors will fail** (LSTM failure prediction)
-- Complete coverage of both instant and gradual issues
-
-### Q: What would you add to improve this project?
-
-**A:**
-
-- **Charts/graphs** showing data over time
-- **Anomaly alerts** - if temperature spikes to 200°F suddenly, send email/SMS
-- **Kafka health monitoring** - alert if Kafka goes down or gets slow
-- **Authentication** to protect the dashboard
-- **Multiple sensors** with unique IDs
-- **Data export** to CSV or Excel
-- **Unit tests** for the code
-- **Alert thresholds** - customizable risk levels for notifications
-- **Historical predictions** - track prediction accuracy over time
-
----
-
-### Q: How does anomaly detection work?
-
-**A:** This project uses a **hybrid detection system** with two algorithms:
-
-**1. Isolation Forest (Point-Based):**
-
-- Detects if a single reading is abnormal
-- Compares current values to learned normal ranges
-- Fast and effective for instant anomalies
-
-**2. LSTM Autoencoder (Temporal):**
-
-- Analyzes sequences of readings over time
-- Detects gradual degradation and pattern changes
-- Predicts future anomalies before they occur
-
-**How They Work Together:**
-
-- Isolation Forest catches sudden spikes
-- LSTM catches gradual drift and predicts future issues
-- Combined = best of both worlds
-
-**Example:**
-
-```python
-# Isolation Forest detects: "This reading is abnormal NOW"
-if isolation_forest.detect(reading) == True:
-    alert("Anomaly detected!")
-
-# LSTM predicts: "Based on recent pattern, anomaly likely in 5-10 readings"
-if lstm.predict_future_anomaly().risk_score > 70:
-    alert("High risk of future anomaly - take preventive action")
+## 🛑 Stop Everything
+
+```powershell
+docker-compose down
+```
+
+To delete all data too:
+```powershell
+docker-compose down -v
 ```
 
 ---
 
-### Q: How would you know if Kafka goes down?
-
-**A:** Several ways:
-
-1. **Health check endpoint** - Kafka exposes metrics we can poll
-2. **Connection errors** - If producer/consumer can't connect, log it
-3. **Lag monitoring** - If consumer falls behind, something's wrong
-4. **Heartbeat** - Send test messages and verify they arrive
-
-In production, you'd use tools like **Prometheus + Grafana** or **Datadog** to monitor Kafka.
-
----
-
-### Q: Would you use virtual environment (venv) in production?
-
-**A:** No! In a real factory, you'd use **Docker containers** instead:
-
-| Development (This Project) | Production (Real Factory)           |
-| -------------------------- | ----------------------------------- |
-| Python venv on your laptop | Docker containers                   |
-| docker-compose on one PC   | Kubernetes cluster                  |
-| Single Kafka broker        | Kafka cluster (3+ brokers)          |
-| Single database            | Database with replicas              |
-| Dashboard on localhost     | Dashboard behind firewall with auth |
-
-**Why Docker in production?**
-
-- Same environment everywhere (no "works on my machine")
-- Easy to scale up/down
-- Easy to update and rollback
-- Isolated from host system
-- Can run on cloud (AWS, Azure, GCP)
-
----
-
-### Q: How would this look in a real factory?
-
-**A:**
-
-```
-Real Sensors (PLC/SCADA)  →  Edge Gateway  →  Kafka Cluster  →  Consumers  →  Database
-        ↓                         ↓                ↓               ↓            ↓
-  Actual machines           On-site server    Cloud or         Multiple      Time-series DB
-  (not stub data)           converts signals  on-premise       workers       (InfluxDB/TimescaleDB)
-                                                                    ↓
-                                                              Alerting System
-                                                              (PagerDuty/Slack)
-```
-
-The code structure would be similar, but:
-
-- Real sensor data instead of random numbers
-- Multiple Kafka brokers for redundancy
-- Kubernetes to manage containers
-- Monitoring dashboards (Grafana)
-- Alert systems for anomalies and outages
-
----
-
-## API Endpoints
-
-### LSTM Endpoints
-
-| Endpoint                      | Method | Description                                          |
-| ----------------------------- | ------ | ---------------------------------------------------- |
-| `/api/lstm-status`            | GET    | Returns training quality, threshold, sequence length |
-| `/api/lstm-predictions`       | GET    | Returns current future anomaly prediction            |
-| `/api/generate-future-report` | POST   | Generates and downloads PDF report                   |
-
-### Example Responses
-
-**LSTM Status:**
-
-```json
-{
-  "available": true,
-  "trained": true,
-  "quality_score": 89.4,
-  "message": "Excellent - Model is well-trained and reliable",
-  "threshold": 1.0612,
-  "sequence_length": 20,
-  "reading_count": 659
-}
-```
-
-**LSTM Predictions:**
-
-```json
-{
-  "available": true,
-  "trained": true,
-  "current_prediction": {
-    "risk_score": 37.2,
-    "predicted_window": "Decreasing risk - unlikely in next 10 readings",
-    "confidence": 0.92,
-    "trend": "decreasing",
-    "current_error": 0.8902,
-    "threshold": 1.0612,
-    "contributing_sensors": []
-  }
-}
-```
-
----
-
-## Production Deployment Notes
+## 🚀 Production Deployment
 
 ### Virtual Environment in Production?
 
-**No!** In a real factory, you'd use **Docker containers** instead:
+**No!** In production, use **Docker containers**:
 
-| Development (This Project) | Production (Real Factory)           |
-| -------------------------- | ----------------------------------- |
-| Python venv on your laptop | Docker containers                   |
-| docker-compose on one PC   | Kubernetes cluster                  |
-| Single Kafka broker        | Kafka cluster (3+ brokers)          |
-| Single database            | Database with replicas              |
-| Dashboard on localhost     | Dashboard behind firewall with auth |
-
-**Why Docker in production?**
-
-- Same environment everywhere (no "works on my machine")
-- Easy to scale up/down
-- Easy to update and rollback
-- Isolated from host system
-- Can run on cloud (AWS, Azure, GCP)
+| Development | Production |
+|-------------|------------|
+| Python venv on laptop | Docker containers |
+| docker-compose on one PC | Kubernetes cluster |
+| Single Kafka broker | Kafka cluster (3+ brokers) |
+| Single database | Database with replicas |
+| Dashboard on localhost | Dashboard behind firewall |
 
 ### Monitoring in Production
 
-If Kafka goes down or there's a big error (like a random value going super high), you'd want:
+- **Health check endpoints** - Monitor Kafka, database, services
+- **Alerting system** - PagerDuty, Slack, email notifications
+- **Metrics dashboard** - Prometheus + Grafana
+- **Log aggregation** - ELK stack (Elasticsearch, Logstash, Kibana)
+- **Automated recovery** - Auto-restart failed services
 
-1. **Health check endpoints** - Monitor Kafka, database, and services
-2. **Alerting system** - PagerDuty, Slack, or email notifications
-3. **Metrics dashboard** - Prometheus + Grafana for visualization
-4. **Log aggregation** - ELK stack (Elasticsearch, Logstash, Kibana)
-5. **Automated recovery** - Auto-restart failed services
+---
 
-### Real Factory Setup
+## 📊 API Reference
 
-```
-Real Sensors (PLC/SCADA)  →  Edge Gateway  →  Kafka Cluster  →  Consumers  →  Database
-        ↓                         ↓                ↓               ↓            ↓
-  Actual machines           On-site server    Cloud or         Multiple      Time-series DB
-  (not stub data)           converts signals  on-premise       workers       (InfluxDB/TimescaleDB)
-                                                                    ↓
-                                                              Alerting System
-                                                              (PagerDuty/Slack)
-```
+### LSTM Endpoints
 
-The code structure would be similar, but:
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/lstm-status` | GET | Returns training quality, threshold, sequence length |
+| `/api/lstm-predictions` | GET | Returns current future anomaly prediction |
+| `/api/generate-future-report` | POST | Generates and downloads PDF report |
 
-- Real sensor data instead of random numbers
-- Multiple Kafka brokers for redundancy
-- Kubernetes to manage containers
-- Monitoring dashboards (Grafana)
-- Alert systems for anomalies and outages
-- LSTM models trained on historical production data
+### Machine Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/machines/<id>/start` | POST | Start producer for machine |
+| `/api/machines/<id>/stop` | POST | Stop producer for machine |
+| `/api/machines/<id>/status` | GET | Get machine status |
+| `/api/machines/<id>/stats` | GET | Get machine statistics |
+
+### Stats Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/stats` | GET | Get overall statistics |
+| `/api/config` | GET/POST | Get/update configuration |
+
+---
+
+## 🎓 Learning Resources
+
+### Key Concepts
+
+- **Kafka**: Message broker for reliable streaming
+- **Isolation Forest**: Point-based anomaly detection
+- **LSTM Autoencoder**: Temporal pattern detection
+- **RUL Prediction**: Remaining Useful Life estimation
+- **Exactly-Once Semantics**: Each message processed exactly once
+- **Exponential Backoff**: Retry strategy for connection failures
+
+### Interview Questions
+
+See the [README Interview Questions section](#interview-questions--answers) for detailed explanations of:
+- Why Kafka?
+- Producer vs Consumer
+- Isolation Forest vs LSTM
+- Exactly-once semantics
+- And more...
+
+---
+
+## 📝 License
+
+This project is part of the **Industrial Sensor Anomaly Detection Pipeline** portfolio.
+
+---
+
+## 🤝 Contributing
+
+This is a portfolio project demonstrating:
+- Real-time data streaming
+- ML anomaly detection
+- AI-powered analysis
+- Cloud deployment
+- Enterprise audit logging
+- Modern web development
+
+---
+
+**Status:** ✅ **PRODUCTION READY** - All features implemented and tested.
+
+**Last Updated:** 2026-01-07
