@@ -641,6 +641,9 @@ def get_stats():
             'stats_by_category': stats_by_category
         }
     except Exception as e:
+        if conn:
+            return_db_connection(conn)
+        logger.error(f"Error in get_stats: {e}")
         return {'error': str(e)}
 
 def get_config():
