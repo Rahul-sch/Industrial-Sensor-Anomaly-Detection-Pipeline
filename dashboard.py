@@ -1716,7 +1716,7 @@ def api_anomalies():
         
         if not table_exists:
             cursor.close()
-            conn.close()
+            return_db_connection(conn)
             return jsonify({'anomalies': []})
         
         query = """
@@ -1738,7 +1738,7 @@ def api_anomalies():
         cursor.execute(query, (limit,))
         rows = cursor.fetchall()
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
         
         anomalies = []
         for row in rows:
@@ -1763,6 +1763,8 @@ def api_anomalies():
         
     except Exception as e:
         logging.error(f"Error fetching anomalies: {e}")
+        if conn:
+            return_db_connection(conn)
         return jsonify({'anomalies': []})
 
 
@@ -2198,7 +2200,7 @@ def api_ml_stats():
         
         if not table_exists:
             cursor.close()
-            conn.close()
+            return_db_connection(conn)
             return jsonify({
                 'total_detections': 0,
                 'total_anomalies': 0,
@@ -2248,7 +2250,7 @@ def api_ml_stats():
             report_stats = (0, 0)
         
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
         
         return jsonify({
             'total_detections': stats[0] or 0,
@@ -2264,6 +2266,8 @@ def api_ml_stats():
         
     except Exception as e:
         logging.error(f"Error fetching ML stats: {e}")
+        if conn:
+            return_db_connection(conn)
         return jsonify({
             'total_detections': 0,
             'total_anomalies': 0,
@@ -2303,7 +2307,7 @@ def api_audit_logs():
         
         rows = cursor.fetchall()
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
         
         logs = []
         for row in rows:
@@ -2324,6 +2328,8 @@ def api_audit_logs():
     except Exception as e:
         # If table doesn't exist or other error, return empty logs
         logging.warning(f"Failed to fetch audit logs: {e}")
+        if conn:
+            return_db_connection(conn)
         return jsonify({'success': True, 'logs': []})
 
 
@@ -4028,13 +4034,18 @@ def api_predictive_health():
                     'error': str(e)
                 }
         
-        conn.close()
+        return_db_connection(conn)
         return jsonify(results), 200
         
     except ImportError:
         return jsonify({'error': 'Prediction engine not available'}), 500
     except Exception as e:
         logging.error(f"Error in predictive health endpoint: {e}")
+        try:
+            if conn:
+                return_db_connection(conn)
+        except:
+            pass
         return jsonify({'error': str(e)}), 500
 
 
