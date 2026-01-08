@@ -263,7 +263,7 @@ class SensorDataConsumer:
         
         insert_query = """
             INSERT INTO sensor_readings (
-                timestamp,
+                timestamp, machine_id,
                 temperature, pressure, humidity, ambient_temp, dew_point,
                 air_quality_index, co2_level, particle_count, noise_level, light_intensity,
                 vibration, rpm, torque, shaft_alignment, bearing_temp,
@@ -277,7 +277,7 @@ class SensorDataConsumer:
                 custom_sensors
             )
             VALUES (
-                %s,
+                %s, %s,
                 %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s,
@@ -296,6 +296,7 @@ class SensorDataConsumer:
         try:
             self.db_cursor.execute(insert_query, (
                 reading['timestamp'],
+                reading.get('machine_id', 'A'),  # Default to 'A' if not present
                 # Environmental
                 reading['temperature'], reading['pressure'], reading['humidity'],
                 reading.get('ambient_temp'), reading.get('dew_point'),
