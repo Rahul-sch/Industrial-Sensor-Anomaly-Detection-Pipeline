@@ -4854,7 +4854,9 @@
       function renderAlarmsChartMatrix() {
         renderAlarmMatrix();
       }
-          Object.values(statsData.stats_by_category).forEach(catData => {
+      
+      // Toggle Category Visibility
+      function toggleAlarmsCategory(category) {
             if (catData.sensors) {
               Object.entries(catData.sensors).forEach(([sensorName, sensorData]) => {
                 allSensors.push({
