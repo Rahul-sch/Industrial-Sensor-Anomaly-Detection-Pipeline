@@ -2881,9 +2881,9 @@ def api_start_machine(machine_id):
                 logger.error(f"Error starting consumer: {e}", exc_info=True)
                 return jsonify({'success': False, 'error': f"Failed to start consumer: {str(e)}"}), 500
         
-    with machine_state_lock:
-        machine_state[machine_id]['running'] = True
-    
+        with machine_state_lock:
+            machine_state[machine_id]['running'] = True
+        
         return jsonify({
             'success': True, 
             'machine_id': machine_id, 
