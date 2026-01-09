@@ -178,9 +178,10 @@ processes = {
     'consumer': None
 }
 
-# Lock to prevent concurrent start/stop operations
+# Locks to prevent concurrent start/stop operations (separate for producer and consumer)
 import threading
-component_lock = threading.Lock()
+producer_lock = threading.Lock()
+consumer_lock = threading.Lock()
 
 # ============================================================================
 # MACHINE STATE MANAGEMENT (Phase 1 - In-Memory Only)
@@ -1293,8 +1294,11 @@ def start_component(component):
     if component not in ['producer', 'consumer']:
         return jsonify({'success': False, 'error': 'Invalid component'})
 
+    # Use separate locks for producer and consumer to allow parallel starts
+    lock = producer_lock if component == 'producer' else consumer_lock
+    
     # Use lock to prevent concurrent starts (rapid clicking)
-    if not component_lock.acquire(blocking=False):
+    if not lock.acquire(blocking=False):
         logger.warning(f"{component.capitalize()} start already in progress, ignoring duplicate request")
         return jsonify({'success': False, 'error': f'{component.capitalize()} start already in progress'}), 409
     
@@ -1304,7 +1308,7 @@ def start_component(component):
         if is_component_running(component):
             logger.warning(f"{component.capitalize()} is already running")
             lock_acquired = False
-            component_lock.release()
+            lock.release()
             return jsonify({'success': False, 'error': f'{component.capitalize()} is already running'}), 409
 
         # ALWAYS kill existing processes first to prevent duplicates
@@ -1392,7 +1396,7 @@ def start_component(component):
         # Only release the lock if we still have it
         if lock_acquired:
             try:
-                component_lock.release()
+                lock.release()
             except RuntimeError:
                 # Lock was already released, ignore
                 pass
