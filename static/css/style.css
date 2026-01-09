@@ -4657,3 +4657,54 @@ input:checked + .toggle-slider:before {
   font-weight: 700 !important;
   color: var(--text-primary) !important;
 }
+
+/* ============================================
+         ALARMS CHART MATRIX STYLING
+         ============================================ */
+.alarms-sensor-chart-tile {
+  transition: all var(--transition-normal);
+}
+
+.alarms-sensor-chart-tile:hover {
+  border-color: var(--theme-interactive-primary) !important;
+  box-shadow: 0 0 8px rgba(0, 191, 255, 0.2);
+}
+
+.alarms-sensor-chart-tile.crit {
+  border-color: var(--status-error) !important;
+  box-shadow: 0 0 8px rgba(255, 23, 68, 0.3);
+}
+
+.alarms-sensor-chart-tile.wrn {
+  border-color: var(--status-warning) !important;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+/* Alarms category widget charts grid */
+#alarmsEnvCharts,
+#alarmsMechCharts,
+#alarmsThermCharts,
+#alarmsElecCharts,
+#alarmsFluidCharts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+}
+
+/* Alarms page widget styling */
+#alarmsChartGrid .config-widget {
+  background: var(--theme-bg-secondary) !important;
+  border: 1px solid var(--border-default);
+}
+
+#alarmsChartGrid .config-widget-header {
+  background: var(--theme-bg-tertiary) !important;
+  color: var(--theme-text-primary) !important;
+  cursor: pointer;
+  transition: background var(--transition-normal);
+}
+
+#alarmsChartGrid .config-widget-header:hover {
+  background: var(--theme-bg-elevated) !important;
+}
