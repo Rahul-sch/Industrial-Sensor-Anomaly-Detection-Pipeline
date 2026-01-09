@@ -524,8 +524,43 @@
         <div class="scada-section" id="section-configuration" style="display: none;">
           <div class="grid-stack" id="configGrid">
             
+            <!-- Widget 0: Smart Sensor Onboarding (Top - AI Powered) -->
+            <div class="grid-stack-item" data-gs-x="0" data-gs-y="0" data-gs-width="12" data-gs-height="3">
+              <div class="grid-stack-item-content">
+                <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
+                <div class="rig-card" style="height: 100%; display: flex; flex-direction: column; border: 2px solid var(--theme-status-info); box-shadow: 0 0 20px rgba(0, 191, 255, 0.3);">
+                  <div class="rig-card-header" style="border-bottom: 1px solid var(--theme-status-info);">
+                    <span>✨ SMART SENSOR ONBOARDING (AI-POWERED)</span>
+                    <span class="status-indicator" style="background: var(--theme-status-info);"></span>
+                  </div>
+                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md);">
+                    <div id="sensorUploadZone" class="scada-upload-zone" ondrop="handleSensorFileDrop(event)" ondragover="event.preventDefault()" onclick="document.getElementById('sensorFileInput').click()">
+                      <div class="scada-upload-icon">📄</div>
+                      <div class="scada-upload-text">
+                        <span style="font-weight: 700;">Drag & Drop</span> or <span style="font-weight: 700;">Click</span>
+                      </div>
+                      <div class="scada-upload-hint">PDF, CSV, or JSON</div>
+                      <input type="file" id="sensorFileInput" accept=".pdf,.csv,.json" style="display: none;" onchange="handleSensorFileSelect(event)">
+                    </div>
+                    <button onclick="aiParseSensorFile()" class="scada-btn" id="aiParseBtn" style="width: 100%; margin-top: var(--space-sm); background: var(--theme-status-info); border-color: var(--theme-status-info); font-weight: 700;">
+                      <span style="margin-right: var(--space-xs);">✨</span>AI PARSE
+                    </button>
+                    <div id="aiParseLoading" style="display: none; margin-top: var(--space-sm); text-align: center; padding: var(--space-md);">
+                      <div class="scada-loading-spinner"></div>
+                      <div class="config-label" style="margin-top: var(--space-sm); font-weight: 700;">Analyzing...</div>
+                    </div>
+                    <div id="aiParseResults" style="display: none; margin-top: var(--space-sm); padding: var(--space-md); border: 2px solid var(--theme-status-info); border-radius: 4px; background: var(--bg-tertiary);">
+                      <div class="config-label" style="color: var(--theme-status-info); margin-bottom: var(--space-md); font-weight: 700; font-size: 11px;">✓ REVIEW EXTRACTED SPECS</div>
+                      <div id="aiParsePreview" class="config-value" style="font-weight: 700;"></div>
+                      <button onclick="applyAIParseResults()" class="scada-btn" style="width: 100%; margin-top: var(--space-sm); background: var(--theme-status-info); border-color: var(--theme-status-info); font-weight: 700;">APPLY TO FORM</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <!-- Widget 1: Sensor Management Accordion (Left) -->
-            <div class="grid-stack-item" data-gs-x="0" data-gs-y="0" data-gs-width="4" data-gs-height="10">
+            <div class="grid-stack-item" data-gs-x="0" data-gs-y="3" data-gs-width="4" data-gs-height="10">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
@@ -567,31 +602,9 @@
                       </div>
                     </div>
                     
-                    <!-- Sensor List -->
-                    <div class="rig-card" style="margin-bottom: var(--space-md);">
-                      <div class="rig-card-header">
-                        <span>SENSOR LIST</span>
-                        <span class="status-indicator status-nom"></span>
-                      </div>
-                      <div class="rig-card-body" style="padding: 0;">
-                        <div id="configSensorList" style="overflow: hidden;">
-                          <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
-                            <thead>
-                              <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-default);">
-                                <th class="config-table-header" style="font-weight: 700;">SENSOR</th>
-                                <th class="config-table-header" style="text-align: center; width: 60px; font-weight: 700;">ENABLE</th>
-                              </tr>
-                            </thead>
-                            <tbody id="configSensorListBody">
-                              <tr>
-                                <td colspan="2" style="text-align: center; color: var(--text-muted); padding: var(--space-md); font-size: 10px;">
-                                  Loading...
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                    <!-- Sensor Management Accordions (5 Categories) -->
+                    <div id="configSensorAccordions" style="flex: 1; overflow-y: auto;">
+                      <!-- Populated by renderConfigSensorAccordions() -->
                     </div>
                     
                     <!-- Custom Sensors List -->
@@ -613,7 +626,7 @@
 
 
             <!-- Widget 2: Add Custom Sensor Form (Center Top) -->
-            <div class="grid-stack-item" data-gs-x="4" data-gs-y="0" data-gs-width="4" data-gs-height="6">
+            <div class="grid-stack-item" data-gs-x="4" data-gs-y="3" data-gs-width="4" data-gs-height="6">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div id="sectionConfigContent" class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
@@ -679,7 +692,7 @@
             </div>
             
             <!-- Widget 3: Anomaly Simulation (Right Top) -->
-            <div class="grid-stack-item" data-gs-x="8" data-gs-y="0" data-gs-width="4" data-gs-height="4">
+            <div class="grid-stack-item" data-gs-x="8" data-gs-y="3" data-gs-width="4" data-gs-height="4">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
@@ -722,7 +735,7 @@
             </div>
             
             <!-- Widget 4: Data Export (Right Bottom) -->
-            <div class="grid-stack-item" data-gs-x="8" data-gs-y="4" data-gs-width="4" data-gs-height="4">
+            <div class="grid-stack-item" data-gs-x="8" data-gs-y="7" data-gs-width="4" data-gs-height="4">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
@@ -754,7 +767,7 @@
             </div>
             
             <!-- Widget 5: User Management (Center Bottom) -->
-            <div class="grid-stack-item" data-gs-x="4" data-gs-y="6" data-gs-width="4" data-gs-height="2">
+            <div class="grid-stack-item" data-gs-x="4" data-gs-y="9" data-gs-width="4" data-gs-height="2">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
@@ -6676,8 +6689,16 @@ Report generated by Sensor Data Pipeline Dashboard
 
       // Render sensor management in config section
       function renderConfigSensorManagement() {
-        const tbody = document.getElementById('configSensorListBody');
         const machineLabel = document.getElementById('configMachineLabel');
+        if (machineLabel) {
+          machineLabel.textContent = selectedMachineId;
+        }
+        
+        // Render accordions instead of table
+        renderConfigSensorAccordions();
+        
+        // Legacy table rendering (kept for backward compatibility)
+        const tbody = document.getElementById('configSensorListBody');
         if (!tbody) return;
         
         if (machineLabel) {
@@ -7199,10 +7220,18 @@ Report generated by Sensor Data Pipeline Dashboard
         const nameInput = document.getElementById('newSensorName');
         const categorySelect = document.getElementById('newSensorCategory');
         const unitInput = document.getElementById('newSensorUnit');
+        const minRangeInput = document.getElementById('newSensorMinRange');
+        const maxRangeInput = document.getElementById('newSensorMaxRange');
+        const lowThresholdInput = document.getElementById('newSensorLowThreshold');
+        const highThresholdInput = document.getElementById('newSensorHighThreshold');
         
         if (nameInput) nameInput.value = aiParsedData.name;
         if (categorySelect) categorySelect.value = aiParsedData.category;
         if (unitInput) unitInput.value = aiParsedData.unit;
+        if (minRangeInput) minRangeInput.value = aiParsedData.min_range || '';
+        if (maxRangeInput) maxRangeInput.value = aiParsedData.max_range || '';
+        if (lowThresholdInput) lowThresholdInput.value = aiParsedData.threshold_min || '';
+        if (highThresholdInput) highThresholdInput.value = aiParsedData.threshold_max || '';
         
         // Show success message
         alert('✓ Sensor parameters auto-filled! Review and submit the form.');
@@ -7212,6 +7241,230 @@ Report generated by Sensor Data Pipeline Dashboard
         if (formSection) {
           formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+      }
+      
+      // ============================================
+      // CONFIG SENSOR ACCORDIONS (5-Category Master List)
+      // ============================================
+      function renderConfigSensorAccordions() {
+        const container = document.getElementById('configSensorAccordions');
+        if (!container) return;
+        
+        // Hardcoded sensor ranges from config.py (for default references)
+        const sensorRanges = {
+          'temperature': {min: 60.0, max: 100.0, unit: '°F'},
+          'pressure': {min: 0.0, max: 15.0, unit: 'PSI'},
+          'humidity': {min: 20.0, max: 80.0, unit: '%'},
+          'ambient_temp': {min: 50.0, max: 90.0, unit: '°F'},
+          'dew_point': {min: 30.0, max: 70.0, unit: '°F'},
+          'air_quality_index': {min: 0, max: 500, unit: 'AQI'},
+          'co2_level': {min: 400, max: 2000, unit: 'ppm'},
+          'particle_count': {min: 0, max: 100000, unit: 'particles/m³'},
+          'noise_level': {min: 40, max: 110, unit: 'dB'},
+          'light_intensity': {min: 0, max: 10000, unit: 'lux'},
+          'vibration': {min: 0.0, max: 10.0, unit: 'mm/s'},
+          'rpm': {min: 1000.0, max: 5000.0, unit: 'RPM'},
+          'torque': {min: 0, max: 500, unit: 'Nm'},
+          'shaft_alignment': {min: -0.5, max: 0.5, unit: 'mm'},
+          'bearing_temp': {min: 70, max: 180, unit: '°F'},
+          'motor_current': {min: 0, max: 100, unit: 'A'},
+          'belt_tension': {min: 20, max: 100, unit: 'lbf'},
+          'gear_wear': {min: 0, max: 100, unit: '%'},
+          'coupling_temp': {min: 60, max: 150, unit: '°F'},
+          'lubrication_pressure': {min: 10, max: 60, unit: 'PSI'},
+          'coolant_temp': {min: 140, max: 220, unit: '°F'},
+          'exhaust_temp': {min: 300, max: 900, unit: '°F'},
+          'oil_temp': {min: 150, max: 250, unit: '°F'},
+          'radiator_temp': {min: 150, max: 230, unit: '°F'},
+          'thermal_efficiency': {min: 60, max: 95, unit: '%'},
+          'heat_dissipation': {min: 0, max: 5000, unit: 'W'},
+          'inlet_temp': {min: 50, max: 120, unit: '°F'},
+          'outlet_temp': {min: 80, max: 200, unit: '°F'},
+          'core_temp': {min: 140, max: 240, unit: '°F'},
+          'surface_temp': {min: 70, max: 180, unit: '°F'},
+          'voltage': {min: 110, max: 130, unit: 'V'},
+          'current': {min: 0, max: 50, unit: 'A'},
+          'power_factor': {min: 0.7, max: 1.0, unit: 'PF'},
+          'frequency': {min: 59.0, max: 61.0, unit: 'Hz'},
+          'resistance': {min: 0.1, max: 100, unit: 'Ω'},
+          'capacitance': {min: 1, max: 1000, unit: 'μF'},
+          'inductance': {min: 0.1, max: 10, unit: 'mH'},
+          'phase_angle': {min: -180, max: 180, unit: '°'},
+          'harmonic_distortion': {min: 0, max: 20, unit: '%'},
+          'ground_fault': {min: 0, max: 100, unit: 'mA'},
+          'flow_rate': {min: 0, max: 500, unit: 'L/min'},
+          'fluid_pressure': {min: 0, max: 100, unit: 'PSI'},
+          'viscosity': {min: 1, max: 100, unit: 'cP'},
+          'density': {min: 0.5, max: 1.5, unit: 'g/cm³'},
+          'reynolds_number': {min: 2000, max: 10000, unit: ''},
+          'pipe_pressure_drop': {min: 0, max: 50, unit: 'PSI'},
+          'pump_efficiency': {min: 60, max: 95, unit: '%'},
+          'cavitation_index': {min: 0, max: 10, unit: ''},
+          'turbulence': {min: 0, max: 100, unit: '%'},
+          'valve_position': {min: 0, max: 100, unit: '%'}
+        };
+        
+        // Get all sensors from unified registry or sensorsByCategory
+        let allSensors = [];
+        if (typeof unifiedSensorRegistry !== 'undefined') {
+          allSensors = Object.values(unifiedSensorRegistry);
+        } else if (typeof sensorsByCategory !== 'undefined') {
+          Object.keys(sensorsByCategory).forEach(cat => {
+            sensorsByCategory[cat].forEach(sensorName => {
+              allSensors.push({
+                sensor_name: sensorName,
+                name: sensorName,
+                category: sensorRanges[sensorName]?.category || 'custom',
+                unit: sensorRanges[sensorName]?.unit || '',
+                min_range: sensorRanges[sensorName]?.min || 0,
+                max_range: sensorRanges[sensorName]?.max || 100
+              });
+            });
+          });
+        }
+        
+        // Group by the 5 master categories
+        const categories = ['environmental', 'mechanical', 'thermal', 'electrical', 'fluid'];
+        const byCategory = {};
+        
+        allSensors.forEach(sensor => {
+          const cat = sensor.category || 'custom';
+          if (categories.includes(cat)) {
+            if (!byCategory[cat]) byCategory[cat] = [];
+            byCategory[cat].push(sensor);
+          }
+        });
+        
+        let html = '';
+        categories.forEach(cat => {
+          if (!byCategory[cat] || byCategory[cat].length === 0) return;
+          
+          const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
+          const sensors = byCategory[cat];
+          
+          // Check if all sensors in category are enabled
+          const allEnabled = sensors.every(s => {
+            const sensorName = s.sensor_name || s.name;
+            return machineSensorState[selectedMachineId][sensorName]?.enabled !== false;
+          });
+          
+          html += `
+            <div class="rig-accordion" style="margin-bottom: var(--space-sm);">
+              <div class="rig-accordion-header" onclick="toggleConfigAccordion('${cat}')" style="padding: var(--space-sm);">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                  <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                    <span style="font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--text-primary); text-transform: uppercase;">${catLabel}</span>
+                    <span style="font-family: var(--font-mono); font-size: 9px; color: var(--text-muted);">(${sensors.length})</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                    <button 
+                      onclick="event.stopPropagation(); enableAllInCategory('${cat}', true)" 
+                      class="scada-btn" 
+                      style="padding: 2px 6px; font-size: 8px; background: var(--status-running); border-color: var(--status-running); font-weight: 700;">
+                      ENABLE ALL
+                    </button>
+                    <button 
+                      onclick="event.stopPropagation(); enableAllInCategory('${cat}', false)" 
+                      class="scada-btn" 
+                      style="padding: 2px 6px; font-size: 8px; background: var(--status-error); border-color: var(--status-error); font-weight: 700;">
+                      DISABLE ALL
+                    </button>
+                    <span class="rig-accordion-chevron" id="chevron-config-${cat}" style="font-size: 10px;">▼</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rig-accordion-content" id="accordion-config-${cat}" style="display: none; padding: var(--space-xs);">
+                ${sensors.map(sensor => {
+                  const sensorName = sensor.sensor_name || sensor.name;
+                  const enabled = machineSensorState[selectedMachineId][sensorName]?.enabled !== false;
+                  const defaultRange = sensorRanges[sensorName] || {min: 0, max: 100, unit: ''};
+                  const displayName = sensorName.replace(/_/g, ' ').toUpperCase();
+                  
+                  return `
+                    <div style="padding: var(--space-xs); border-bottom: 1px solid var(--border-subtle); display: grid; grid-template-columns: auto 1fr auto auto auto; gap: var(--space-xs); align-items: center; font-size: 9px;">
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background: ${enabled ? 'var(--status-running)' : 'var(--status-normal)'};"></div>
+                      <span style="font-family: var(--font-mono); font-weight: 700; color: var(--text-primary);">${displayName}</span>
+                      <label class="toggle-switch" style="transform: scale(0.7);">
+                        <input 
+                          type="checkbox" 
+                          ${enabled ? 'checked' : ''} 
+                          onchange="toggleSensorEnabledFromAccordion('${sensorName}', this.checked)">
+                        <span class="toggle-slider"></span>
+                      </label>
+                      <span style="font-family: var(--font-mono); font-size: 8px; color: var(--text-muted); font-weight: 700;">REF: ${defaultRange.min} - ${defaultRange.max} ${defaultRange.unit}</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        });
+        
+        if (html === '') {
+          html = '<div style="text-align: center; color: var(--text-muted); padding: var(--space-lg); font-family: var(--font-mono); font-size: 11px; font-weight: 700;">No sensors found</div>';
+        }
+        
+        container.innerHTML = html;
+      }
+      
+      function toggleConfigAccordion(category) {
+        const content = document.getElementById(`accordion-config-${category}`);
+        const chevron = document.getElementById(`chevron-config-${category}`);
+        if (content) {
+          const isHidden = content.style.display === 'none';
+          content.style.display = isHidden ? 'block' : 'none';
+          if (chevron) chevron.textContent = isHidden ? '▲' : '▼';
+        }
+      }
+      
+      function enableAllInCategory(category, enable) {
+        // Category to sensor mapping
+        const categoryMap = {
+          'environmental': ['temperature', 'pressure', 'humidity', 'ambient_temp', 'dew_point', 'air_quality_index', 'co2_level', 'particle_count', 'noise_level', 'light_intensity'],
+          'mechanical': ['vibration', 'rpm', 'torque', 'shaft_alignment', 'bearing_temp', 'motor_current', 'belt_tension', 'gear_wear', 'coupling_temp', 'lubrication_pressure'],
+          'thermal': ['coolant_temp', 'exhaust_temp', 'oil_temp', 'radiator_temp', 'thermal_efficiency', 'heat_dissipation', 'inlet_temp', 'outlet_temp', 'core_temp', 'surface_temp'],
+          'electrical': ['voltage', 'current', 'power_factor', 'frequency', 'resistance', 'capacitance', 'inductance', 'phase_angle', 'harmonic_distortion', 'ground_fault'],
+          'fluid': ['flow_rate', 'fluid_pressure', 'viscosity', 'density', 'reynolds_number', 'pipe_pressure_drop', 'pump_efficiency', 'cavitation_index', 'turbulence', 'valve_position']
+        };
+        
+        // Find all sensors in this category
+        let sensorsInCategory = categoryMap[category] || [];
+        
+        // Also check unifiedSensorRegistry if available
+        if (typeof unifiedSensorRegistry !== 'undefined') {
+          Object.values(unifiedSensorRegistry).forEach(sensor => {
+            if (sensor.category === category) {
+              const sensorName = sensor.sensor_name || sensor.name;
+              if (!sensorsInCategory.includes(sensorName)) {
+                sensorsInCategory.push(sensorName);
+              }
+            }
+          });
+        }
+        
+        // Update state for all sensors in category
+        sensorsInCategory.forEach(sensorName => {
+          if (!machineSensorState[selectedMachineId][sensorName]) {
+            machineSensorState[selectedMachineId][sensorName] = { enabled: true, baseline: null };
+          }
+          machineSensorState[selectedMachineId][sensorName].enabled = enable;
+        });
+        
+        // Re-render accordion to show updated state
+        renderConfigSensorAccordions();
+        
+        // Refresh operator dashboard
+        updateStats();
+      }
+      
+      function toggleSensorEnabledFromAccordion(sensorName, enabled) {
+        if (!machineSensorState[selectedMachineId][sensorName]) {
+          machineSensorState[selectedMachineId][sensorName] = { enabled: true, baseline: null };
+        }
+        machineSensorState[selectedMachineId][sensorName].enabled = enabled;
+        
+        // Update other UI elements if needed
+        updateStats();
       }
       
       // ============================================

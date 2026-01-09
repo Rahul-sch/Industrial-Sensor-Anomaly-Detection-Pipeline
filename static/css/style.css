@@ -4450,3 +4450,149 @@ input:checked + .toggle-slider:before {
   height: calc(100vh - 60px - var(--space-lg) * 2);
   overflow: hidden;
 }
+
+/* Smart Onboarding Widget - AI-Powered Neon Border */
+#configGrid .grid-stack-item:first-child .rig-card {
+  border: 2px solid var(--theme-status-info) !important;
+  box-shadow: 0 0 20px rgba(0, 191, 255, 0.3) !important;
+}
+
+#configGrid .grid-stack-item:first-child .rig-card-header {
+  border-bottom: 1px solid var(--theme-status-info);
+}
+
+/* Accordion Styling for Config */
+.rig-accordion {
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  margin-bottom: var(--space-sm);
+  background: var(--bg-secondary);
+}
+
+.rig-accordion-header {
+  padding: var(--space-sm);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-default);
+  transition: background var(--theme-transition-normal);
+}
+
+.rig-accordion-header:hover {
+  background: var(--bg-elevated);
+}
+
+.rig-accordion-content {
+  padding: var(--space-xs);
+  background: var(--bg-secondary);
+}
+
+.rig-accordion-chevron {
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform var(--theme-transition-normal);
+}
+
+/* Toggle Switch - High Contrast Neon Cyan */
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  display: inline-block;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--status-normal);
+  transition: var(--theme-transition-normal);
+  border-radius: 20px;
+  border: 1px solid var(--border-default);
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--text-primary);
+  transition: var(--theme-transition-normal);
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--theme-interactive-primary);
+  border-color: var(--theme-interactive-primary);
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(16px);
+}
+
+.toggle-switch input:focus + .toggle-slider {
+  box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.3);
+}
+
+/* Upload Zone Styling */
+.scada-upload-zone {
+  border: 2px dashed var(--border-default);
+  border-radius: 4px;
+  padding: var(--space-xl);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--theme-transition-normal), background var(--theme-transition-normal);
+  background: var(--bg-secondary);
+}
+
+.scada-upload-zone:hover {
+  border-color: var(--theme-interactive-primary);
+  background: var(--bg-tertiary);
+}
+
+.scada-upload-zone-has-file {
+  border-color: var(--theme-status-info);
+  background: var(--bg-tertiary);
+}
+
+.scada-upload-icon {
+  font-size: 32px;
+  margin-bottom: var(--space-sm);
+}
+
+.scada-upload-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  font-weight: 700;
+  margin-bottom: var(--space-xs);
+}
+
+.scada-upload-hint {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+/* Ensure all config labels are bold */
+#configGrid .config-label,
+#configGrid .rig-card-header span,
+#configGrid .rig-accordion-header span {
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+}
