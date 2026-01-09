@@ -799,37 +799,37 @@
               </div>
             </div>
             
-            <!-- Widget 6: User Management (Right Bottom) -->
-            <div class="grid-stack-item" data-gs-x="8" data-gs-y="11" data-gs-width="4" data-gs-height="2">
+            <!-- Widget 2: User Management (moved here from Config) -->
+            <div class="grid-stack-item" data-gs-x="4" data-gs-y="0" data-gs-width="8" data-gs-height="6">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
                   <div class="rig-card-header">
-                    <span>USER MANAGEMENT</span>
+                    <span style="font-weight: 900;">USER MANAGEMENT</span>
                     <span class="status-indicator status-nom"></span>
                   </div>
                   <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md);">
-                    <form id="adminCreateUserForm" onsubmit="adminCreateUser(event)" style="display: grid; gap: var(--space-sm);">
-                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm);">
+                    <form id="adminCreateUserForm" onsubmit="adminCreateUser(event)" style="display: grid; gap: var(--space-md); margin-bottom: var(--space-lg);">
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-sm);">
                         <div>
-                          <label class="config-label" style="font-weight: 700;">USERNAME</label>
+                          <label class="config-label" style="font-weight: 900;">USERNAME</label>
                           <input type="text" id="adminNewUsername" required class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
                         </div>
                         <div>
-                          <label class="config-label" style="font-weight: 700;">PASSWORD</label>
+                          <label class="config-label" style="font-weight: 900;">PASSWORD</label>
                           <input type="password" id="adminNewPassword" required class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
                         </div>
                         <div>
-                          <label class="config-label" style="font-weight: 700;">ROLE</label>
+                          <label class="config-label" style="font-weight: 900;">ROLE</label>
                           <select id="adminNewRole" required class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; cursor: pointer;">
                             <option value="operator">Operator</option>
                             <option value="admin">Admin</option>
                           </select>
                         </div>
                       </div>
-                        <div>
-                          <label class="config-label" style="font-weight: 900;">ASSIGNED MACHINES</label>
-                          <div style="display: flex; gap: var(--space-md);">
+                      <div>
+                        <label class="config-label" style="font-weight: 900;">ASSIGNED MACHINES</label>
+                        <div style="display: flex; gap: var(--space-md);">
                           <label style="display: flex; align-items: center; gap: var(--space-xs); cursor: pointer;">
                             <input type="checkbox" value="A" class="admin-machine-checkbox" style="cursor: pointer;">
                             <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-primary);">A</span>
@@ -848,6 +848,14 @@
                       <div id="adminCreateUserError" style="display: none; color: var(--status-error); font-family: var(--font-mono); font-size: 11px; text-align: center; font-weight: 700;"></div>
                       <div id="adminCreateUserSuccess" style="display: none; color: var(--status-running); font-family: var(--font-mono); font-size: 11px; text-align: center; font-weight: 700;"></div>
                     </form>
+                    
+                    <!-- User List -->
+                    <div id="adminUserList" style="margin-top: var(--space-lg);">
+                      <div class="config-label" style="font-weight: 900; margin-bottom: var(--space-sm);">EXISTING USERS</div>
+                      <div id="adminUserListContent" style="max-height: 300px; overflow-y: auto;">
+                        <div class="config-value" style="text-align: center; padding: var(--space-lg);">Loading users...</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1059,12 +1067,12 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
               <div>
                 <label style="display: block; color: #94a3b8; font-size: 12px; margin-bottom: 6px; text-transform: uppercase;">Sensor Name *</label>
-                <input type="text" id="newSensorName" placeholder="e.g., bearing_vibration_rms" 
+                <input type="text" id="oldNewSensorName" placeholder="e.g., bearing_vibration_rms" 
                        style="width: 100%; padding: 8px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; color: #e2e8f0; font-size: 14px;">
               </div>
               <div>
                 <label style="display: block; color: #94a3b8; font-size: 12px; margin-bottom: 6px; text-transform: uppercase;">Category</label>
-                <select id="newSensorCategory" 
+                <select id="oldNewSensorCategory" 
                         style="width: 100%; padding: 8px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; color: #e2e8f0; font-size: 14px;">
                   <option value="custom">Custom Parameters</option>
                   <option value="environmental">Environmental</option>
@@ -1076,7 +1084,7 @@
               </div>
               <div>
                 <label style="display: block; color: #94a3b8; font-size: 12px; margin-bottom: 6px; text-transform: uppercase;">Unit</label>
-                <input type="text" id="newSensorUnit" placeholder="e.g., mm/s, °F, PSI" 
+                <input type="text" id="oldNewSensorUnit" placeholder="e.g., mm/s, °F, PSI" 
                        style="width: 100%; padding: 8px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; color: #e2e8f0; font-size: 14px;">
               </div>
               <div>
@@ -5000,7 +5008,6 @@
             updateTelemetryRail();
             
             // Update comm status on message receipt
-            const currentMachine = machineData[selectedMachineId];
             if (currentMachine) {
               currentMachine.lastMessageTime = Date.now();
               // Flash comm status green

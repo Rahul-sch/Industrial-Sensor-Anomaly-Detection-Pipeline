@@ -129,7 +129,8 @@ if TALISMAN_AVAILABLE:
         'connect-src': [
             "'self'",
             'https://*.neon.tech',  # Allow Neon database connections
-            'https://*.aws.neon.tech'  # Allow AWS Neon connections
+            'https://*.aws.neon.tech',  # Allow AWS Neon connections
+            'https://cdn.jsdelivr.net'  # Allow Gridstack source maps
         ],
         'font-src': [
             "'self'",
