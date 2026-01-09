@@ -273,13 +273,13 @@ def get_db_connection():
             return None
     else:
         # Fallback to direct connection if pool not available
-    try:
-        import config
-        conn = psycopg2.connect(**config.DB_CONFIG)
-        return conn
-    except Exception as e:
+        try:
+            import config
+            conn = psycopg2.connect(**config.DB_CONFIG)
+            return conn
+        except Exception as e:
             logger.error(f"Failed to create direct database connection: {e}")
-        return None
+            return None
 
 def return_db_connection(conn):
     """Return connection to pool."""
@@ -910,7 +910,7 @@ def api_login():
         if conn:
             conn.rollback()
             if cursor:
-            cursor.close()
+                cursor.close()
             return_db_connection(conn)
         logging.error(f"Login error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
