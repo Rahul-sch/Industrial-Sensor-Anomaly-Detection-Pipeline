@@ -522,324 +522,293 @@
         
         <!-- Configuration Section -->
         <div class="scada-section" id="section-configuration" style="display: none;">
-          <!-- Config 2-Column Grid: Sensor List | Edit Form -->
-          <div class="config-two-column-grid">
-            <!-- LEFT COLUMN: Sensor List (Scrollable) -->
-            <div class="config-sensor-list-column">
-              <h2 class="config-section-title">SENSOR LIST</h2>
+          <div class="grid-stack" id="configGrid">
             
-            <!-- Connection Status (Mini Panel) -->
-            <div class="rig-card" style="margin-bottom: var(--space-md);">
-              <div class="rig-card-header">
-                <span>CONNECTION STATUS</span>
-                <span class="status-indicator status-nom"></span>
-              </div>
-              <div class="rig-card-body" style="padding: var(--space-md);">
-                <div style="display: grid; gap: var(--space-sm);">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span class="config-label">PRODUCER</span>
-                    <div style="display: flex; align-items: center; gap: var(--space-xs);">
-                      <div class="scada-status-dot-indicator" id="configProducerStatus"></div>
-                      <span class="config-value" id="configProducerStatusText">STOPPED</span>
-                    </div>
-                  </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span class="config-label">CONSUMER</span>
-                    <div style="display: flex; align-items: center; gap: var(--space-xs);">
-                      <div class="scada-status-dot-indicator" id="configConsumerStatus"></div>
-                      <span class="config-value" id="configConsumerStatusText">STOPPED</span>
-                    </div>
-                  </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding-top: var(--space-sm); border-top: 1px solid var(--border-subtle);">
-                    <span class="config-label">KAFKA</span>
-                    <div style="display: flex; align-items: center; gap: var(--space-xs);">
-                      <div class="scada-status-dot-indicator" id="configKafkaStatus"></div>
-                      <span class="config-value" id="configKafkaStatusText">Checking...</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Sensor Management Section -->
-            <div class="rig-card" style="margin-bottom: var(--space-md);">
-              <div class="rig-card-header">
-                <span>SENSOR MANAGEMENT - MACHINE <span id="configMachineLabel" style="color: var(--status-running);">A</span></span>
-                <span class="status-indicator status-nom"></span>
-              </div>
-              <div class="rig-card-body" style="padding: 0;">
-                <div id="configSensorList" style="overflow: hidden;">
-                  <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
-                    <thead>
-                      <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-default);">
-                        <th class="config-table-header">SENSOR</th>
-                        <th class="config-table-header" style="text-align: center; width: 60px;">ENABLE</th>
-                      </tr>
-                    </thead>
-                    <tbody id="configSensorListBody">
-                      <tr>
-                        <td colspan="2" style="text-align: center; color: var(--text-muted); padding: var(--space-md); font-size: 10px;">
-                          Loading...
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <!-- Custom Sensors List -->
-            <div class="rig-card">
-              <div class="rig-card-header">
-                <span>CUSTOM SENSORS</span>
-                <span class="status-indicator status-nom"></span>
-              </div>
-              <div class="rig-card-body" style="padding: var(--space-md);">
-                <div id="customSensorsList" style="max-height: 300px; overflow-y: auto;">
-                  <div class="config-value" style="text-align: center; padding: var(--space-lg);">Loading...</div>
-                </div>
-              </div>
-            </div>
-
-            </div>
-            <!-- END LEFT COLUMN -->
-
-            <!-- RIGHT COLUMN: Edit Forms & Kafka Controls -->
-            <div class="config-edit-form-column">
-              <h2 class="config-section-title">CONFIGURATION</h2>
-
-              <!-- Operator Logs (Admin Only) -->
-              <div id="adminOperatorLogsSection" style="display: none; margin-bottom: var(--space-lg);">
-                <div class="rig-card">
+            <!-- Widget 1: Sensor Management Accordion (Left) -->
+            <div class="grid-stack-item" data-gs-x="0" data-gs-y="0" data-gs-width="4" data-gs-height="10">
+              <div class="grid-stack-item-content">
+                <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
+                <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
                   <div class="rig-card-header">
-                    <span>OPERATOR LOGS</span>
+                    <span>SENSOR MANAGEMENT - MACHINE <span id="configMachineLabel" style="color: var(--status-running);">A</span></span>
                     <span class="status-indicator status-nom"></span>
                   </div>
-                  <div class="rig-card-body" style="padding: 0; overflow: hidden;">
-                    <table class="scada-admin-table">
-                      <thead>
-                        <tr>
-                          <th>OPERATOR</th>
-                          <th>ACTION</th>
-                          <th>TIME</th>
-                        </tr>
-                      </thead>
-                      <tbody id="operatorLogsTableBody">
-                        <tr>
-                          <td colspan="3" style="text-align: center; color: var(--text-muted); padding: var(--space-md);">No logs</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md);">
+                    <!-- Connection Status -->
+                    <div class="rig-card" style="margin-bottom: var(--space-md);">
+                      <div class="rig-card-header">
+                        <span>CONNECTION STATUS</span>
+                        <span class="status-indicator status-nom"></span>
+                      </div>
+                      <div class="rig-card-body" style="padding: var(--space-md);">
+                        <div style="display: grid; gap: var(--space-sm);">
+                          <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="config-label" style="font-weight: 700;">PRODUCER</span>
+                            <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                              <div class="scada-status-dot-indicator" id="configProducerStatus"></div>
+                              <span class="config-value" id="configProducerStatusText">STOPPED</span>
+                            </div>
+                          </div>
+                          <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="config-label" style="font-weight: 700;">CONSUMER</span>
+                            <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                              <div class="scada-status-dot-indicator" id="configConsumerStatus"></div>
+                              <span class="config-value" id="configConsumerStatusText">STOPPED</span>
+                            </div>
+                          </div>
+                          <div style="display: flex; justify-content: space-between; align-items: center; padding-top: var(--space-sm); border-top: 1px solid var(--border-subtle);">
+                            <span class="config-label" style="font-weight: 700;">KAFKA</span>
+                            <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                              <div class="scada-status-dot-indicator" id="configKafkaStatus"></div>
+                              <span class="config-value" id="configKafkaStatusText">Checking...</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Sensor List -->
+                    <div class="rig-card" style="margin-bottom: var(--space-md);">
+                      <div class="rig-card-header">
+                        <span>SENSOR LIST</span>
+                        <span class="status-indicator status-nom"></span>
+                      </div>
+                      <div class="rig-card-body" style="padding: 0;">
+                        <div id="configSensorList" style="overflow: hidden;">
+                          <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
+                            <thead>
+                              <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-default);">
+                                <th class="config-table-header" style="font-weight: 700;">SENSOR</th>
+                                <th class="config-table-header" style="text-align: center; width: 60px; font-weight: 700;">ENABLE</th>
+                              </tr>
+                            </thead>
+                            <tbody id="configSensorListBody">
+                              <tr>
+                                <td colspan="2" style="text-align: center; color: var(--text-muted); padding: var(--space-md); font-size: 10px;">
+                                  Loading...
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Custom Sensors List -->
+                    <div class="rig-card">
+                      <div class="rig-card-header">
+                        <span>CUSTOM SENSORS</span>
+                        <span class="status-indicator status-nom"></span>
+                      </div>
+                      <div class="rig-card-body" style="padding: var(--space-md);">
+                        <div id="customSensorsList" style="max-height: 300px; overflow-y: auto;">
+                          <div class="config-value" style="text-align: center; padding: var(--space-lg);">Loading...</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- Smart Sensor Onboarding (Admin Only) -->
-              <div id="adminSmartSensorSection" style="display: none; margin-bottom: var(--space-lg);">
-                <div class="rig-card">
+
+            <!-- Widget 2: Add Custom Sensor Form (Center Top) -->
+            <div class="grid-stack-item" data-gs-x="4" data-gs-y="0" data-gs-width="4" data-gs-height="6">
+              <div class="grid-stack-item-content">
+                <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
+                <div id="sectionConfigContent" class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
                   <div class="rig-card-header">
-                    <span>✨ SMART SENSOR ONBOARDING</span>
+                    <span>➕ ADD CUSTOM SENSOR</span>
                     <span class="status-indicator status-nom"></span>
                   </div>
-                  <div class="rig-card-body" style="padding: var(--space-md);">
-                    <div id="sensorUploadZone" class="scada-upload-zone" ondrop="handleSensorFileDrop(event)" ondragover="event.preventDefault()" onclick="document.getElementById('sensorFileInput').click()">
-                      <div class="scada-upload-icon">📄</div>
-                      <div class="scada-upload-text">
-                        <span style="font-weight: 600;">Drag & Drop</span> or <span style="font-weight: 600;">Click</span>
-                      </div>
-                      <div class="scada-upload-hint">PDF, CSV, or JSON</div>
-                      <input type="file" id="sensorFileInput" accept=".pdf,.csv,.json" style="display: none;" onchange="handleSensorFileSelect(event)">
-                    </div>
-                    <button onclick="aiParseSensorFile()" class="scada-btn" id="aiParseBtn" style="width: 100%; margin-top: var(--space-sm);">
-                      <span style="margin-right: var(--space-xs);">✨</span>AI PARSE
-                    </button>
-                    <div id="aiParseLoading" style="display: none; margin-top: var(--space-sm); text-align: center; padding: var(--space-md);">
-                      <div class="scada-loading-spinner"></div>
-                      <div class="config-label" style="margin-top: var(--space-sm);">Analyzing...</div>
-                    </div>
-                    <div id="aiParseResults" style="display: none; margin-top: var(--space-sm); padding: var(--space-md); border: 1px solid var(--status-running); border-radius: 4px;">
-                      <div class="config-label" style="color: var(--status-running); margin-bottom: var(--space-sm);">✓ COMPLETE</div>
-                      <div id="aiParsePreview" class="config-value"></div>
-                      <button onclick="applyAIParseResults()" class="scada-btn" style="width: 100%; margin-top: var(--space-sm);">APPLY</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Sampling Rate Control -->
-              <div class="rig-card" style="margin-bottom: var(--space-lg);">
-                <div class="rig-card-header">
-                  <span>SAMPLING RATE CONTROL</span>
-                  <span class="status-indicator status-nom"></span>
-                </div>
-                <div class="rig-card-body" style="padding: var(--space-md);">
-                  <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
-                    <label class="config-label" style="white-space: nowrap;">Sampling Rate:</label>
-                    <input type="range" id="configSamplingFrequency" min="10" max="100" value="50" step="10" style="flex: 1;" onchange="updateConfigSamplingFrequency(this.value)">
-                    <span class="config-value" id="configFrequencyDisplay" style="min-width: 60px;">50Hz</span>
-                  </div>
-                  <p class="config-label" style="line-height: 1.4;">Controls data collection frequency (10Hz - 100Hz).</p>
-                </div>
-              </div>
-
-              <!-- Producer Duration & Interval -->
-              <div class="rig-card" style="margin-bottom: var(--space-lg);">
-                <div class="rig-card-header">
-                  <span>PRODUCER DURATION & INTERVAL</span>
-                  <span class="status-indicator status-nom"></span>
-                </div>
-                <div class="rig-card-body" style="padding: var(--space-md);">
-                  <div style="display: grid; gap: var(--space-md);">
-                    <div>
-                      <label class="config-label" style="display: block; margin-bottom: var(--space-xs);">DURATION</label>
-                      <div style="display: flex; gap: var(--space-sm);">
-                        <input type="number" id="configDurationHours" min="0" value="0" placeholder="Hours" class="scada-input" style="flex: 1; padding: var(--space-sm);">
-                        <input type="number" id="configDurationMinutes" min="0" max="59" value="0" placeholder="Min" class="scada-input" style="flex: 1; padding: var(--space-sm);">
-                      </div>
-                    </div>
-                    <div>
-                      <label class="config-label" style="display: block; margin-bottom: var(--space-xs);">INTERVAL (SECONDS)</label>
-                      <input type="number" id="configIntervalSeconds" min="1" value="30" class="scada-input" style="width: 100%; padding: var(--space-sm);">
-                    </div>
-                    <div style="display: flex; gap: var(--space-sm);">
-                      <button onclick="updateConfigFromForm()" class="scada-btn" style="flex: 1;">UPDATE</button>
-                      <button onclick="resetConfigFromForm()" class="rig-btn rig-btn-secondary" style="flex: 1;">RESET</button>
-                    </div>
-                    <div id="configFormMessage" class="config-value" style="text-align: center; padding: var(--space-xs);">Ready for updates.</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Custom Sensor Management Form -->
-              <div id="sectionConfigContent" class="rig-card">
-                <div class="rig-card-header">
-                  <span>➕ ADD CUSTOM SENSOR</span>
-                  <span class="status-indicator status-nom"></span>
-                </div>
-                <div class="rig-card-body" style="padding: var(--space-md);">
-                  <p class="config-label" style="margin-bottom: var(--space-md); line-height: 1.4;">
-                    Add custom sensor parameters. New sensors appear in producer messages and dashboard stats.
-                  </p>
-                  
-                  <div style="display: grid; gap: var(--space-sm); margin-bottom: var(--space-md);">
-                    <div>
-                      <label class="config-label">SENSOR NAME *</label>
-                      <input type="text" id="newSensorName" placeholder="bearing_vibration_rms" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
+                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md);">
+                    <p class="config-label" style="margin-bottom: var(--space-md); line-height: 1.4; font-weight: 700;">
+                      Add custom sensor parameters. New sensors appear in producer messages and dashboard stats.
+                    </p>
+                    
+                    <div style="display: grid; gap: var(--space-sm); margin-bottom: var(--space-md);">
                       <div>
-                        <label class="config-label">CATEGORY</label>
-                        <select id="newSensorCategory" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; cursor: pointer;">
-                          <option value="custom">Custom</option>
-                          <option value="environmental">Environmental</option>
-                          <option value="mechanical">Mechanical</option>
-                          <option value="thermal">Thermal</option>
-                          <option value="electrical">Electrical</option>
-                          <option value="fluid">Fluid</option>
+                        <label class="config-label" style="font-weight: 700;">SENSOR NAME *</label>
+                        <input type="text" id="newSensorName" placeholder="bearing_vibration_rms" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                      </div>
+                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
+                        <div>
+                          <label class="config-label" style="font-weight: 700;">CATEGORY</label>
+                          <select id="newSensorCategory" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; cursor: pointer;">
+                            <option value="custom">Custom</option>
+                            <option value="environmental">Environmental</option>
+                            <option value="mechanical">Mechanical</option>
+                            <option value="thermal">Thermal</option>
+                            <option value="electrical">Electrical</option>
+                            <option value="fluid">Fluid</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="config-label" style="font-weight: 700;">UNIT</label>
+                          <input type="text" id="newSensorUnit" placeholder="mm/s" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                        </div>
+                      </div>
+                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
+                        <div>
+                          <label class="config-label" style="font-weight: 700;">MIN RANGE *</label>
+                          <input type="number" step="any" id="newSensorMinRange" placeholder="0.0" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                        </div>
+                        <div>
+                          <label class="config-label" style="font-weight: 700;">MAX RANGE *</label>
+                          <input type="number" step="any" id="newSensorMaxRange" placeholder="100.0" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                        </div>
+                      </div>
+                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
+                        <div>
+                          <label class="config-label" style="font-weight: 700;">LOW THRESHOLD</label>
+                          <input type="number" step="any" id="newSensorLowThreshold" placeholder="Optional" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                        </div>
+                        <div>
+                          <label class="config-label" style="font-weight: 700;">HIGH THRESHOLD</label>
+                          <input type="number" step="any" id="newSensorHighThreshold" placeholder="Optional" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                        </div>
+                      </div>
+                    </div>
+                    <button onclick="addCustomSensor()" class="scada-btn" style="width: 100%;">
+                      ➕ ADD SENSOR
+                    </button>
+                    <div id="customSensorMessage" class="config-value" style="margin-top: var(--space-sm); text-align: center;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Widget 3: Anomaly Simulation (Right Top) -->
+            <div class="grid-stack-item" data-gs-x="8" data-gs-y="0" data-gs-width="4" data-gs-height="4">
+              <div class="grid-stack-item-content">
+                <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
+                <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
+                  <div class="rig-card-header">
+                    <span>ANOMALY SIMULATION</span>
+                    <span class="status-indicator status-warning"></span>
+                  </div>
+                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md);">
+                    <p class="config-label" style="margin-bottom: var(--space-md); font-weight: 700;">
+                      Inject synthetic anomalies for testing ML detection and alert workflows.
+                    </p>
+                    
+                    <div style="display: grid; gap: var(--space-sm);">
+                      <div style="display: flex; align-items: center; gap: var(--space-md);">
+                        <label class="config-label" style="min-width: 100px; font-weight: 700;">Machine:</label>
+                        <select id="injectionMachineId" class="scada-input" style="flex: 1; padding: var(--space-sm);">
+                          <option value="A">Machine A</option>
+                          <option value="B">Machine B</option>
+                          <option value="C">Machine C</option>
                         </select>
                       </div>
-                      <div>
-                        <label class="config-label">UNIT</label>
-                        <input type="text" id="newSensorUnit" placeholder="mm/s" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                      
+                      <div style="display: flex; align-items: center; gap: var(--space-md);">
+                        <label class="config-label" style="min-width: 100px; font-weight: 700;">Anomaly Type:</label>
+                        <select id="injectionAnomalyType" class="scada-input" style="flex: 1; padding: var(--space-sm);">
+                          <option value="high_vibration">High Vibration</option>
+                          <option value="high_temperature">High Temperature</option>
+                          <option value="rpm_spike">RPM Spike</option>
+                          <option value="bearing_overheat">Bearing Overheat</option>
+                        </select>
                       </div>
+                      
+                      <button onclick="injectAnomalyNow()" class="rig-btn-primary" style="width: 100%; margin-top: var(--space-sm);">
+                        <span style="margin-right: var(--space-xs);">⚠️</span>INJECT ANOMALY
+                      </button>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
-                      <div>
-                        <label class="config-label">MIN RANGE *</label>
-                        <input type="number" step="any" id="newSensorMinRange" placeholder="0.0" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
-                      </div>
-                      <div>
-                        <label class="config-label">MAX RANGE *</label>
-                        <input type="number" step="any" id="newSensorMaxRange" placeholder="100.0" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
-                      </div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
-                      <div>
-                        <label class="config-label">LOW THRESHOLD</label>
-                        <input type="number" step="any" id="newSensorLowThreshold" placeholder="Optional" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
-                      </div>
-                      <div>
-                        <label class="config-label">HIGH THRESHOLD</label>
-                        <input type="number" step="any" id="newSensorHighThreshold" placeholder="Optional" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
-                      </div>
-                    </div>
-                  </div>
-                  <button onclick="addCustomSensor()" class="scada-btn" style="width: 100%;">
-                    ➕ ADD SENSOR
-                  </button>
-                  <div id="customSensorMessage" class="config-value" style="margin-top: var(--space-sm); text-align: center;"></div>
-                </div>
-              </div>
-
-              <!-- Anomaly Simulation Widget -->
-              <div class="rig-card" style="margin-bottom: var(--space-lg);">
-                <div class="rig-card-header">
-                  <span>ANOMALY SIMULATION</span>
-                  <span class="status-indicator status-warning"></span>
-                </div>
-                <div class="rig-card-body" style="padding: var(--space-md);">
-                  <p class="config-label" style="margin-bottom: var(--space-md);">
-                    Inject synthetic anomalies for testing ML detection and alert workflows.
-                  </p>
-                  
-                  <div style="display: grid; gap: var(--space-sm);">
-                    <div style="display: flex; align-items: center; gap: var(--space-md);">
-                      <label class="config-label" style="min-width: 100px;">Machine:</label>
-                      <select id="injectionMachineId" class="scada-input" style="flex: 1; padding: var(--space-sm);">
-                        <option value="A">Machine A</option>
-                        <option value="B">Machine B</option>
-                        <option value="C">Machine C</option>
-                      </select>
-                    </div>
-                    
-                    <div style="display: flex; align-items: center; gap: var(--space-md);">
-                      <label class="config-label" style="min-width: 100px;">Anomaly Type:</label>
-                      <select id="injectionAnomalyType" class="scada-input" style="flex: 1; padding: var(--space-sm);">
-                        <option value="high_vibration">High Vibration</option>
-                        <option value="high_temperature">High Temperature</option>
-                        <option value="rpm_spike">RPM Spike</option>
-                        <option value="bearing_overheat">Bearing Overheat</option>
-                      </select>
-                    </div>
-                    
-                    <button onclick="injectAnomalyNow()" class="rig-btn-primary" style="width: 100%; margin-top: var(--space-sm);">
-                      <span style="margin-right: var(--space-xs);">⚠️</span>INJECT ANOMALY
-                    </button>
                   </div>
                 </div>
               </div>
-
-              <!-- Data Export Widget -->
-              <div class="rig-card" style="margin-bottom: var(--space-lg);">
-                <div class="rig-card-header">
-                  <span>DATA EXPORT</span>
-                  <span class="status-indicator status-info"></span>
-                </div>
-                <div class="rig-card-body" style="padding: var(--space-md);">
-                  <p class="config-label" style="margin-bottom: var(--space-md);">
-                    Export sensor readings and ML metrics for external analysis.
-                  </p>
-                  
-                  <div style="display: grid; gap: var(--space-sm);">
-                    <button onclick="exportData('csv')" class="rig-btn-secondary" style="width: 100%;">
-                      <span style="margin-right: var(--space-xs);">📄</span>EXPORT AS CSV
-                    </button>
-                    
-                    <button onclick="exportData('json')" class="rig-btn-secondary" style="width: 100%;">
-                      <span style="margin-right: var(--space-xs);">📋</span>EXPORT AS JSON
-                    </button>
-                    
-                    <button onclick="exportLogsPDF()" class="rig-btn-secondary" style="width: 100%;">
-                      <span style="margin-right: var(--space-xs);">📕</span>EXPORT LOGS (PDF)
-                    </button>
-                  </div>
-                </div>
-              </div>
-
             </div>
-            <!-- END RIGHT COLUMN -->
+            
+            <!-- Widget 4: Data Export (Right Bottom) -->
+            <div class="grid-stack-item" data-gs-x="8" data-gs-y="4" data-gs-width="4" data-gs-height="4">
+              <div class="grid-stack-item-content">
+                <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
+                <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
+                  <div class="rig-card-header">
+                    <span>DATA EXPORT</span>
+                    <span class="status-indicator status-info"></span>
+                  </div>
+                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md);">
+                    <p class="config-label" style="margin-bottom: var(--space-md); font-weight: 700;">
+                      Export sensor readings and ML metrics for external analysis.
+                    </p>
+                    
+                    <div style="display: grid; gap: var(--space-sm);">
+                      <button onclick="exportData('csv')" class="rig-btn-secondary" style="width: 100%;">
+                        <span style="margin-right: var(--space-xs);">📄</span>EXPORT AS CSV
+                      </button>
+                      
+                      <button onclick="exportData('json')" class="rig-btn-secondary" style="width: 100%;">
+                        <span style="margin-right: var(--space-xs);">📋</span>EXPORT AS JSON
+                      </button>
+                      
+                      <button onclick="exportLogsPDF()" class="rig-btn-secondary" style="width: 100%;">
+                        <span style="margin-right: var(--space-xs);">📕</span>EXPORT LOGS (PDF)
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Widget 5: User Management (Center Bottom) -->
+            <div class="grid-stack-item" data-gs-x="4" data-gs-y="6" data-gs-width="4" data-gs-height="2">
+              <div class="grid-stack-item-content">
+                <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
+                <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
+                  <div class="rig-card-header">
+                    <span>USER MANAGEMENT</span>
+                    <span class="status-indicator status-nom"></span>
+                  </div>
+                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md);">
+                    <form id="adminCreateUserForm" onsubmit="adminCreateUser(event)" style="display: grid; gap: var(--space-sm);">
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm);">
+                        <div>
+                          <label class="config-label" style="font-weight: 700;">USERNAME</label>
+                          <input type="text" id="adminNewUsername" required class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                        </div>
+                        <div>
+                          <label class="config-label" style="font-weight: 700;">PASSWORD</label>
+                          <input type="password" id="adminNewPassword" required class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                        </div>
+                        <div>
+                          <label class="config-label" style="font-weight: 700;">ROLE</label>
+                          <select id="adminNewRole" required class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; cursor: pointer;">
+                            <option value="operator">Operator</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label class="config-label" style="font-weight: 700;">ASSIGNED MACHINES</label>
+                        <div style="display: flex; gap: var(--space-md);">
+                          <label style="display: flex; align-items: center; gap: var(--space-xs); cursor: pointer;">
+                            <input type="checkbox" value="A" class="admin-machine-checkbox" style="cursor: pointer;">
+                            <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-primary);">A</span>
+                          </label>
+                          <label style="display: flex; align-items: center; gap: var(--space-xs); cursor: pointer;">
+                            <input type="checkbox" value="B" class="admin-machine-checkbox" style="cursor: pointer;">
+                            <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-primary);">B</span>
+                          </label>
+                          <label style="display: flex; align-items: center; gap: var(--space-xs); cursor: pointer;">
+                            <input type="checkbox" value="C" class="admin-machine-checkbox" style="cursor: pointer;">
+                            <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-primary);">C</span>
+                          </label>
+                        </div>
+                      </div>
+                      <button type="submit" class="rig-btn rig-btn-start" style="width: 100%;">CREATE USER</button>
+                      <div id="adminCreateUserError" style="display: none; color: var(--status-error); font-family: var(--font-mono); font-size: 11px; text-align: center; font-weight: 700;"></div>
+                      <div id="adminCreateUserSuccess" style="display: none; color: var(--status-running); font-family: var(--font-mono); font-size: 11px; text-align: center; font-weight: 700;"></div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
           </div>
-          <!-- END 2-COLUMN GRID -->
+          <!-- END GRIDSTACK -->
         </div>
         
         <!-- Analytics Section (Admin Only) -->
@@ -862,61 +831,6 @@
           </div>
         </div>
         
-        <!-- Users Section (Admin Only) -->
-        <div class="scada-section" id="section-users" style="display: none;">
-          <div class="rig-card">
-            <div class="rig-card-header">USER MANAGEMENT</div>
-            <div class="rig-card-body">
-              <form id="adminCreateUserForm" onsubmit="adminCreateUser(event)" style="display: grid; gap: var(--space-lg);">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md);">
-                  <div>
-                    <label style="display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: var(--space-xs); text-transform: uppercase;">
-                      USERNAME
-                    </label>
-                    <input type="text" id="adminNewUsername" required style="width: 100%; padding: var(--space-sm); background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px; color: var(--text-primary); font-family: var(--font-mono); font-size: 12px; font-weight: 700;">
-                  </div>
-                  <div>
-                    <label style="display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: var(--space-xs); text-transform: uppercase;">
-                      PASSWORD
-                    </label>
-                    <input type="password" id="adminNewPassword" required style="width: 100%; padding: var(--space-sm); background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px; color: var(--text-primary); font-family: var(--font-mono); font-size: 12px; font-weight: 700;">
-                  </div>
-                  <div>
-                    <label style="display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: var(--space-xs); text-transform: uppercase;">
-                      ROLE
-                    </label>
-                    <select id="adminNewRole" required style="width: 100%; padding: var(--space-sm); background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px; color: var(--text-primary); font-family: var(--font-mono); font-size: 12px; font-weight: 700; cursor: pointer;">
-                      <option value="operator">Operator</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label style="display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: var(--space-xs); text-transform: uppercase;">
-                    ASSIGNED MACHINES
-                  </label>
-                  <div style="display: flex; gap: var(--space-md);">
-                    <label style="display: flex; align-items: center; gap: var(--space-xs); cursor: pointer;">
-                      <input type="checkbox" value="A" class="admin-machine-checkbox" style="cursor: pointer;">
-                      <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-primary);">A</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: var(--space-xs); cursor: pointer;">
-                      <input type="checkbox" value="B" class="admin-machine-checkbox" style="cursor: pointer;">
-                      <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-primary);">B</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: var(--space-xs); cursor: pointer;">
-                      <input type="checkbox" value="C" class="admin-machine-checkbox" style="cursor: pointer;">
-                      <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-primary);">C</span>
-                    </label>
-                  </div>
-                </div>
-                <button type="submit" class="rig-btn rig-btn-start" style="width: 100%;">CREATE USER</button>
-                <div id="adminCreateUserError" style="display: none; color: var(--status-error); font-family: var(--font-mono); font-size: 11px; text-align: center; font-weight: 700;"></div>
-                <div id="adminCreateUserSuccess" style="display: none; color: var(--status-running); font-family: var(--font-mono); font-size: 11px; text-align: center; font-weight: 700;"></div>
-              </form>
-            </div>
-          </div>
-        </div>
         
         <!-- Old Users Section (to be removed) -->
         <div id="sectionUsersContent" style="display: none;">
@@ -4323,51 +4237,52 @@
         const configEl = document.getElementById('configGrid');
         if (configEl) {
           configGrid = GridStack.init(gridOptions, '#configGrid');
+          
+          // Handle resize events for config grid widgets
+          configGrid.on('resizestop', function(event, items) {
+            // Any resize handling if needed
+          });
+          
+          // Handle move events
+          configGrid.on('change', function(event, items) {
+            // Any move handling if needed
+          });
         }
         
-        console.log('Gridstack initialized');
+        console.log('Gridstack initialized (monitoring + config)');
       }
 
       function toggleLayoutEditMode() {
         layoutEditMode = !layoutEditMode;
         const btn = document.getElementById('editLayoutBtn');
-        const gridEl = document.getElementById('monitoringGrid');
+        const monitoringGridEl = document.getElementById('monitoringGrid');
+        const configGridEl = document.getElementById('configGrid');
         
-        if (monitoringGrid) {
+        // Sync both grids simultaneously
+        [monitoringGrid, configGrid].forEach((grid, index) => {
+          if (!grid) return;
+          
+          const gridEl = index === 0 ? monitoringGridEl : configGridEl;
+          
           if (layoutEditMode) {
             // Enable edit mode
-            monitoringGrid.setStatic(false);
-            monitoringGrid.enableMove(true);
-            monitoringGrid.enableResize(true);
+            grid.setStatic(false);
+            grid.enableMove(true);
+            grid.enableResize(true);
             if (gridEl) gridEl.classList.add('edit-mode');
-            // Show drag handles
-            document.querySelectorAll('.grid-item-drag-handle').forEach(handle => {
-              handle.style.display = 'block';
-            });
           } else {
             // Disable edit mode (save layout)
-            monitoringGrid.setStatic(true);
-            monitoringGrid.enableMove(false);
-            monitoringGrid.enableResize(false);
+            grid.setStatic(true);
+            grid.enableMove(false);
+            grid.enableResize(false);
             if (gridEl) gridEl.classList.remove('edit-mode');
-            // Hide drag handles
-            document.querySelectorAll('.grid-item-drag-handle').forEach(handle => {
-              handle.style.display = 'none';
-            });
           }
-        }
+        });
         
-        if (configGrid) {
-          if (layoutEditMode) {
-            configGrid.setStatic(false);
-            configGrid.enableMove(true);
-            configGrid.enableResize(true);
-          } else {
-            configGrid.setStatic(true);
-            configGrid.enableMove(false);
-            configGrid.enableResize(false);
-          }
-        }
+        // Show/hide drag handles for all grids
+        document.querySelectorAll('.grid-item-drag-handle').forEach(handle => {
+          handle.style.display = layoutEditMode ? 'block' : 'none';
+        });
         
         if (btn) {
           btn.textContent = layoutEditMode ? '✓ SAVE LAYOUT' : '⚙️ EDIT LAYOUT';
