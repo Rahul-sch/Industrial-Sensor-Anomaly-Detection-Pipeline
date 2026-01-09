@@ -4464,24 +4464,38 @@
           return;
         }
         
+        const adminEl = document.getElementById('adminGrid');
+        if (!adminEl) return;
+        
+        // Calculate proper cell height for 1080p layout
+        const viewportHeight = window.innerHeight;
+        const headerHeight = 60;
+        const padding = 32;
+        const availableHeight = viewportHeight - headerHeight - padding;
+        const cellHeight = Math.floor(availableHeight / 20); // 20 rows for 1080p
+        
         const gridOptions = {
           column: 12,
-          cellHeight: Math.floor((window.innerHeight - 60 - 32) / 20), // Dynamic based on vh
+          cellHeight: cellHeight,
           margin: 8,
           float: false,
-          disableDrag: true,
-          disableResize: true,
-          staticGrid: true
+          disableDrag: false,  // Enable dragging
+          disableResize: false, // Enable resizing
+          staticGrid: false,   // Allow movement
+          minRow: 1,
+          animate: true
         };
         
-        const adminEl = document.getElementById('adminGrid');
-        if (adminEl && !adminGrid) {
+        if (!adminGrid) {
           adminGrid = GridStack.init(gridOptions, '#adminGrid');
-          adminGrid.batchUpdate();
-          console.log('Admin grid initialized');
-        } else if (adminEl && adminGrid) {
+          console.log('Admin grid initialized with drag/resize enabled');
+        } else {
+          // Update existing grid
           adminGrid.batchUpdate();
         }
+        
+        // Ensure widgets maintain their default sizes
+        adminGrid.batchUpdate();
       }
       
       // E-STOP Function
