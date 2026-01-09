@@ -1030,7 +1030,7 @@ body {
          ============================================ */
 .telemetry-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: calc(var(--space-lg) * 0.85);
 }
 
@@ -1043,10 +1043,6 @@ body {
   flex-direction: column;
   gap: calc(var(--space-md) * 0.85);
   transition: all var(--transition-normal);
-  transform: scale(0.85);
-  transform-origin: top left;
-  width: 117.65%; /* Compensate for scale */
-  height: 117.65%;
 }
 
 .telemetry-tile:hover {
@@ -1129,6 +1125,13 @@ body {
 .telemetry-tile-sparkline-line.crit {
   stroke: var(--status-error);
   filter: drop-shadow(0 0 4px var(--status-error));
+}
+
+/* Graph/Canvas scaling fix */
+.telemetry-tile canvas {
+  max-height: 40px !important;
+  width: 100% !important;
+  height: auto !important;
 }
 
 .telemetry-tile-lstm {
