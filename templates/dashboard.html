@@ -452,7 +452,7 @@
           <div class="grid-stack" id="alarmsChartGrid">
             
             <!-- Category Widget 1: Environmental -->
-            <div class="grid-stack-item" data-gs-x="0" data-gs-y="0" data-gs-width="4" data-gs-height="3" data-gs-id="alarms-env">
+            <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="2" gs-h="3" gs-id="alarms-env">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card config-widget" style="height: 100%; display: flex; flex-direction: column; background: var(--theme-bg-secondary);">
@@ -473,7 +473,7 @@
             </div>
             
             <!-- Category Widget 2: Mechanical -->
-            <div class="grid-stack-item" data-gs-x="4" data-gs-y="0" data-gs-width="4" data-gs-height="3" data-gs-id="alarms-mech">
+            <div class="grid-stack-item" gs-x="2" gs-y="0" gs-w="2" gs-h="3" gs-id="alarms-mech">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card config-widget" style="height: 100%; display: flex; flex-direction: column; background: var(--theme-bg-secondary);">
@@ -494,7 +494,7 @@
             </div>
             
             <!-- Category Widget 3: Thermal -->
-            <div class="grid-stack-item" data-gs-x="8" data-gs-y="0" data-gs-width="4" data-gs-height="3" data-gs-id="alarms-therm">
+            <div class="grid-stack-item" gs-x="4" gs-y="0" gs-w="2" gs-h="3" gs-id="alarms-therm">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card config-widget" style="height: 100%; display: flex; flex-direction: column; background: var(--theme-bg-secondary);">
@@ -515,7 +515,7 @@
             </div>
             
             <!-- Category Widget 4: Electrical -->
-            <div class="grid-stack-item" data-gs-x="0" data-gs-y="3" data-gs-width="4" data-gs-height="3" data-gs-id="alarms-elec">
+            <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="2" gs-h="3" gs-id="alarms-elec">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card config-widget" style="height: 100%; display: flex; flex-direction: column; background: var(--theme-bg-secondary);">
@@ -536,7 +536,7 @@
             </div>
             
             <!-- Category Widget 5: Fluid -->
-            <div class="grid-stack-item" data-gs-x="4" data-gs-y="3" data-gs-width="4" data-gs-height="3" data-gs-id="alarms-fluid">
+            <div class="grid-stack-item" gs-x="8" gs-y="0" gs-w="2" gs-h="3" gs-id="alarms-fluid">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card config-widget" style="height: 100%; display: flex; flex-direction: column; background: var(--theme-bg-secondary);">
@@ -557,7 +557,7 @@
             </div>
             
             <!-- Critical Alarms Widget -->
-            <div class="grid-stack-item" data-gs-x="8" data-gs-y="3" data-gs-width="4" data-gs-height="4" data-gs-id="alarms-critical">
+            <div class="grid-stack-item" gs-x="10" gs-y="0" gs-w="2" gs-h="6" gs-id="alarms-critical">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card config-widget" style="height: 100%; display: flex; flex-direction: column; background: var(--theme-bg-secondary);">
@@ -4876,10 +4876,11 @@
           
           // Resize the Gridstack widget
           if (alarmsChartGrid && widgetId) {
-            const widgetEl = document.querySelector(`[data-gs-id="${widgetId}"]`);
+            const widgetEl = document.querySelector(`[gs-id="${widgetId}"]`);
             if (widgetEl) {
               const newHeight = isHidden ? 8 : 3; // Expanded: 8 rows, Collapsed: 3 rows
               alarmsChartGrid.update(widgetEl, { h: newHeight });
+              console.log(`Resized ${widgetId} to height: ${newHeight}`);
             }
           }
         }
