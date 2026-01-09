@@ -2061,8 +2061,7 @@
               const configIcon = document.getElementById('sidebarConfigIcon');
               if (configIcon) configIcon.style.display = 'flex';
               
-              // Show Admin icon for admins
-              const adminIcon = document.getElementById('sidebarAdminIcon');
+              // Show Admin icon for admins (using existing adminIcon from above)
               if (adminIcon && currentUser.role === 'admin') {
                 adminIcon.style.display = 'flex';
               }
