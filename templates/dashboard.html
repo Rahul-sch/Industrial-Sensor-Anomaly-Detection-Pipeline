@@ -831,8 +831,8 @@
         <div class="scada-section" id="section-admin" style="display: none;">
           <div class="grid-stack" id="adminGrid">
             
-            <!-- Widget 1: E-STOP Button -->
-            <div class="grid-stack-item" data-gs-x="0" data-gs-y="0" data-gs-width="4" data-gs-height="4">
+            <!-- WIDGET 1: E-STOP (gs-x="0" gs-y="0" gs-w="4" gs-h="4") -->
+            <div class="grid-stack-item" data-gs-x="0" data-gs-y="0" data-gs-width="4" data-gs-height="4" data-gs-id="admin-estop">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card" style="height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--bg-primary); border: 3px solid var(--theme-status-error); box-shadow: 0 0 40px rgba(255, 23, 68, 0.6);">
@@ -842,9 +842,10 @@
                   </div>
                   <div class="rig-card-body" style="flex: 1; display: flex; justify-content: center; align-items: center; padding: var(--space-xl);">
                     <button 
+                      id="globalEStop"
                       onclick="triggerEmergencyStop()" 
                       class="rig-btn" 
-                      style="width: 90%; height: 90%; font-size: 24px; font-weight: 900; background: var(--theme-status-error); border: 4px solid var(--theme-status-critical); color: white; box-shadow: 0 0 30px rgba(255, 0, 0, 0.8); cursor: pointer; text-transform: uppercase; letter-spacing: 4px;">
+                      style="width: 200px; height: 200px; border-radius: 50%; font-size: 28px; font-weight: 900; background: var(--theme-status-error); border: 6px solid var(--theme-status-critical); color: white; box-shadow: 0 0 40px rgba(255, 0, 0, 0.9), inset 0 0 20px rgba(255, 0, 0, 0.5); cursor: pointer; text-transform: uppercase; letter-spacing: 4px; transition: all 0.2s;">
                       E-STOP
                     </button>
                   </div>
@@ -852,8 +853,49 @@
               </div>
             </div>
             
-            <!-- Widget 2: User Management (Single Instance) -->
-            <div class="grid-stack-item" data-gs-x="4" data-gs-y="0" data-gs-width="8" data-gs-height="6">
+            <!-- WIDGET 2: THEME ENGINE (gs-x="4" gs-y="0" gs-w="4" gs-h="4") -->
+            <div class="grid-stack-item" data-gs-x="4" data-gs-y="0" data-gs-width="4" data-gs-height="4" data-gs-id="admin-theme">
+              <div class="grid-stack-item-content">
+                <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
+                <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
+                  <div class="rig-card-header">
+                    <span style="font-weight: 900;">APPEARANCE ENGINE</span>
+                    <span class="status-indicator status-nom"></span>
+                  </div>
+                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md); display: grid; gap: var(--space-md);">
+                    <div>
+                      <label class="config-label" style="font-weight: 900; margin-bottom: var(--space-sm); display: block;">THEME MODE</label>
+                      <div style="display: grid; gap: var(--space-sm);">
+                        <button 
+                          id="cyberModeToggle" 
+                          onclick="setTheme('default')" 
+                          class="scada-btn" 
+                          style="width: 100%; background: var(--theme-interactive-primary); border-color: var(--theme-interactive-primary); font-weight: 900; font-size: 11px; padding: var(--space-sm); color: var(--text-primary);">
+                          CYBER
+                        </button>
+                        <button 
+                          id="barbieModeToggle" 
+                          onclick="toggleBarbieModeButton()" 
+                          class="scada-btn" 
+                          style="width: 100%; background: var(--theme-interactive-primary); border-color: var(--theme-interactive-primary); font-weight: 900; font-size: 11px; padding: var(--space-sm); color: var(--text-primary);">
+                          BARBIE MODE: <span id="barbieModeStatus">OFF</span>
+                        </button>
+                        <button 
+                          id="matrixModeToggle" 
+                          onclick="toggleMatrixModeButton()" 
+                          class="scada-btn" 
+                          style="width: 100%; background: var(--theme-interactive-primary); border-color: var(--theme-interactive-primary); font-weight: 900; font-size: 11px; padding: var(--space-sm); color: var(--text-primary);">
+                          MATRIX MODE: <span id="matrixModeStatus">OFF</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- WIDGET 3: USER MANAGEMENT (gs-x="8" gs-y="0" gs-w="4" gs-h="8") -->
+            <div class="grid-stack-item" data-gs-x="8" data-gs-y="0" data-gs-width="4" data-gs-height="8" data-gs-id="admin-usermgmt">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
@@ -914,8 +956,8 @@
               </div>
             </div>
             
-            <!-- Widget 3: Login & Audit Logs -->
-            <div class="grid-stack-item" data-gs-x="0" data-gs-y="6" data-gs-width="8" data-gs-height="4">
+            <!-- WIDGET 4: AUDIT LOGS (gs-x="0" gs-y="4" gs-w="8" gs-h="4") -->
+            <div class="grid-stack-item" data-gs-x="0" data-gs-y="4" data-gs-width="8" data-gs-height="4" data-gs-id="admin-audit">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
@@ -923,14 +965,17 @@
                     <span style="font-weight: 900;">LOGIN & AUDIT LOGS</span>
                     <span class="status-indicator status-nom"></span>
                   </div>
-                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: 0;">
+                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: 0; font-family: var(--font-mono); font-size: 9px; background: var(--bg-base); color: var(--text-primary);">
+                    <div style="padding: var(--space-sm); background: var(--bg-secondary); border-bottom: 1px solid var(--border-default);">
+                      <div style="color: var(--theme-status-running);">SYSTEM LOGS - SCROLLABLE TERMINAL</div>
+                    </div>
                     <table class="scada-admin-table" style="width: 100%; border-collapse: collapse; font-size: 9px;">
                       <thead style="position: sticky; top: 0; background: var(--bg-secondary); z-index: 10;">
                         <tr>
-                          <th class="config-table-header" style="font-weight: 900;">TIMESTAMP</th>
-                          <th class="config-table-header" style="font-weight: 900;">USER</th>
-                          <th class="config-table-header" style="font-weight: 900;">ACTION</th>
-                          <th class="config-table-header" style="font-weight: 900;">DETAILS</th>
+                          <th class="config-table-header" style="font-weight: 900; padding: var(--space-xs);">TIMESTAMP</th>
+                          <th class="config-table-header" style="font-weight: 900; padding: var(--space-xs);">USER</th>
+                          <th class="config-table-header" style="font-weight: 900; padding: var(--space-xs);">ACTION</th>
+                          <th class="config-table-header" style="font-weight: 900; padding: var(--space-xs);">DETAILS</th>
                         </tr>
                       </thead>
                       <tbody id="adminAuditLogsBody">
@@ -939,40 +984,6 @@
                         </tr>
                       </tbody>
                     </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Widget 4: Appearance Engine -->
-            <div class="grid-stack-item" data-gs-x="8" data-gs-y="6" data-gs-width="4" data-gs-height="4">
-              <div class="grid-stack-item-content">
-                <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
-                <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
-                  <div class="rig-card-header">
-                    <span style="font-weight: 900;">APPEARANCE ENGINE</span>
-                    <span class="status-indicator status-nom"></span>
-                  </div>
-                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md); display: grid; gap: var(--space-md);">
-                    <div>
-                      <label class="config-label" style="font-weight: 900; margin-bottom: var(--space-sm); display: block;">THEME MODE</label>
-                      <div style="display: grid; gap: var(--space-sm);">
-                        <button 
-                          id="barbieModeToggle" 
-                          onclick="toggleBarbieModeButton()" 
-                          class="scada-btn" 
-                          style="width: 100%; background: var(--theme-interactive-primary); border-color: var(--theme-interactive-primary); font-weight: 900; font-size: 11px; padding: var(--space-sm); color: var(--text-primary);">
-                          BARBIE MODE: <span id="barbieModeStatus">OFF</span>
-                        </button>
-                        <button 
-                          id="matrixModeToggle" 
-                          onclick="toggleMatrixModeButton()" 
-                          class="scada-btn" 
-                          style="width: 100%; background: var(--theme-interactive-primary); border-color: var(--theme-interactive-primary); font-weight: 900; font-size: 11px; padding: var(--space-sm); color: var(--text-primary);">
-                          MATRIX MODE: <span id="matrixModeStatus">OFF</span>
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -2008,9 +2019,22 @@
             if (data.success) {
               currentUser = data.user;
               accessibleMachines = data.user.accessible_machines || [];
+              // Store role in sessionStorage for admin access checks
+              if (currentUser.role) {
+                sessionStorage.setItem('role', currentUser.role);
+              }
               showDashboard();
               filterMachineSelector();
               updateUserInfo();
+              // Show/hide admin sidebar icon based on role
+              const adminIcon = document.getElementById('sidebarAdminIcon');
+              if (adminIcon) {
+                if (currentUser.role === 'admin') {
+                  adminIcon.style.display = 'flex !important';
+                } else {
+                  adminIcon.style.display = 'none';
+                }
+              }
               if (currentUser.role === 'admin') {
                 // Initialize admin sidebar for admins
                 initializeAdminSidebar();
@@ -4455,7 +4479,10 @@
         const adminEl = document.getElementById('adminGrid');
         if (adminEl && !adminGrid) {
           adminGrid = GridStack.init(gridOptions, '#adminGrid');
+          adminGrid.batchUpdate();
           console.log('Admin grid initialized');
+        } else if (adminEl && adminGrid) {
+          adminGrid.batchUpdate();
         }
       }
       
@@ -8372,7 +8399,8 @@ Report generated by Sensor Data Pipeline Dashboard
       function switchSection(sectionName) {
         // Security check for admin section
         if (sectionName === 'admin') {
-          if (!currentUser || currentUser.role !== 'admin') {
+          const userRole = currentUser?.role || sessionStorage.getItem('role');
+          if (userRole !== 'admin') {
             alert('Access denied. Admin privileges required.');
             return;
           }
@@ -8392,8 +8420,11 @@ Report generated by Sensor Data Pipeline Dashboard
           
           // Initialize admin grid if needed
           if (sectionName === 'admin') {
-            if (typeof adminGrid === 'undefined') {
+            if (!adminGrid) {
               initAdminGrid();
+            }
+            if (adminGrid) {
+              adminGrid.batchUpdate();
             }
             loadAdminAuditLogs();
             loadAdminUserList();

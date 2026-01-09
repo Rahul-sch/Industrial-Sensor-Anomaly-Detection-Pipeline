@@ -35,3 +35,34 @@
   --theme-interactive-hover: #40dfff;
   --theme-interactive-active: #0099cc;
 }
+
+/* ============================================
+   BARBIE MODE THEME
+   ============================================ */
+[data-theme='pink'] {
+  --theme-bg-base: #fff5f8;
+  --theme-bg-primary: #ffeef5;
+  --theme-bg-secondary: #ffe0eb;
+  --theme-bg-tertiary: #ffd1e0;
+  --theme-bg-elevated: #ffc2d5;
+  
+  --theme-text-primary: #4a0e1e;
+  --theme-text-secondary: #6b1f3a;
+  --theme-text-muted: #8d2f56;
+  --theme-text-disabled: #af3f72;
+  
+  --theme-border-subtle: #ffc2d5;
+  --theme-border-default: #ffb3c8;
+  --theme-border-strong: #ffa4bb;
+  
+  --theme-status-normal: #ffb3c8;
+  --theme-status-running: #ff4d94;
+  --theme-status-warning: #ff6ba8;
+  --theme-status-error: #ff1a6b;
+  --theme-status-critical: #e6004c;
+  --theme-status-info: #ff4d94;
+  
+  --theme-interactive-primary: #ff4d94;
+  --theme-interactive-hover: #ff6ba8;
+  --theme-interactive-active: #ff1a6b;
+}
