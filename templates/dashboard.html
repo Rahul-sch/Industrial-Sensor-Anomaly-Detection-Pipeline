@@ -2026,8 +2026,7 @@
               showDashboard();
               filterMachineSelector();
               updateUserInfo();
-              // Show/hide admin sidebar icon based on role
-              const adminIcon = document.getElementById('sidebarAdminIcon');
+              // Show/hide admin sidebar icon based on role (using existing adminIcon from above)
               if (adminIcon) {
                 if (currentUser.role === 'admin') {
                   adminIcon.style.display = 'flex !important';
