@@ -4387,19 +4387,31 @@
           return;
         }
         
+        // Calculate proper cell height for 1080p layout (20 rows)
+        const viewportHeight = window.innerHeight;
+        const headerHeight = 60;
+        const padding = 32;
+        const availableHeight = viewportHeight - headerHeight - padding;
+        const cellHeight = Math.max(40, Math.floor(availableHeight / 20)); // Minimum 40px per cell
+        
         const gridOptions = {
           column: 12,
-          cellHeight: Math.floor((window.innerHeight - 60 - 32) / 20), // Dynamic based on vh
+          cellHeight: cellHeight,
           margin: 8,
           float: false,
           disableDrag: true,  // Fixed layout by default
           disableResize: true,
-          staticGrid: true
+          staticGrid: true,
+          minRow: 1, // Ensure at least 1 row is visible
+          animate: false // Disable animation for faster load
         };
         
         const monitoringEl = document.getElementById('monitoringGrid');
         if (monitoringEl) {
           monitoringGrid = GridStack.init(gridOptions, '#monitoringGrid');
+          
+          // Ensure widgets maintain their default sizes
+          monitoringGrid.batchUpdate();
           
           // Handle resize events for Three.js canvas
           monitoringGrid.on('resizestop', function(event, items) {
@@ -4442,6 +4454,9 @@
         if (configEl) {
           configGrid = GridStack.init(gridOptions, '#configGrid');
           
+          // Ensure widgets maintain their default sizes
+          configGrid.batchUpdate();
+          
           // Handle resize events for config grid widgets
           configGrid.on('resizestop', function(event, items) {
             // Any resize handling if needed
@@ -4453,7 +4468,7 @@
           });
         }
         
-        console.log('Gridstack initialized (monitoring + config)');
+        console.log('Gridstack initialized (monitoring + config) with cellHeight:', cellHeight);
       }
       
       // Initialize Admin Grid
