@@ -110,34 +110,14 @@ init_db_pool()
 # CONTENT SECURITY POLICY (CSP) CONFIGURATION
 # ============================================================================
 if TALISMAN_AVAILABLE:
+    # CSP as dictionary (Flask-Talisman supports both dict and string formats)
+    # Using dict format for better maintainability
     csp = {
         'default-src': "'self'",
-        'script-src': [
-            "'self'",
-            "'unsafe-inline'",
-            "'unsafe-eval'",  # Required for Three.js and dynamic JavaScript
-            'https://cdnjs.cloudflare.com',  # For Three.js library
-            'https://cdn.jsdelivr.net'  # For OrbitControls
-        ],
-        'style-src': [
-            "'self'",
-            "'unsafe-inline'",  # Required for inline styles
-            'https://cdnjs.cloudflare.com',  # For Inter font
-            'https://cdn.jsdelivr.net',  # For Gridstack CSS
-            'https://fonts.googleapis.com'  # For Google Fonts if used
-        ],
-        'connect-src': [
-            "'self'",
-            'https://*.neon.tech',  # Allow Neon database connections
-            'https://*.aws.neon.tech',  # Allow AWS Neon connections
-            'https://cdn.jsdelivr.net',  # Allow Gridstack source maps
-            'http://127.0.0.1:7243'  # Allow debug logging endpoint
-        ],
-        'font-src': [
-            "'self'",
-            'https://cdnjs.cloudflare.com',
-            'https://fonts.gstatic.com'
-        ],
+        'script-src': "'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+        'style-src': "'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com",
+        'connect-src': "'self' https://*.neon.tech https://*.aws.neon.tech https://cdn.jsdelivr.net http://127.0.0.1:7243",
+        'font-src': "'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com",
         'img-src': "'self' data:",
         'frame-ancestors': "'none'"
     }
@@ -148,7 +128,7 @@ if TALISMAN_AVAILABLE:
         force_https=False,  # Set to True in production with HTTPS
         strict_transport_security=False  # Set to True in production
     )
-    logger.info("Flask-Talisman initialized with CSP headers")
+    logger.info("Flask-Talisman initialized with CSP headers (unsafe-eval enabled for Three.js/Gridstack)")
 
 # Session configuration
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'change-me-in-production-secret-key-12345')
