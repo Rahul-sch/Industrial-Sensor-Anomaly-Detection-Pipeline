@@ -957,14 +957,20 @@
                     <div>
                       <label class="config-label" style="font-weight: 900; margin-bottom: var(--space-sm); display: block;">THEME MODE</label>
                       <div style="display: grid; gap: var(--space-sm);">
-                        <label style="display: flex; align-items: center; gap: var(--space-xs); cursor: pointer; padding: var(--space-sm); border: 1px solid var(--border-default); border-radius: 4px; transition: all var(--theme-transition-normal);">
-                          <input type="checkbox" id="barbieModeToggle" onchange="toggleBarbieMode(this.checked)" style="cursor: pointer;">
-                          <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 900; color: var(--text-primary);">BARBIE MODE</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: var(--space-xs); cursor: pointer; padding: var(--space-sm); border: 1px solid var(--border-default); border-radius: 4px; transition: all var(--theme-transition-normal);">
-                          <input type="checkbox" id="matrixModeToggle" onchange="toggleMatrixMode(this.checked)" style="cursor: pointer;">
-                          <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 900; color: var(--text-primary);">MATRIX MODE</span>
-                        </label>
+                        <button 
+                          id="barbieModeToggle" 
+                          onclick="toggleBarbieModeButton()" 
+                          class="scada-btn" 
+                          style="width: 100%; background: var(--theme-interactive-primary); border-color: var(--theme-interactive-primary); font-weight: 900; font-size: 11px; padding: var(--space-sm); color: var(--text-primary);">
+                          BARBIE MODE: <span id="barbieModeStatus">OFF</span>
+                        </button>
+                        <button 
+                          id="matrixModeToggle" 
+                          onclick="toggleMatrixModeButton()" 
+                          class="scada-btn" 
+                          style="width: 100%; background: var(--theme-interactive-primary); border-color: var(--theme-interactive-primary); font-weight: 900; font-size: 11px; padding: var(--space-sm); color: var(--text-primary);">
+                          MATRIX MODE: <span id="matrixModeStatus">OFF</span>
+                        </button>
                       </div>
                     </div>
                   </div>
