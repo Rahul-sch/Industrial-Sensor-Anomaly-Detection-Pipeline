@@ -13,36 +13,36 @@
            DEEP SPACE INDUSTRIAL THEME
            Ultra-dark backgrounds with neon accents
            ============================================ */
-  /* Base palette - Deep Space Black */
-  --bg-base: #0a0a0a;
-  --bg-primary: #111111;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #222222;
-  --bg-elevated: #2a2a2a;
+  /* Base palette - Deep Space Black (mapped to theme engine) */
+  --bg-base: var(--theme-bg-base);
+  --bg-primary: var(--theme-bg-primary);
+  --bg-secondary: var(--theme-bg-secondary);
+  --bg-tertiary: var(--theme-bg-tertiary);
+  --bg-elevated: var(--theme-bg-elevated);
 
-  /* Text hierarchy - High contrast */
-  --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
-  --text-muted: #707070;
-  --text-disabled: #404040;
+  /* Text hierarchy - High contrast (mapped to theme engine) */
+  --text-primary: var(--theme-text-primary);
+  --text-secondary: var(--theme-text-secondary);
+  --text-muted: var(--theme-text-muted);
+  --text-disabled: var(--theme-text-disabled);
 
-  /* Borders - Subtle but visible */
-  --border-subtle: #2a2a2a;
-  --border-default: #404040;
-  --border-strong: #606060;
+  /* Borders - Subtle but visible (mapped to theme engine) */
+  --border-subtle: var(--theme-border-subtle);
+  --border-default: var(--theme-border-default);
+  --border-strong: var(--theme-border-strong);
 
-  /* Status - Neon Traffic Light System */
-  --status-normal: #606060;
-  --status-running: #00ff41; /* Neon Green */
-  --status-warning: #ffd700; /* Neon Yellow */
-  --status-error: #ff1744; /* Neon Red */
-  --status-critical: #ff0000; /* Bright Red */
-  --status-info: #00bfff; /* Neon Blue */
+  /* Status - Neon Traffic Light System (mapped to theme engine) */
+  --status-normal: var(--theme-status-normal);
+  --status-running: var(--theme-status-running); /* Neon Green */
+  --status-warning: var(--theme-status-warning); /* Neon Yellow */
+  --status-error: var(--theme-status-error); /* Neon Red */
+  --status-critical: var(--theme-status-critical); /* Bright Red */
+  --status-info: var(--theme-status-info); /* Neon Blue */
 
-  /* Interactive elements - Neon Blue */
-  --interactive-primary: #00bfff;
-  --interactive-hover: #40dfff;
-  --interactive-active: #0099cc;
+  /* Interactive elements - Neon Blue (mapped to theme engine) */
+  --interactive-primary: var(--theme-interactive-primary);
+  --interactive-hover: var(--theme-interactive-hover);
+  --interactive-active: var(--theme-interactive-active);
 
   /* Spacing scale (consistent rhythm) */
   --space-xs: 4px;

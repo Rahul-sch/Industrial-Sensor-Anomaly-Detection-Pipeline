@@ -1,0 +1,37 @@
+/* ============================================
+   RIG ALPHA THEME ENGINE
+   Centralized color system for easy theming
+   ============================================ */
+
+:root {
+  /* Base palette - Deep Space Black */
+  --theme-bg-base: #0a0a0a;
+  --theme-bg-primary: #111111;
+  --theme-bg-secondary: #1a1a1a;
+  --theme-bg-tertiary: #222222;
+  --theme-bg-elevated: #2a2a2a;
+
+  /* Text hierarchy */
+  --theme-text-primary: #ffffff;
+  --theme-text-secondary: #b0b0b0;
+  --theme-text-muted: #707070;
+  --theme-text-disabled: #404040;
+
+  /* Borders */
+  --theme-border-subtle: #2a2a2a;
+  --theme-border-default: #404040;
+  --theme-border-strong: #606060;
+
+  /* Status colors - Neon Traffic Light */
+  --theme-status-normal: #606060;
+  --theme-status-running: #00ff41;
+  --theme-status-warning: #ffd700;
+  --theme-status-error: #ff1744;
+  --theme-status-critical: #ff0000;
+  --theme-status-info: #00bfff;
+
+  /* Interactive elements */
+  --theme-interactive-primary: #00bfff;
+  --theme-interactive-hover: #40dfff;
+  --theme-interactive-active: #0099cc;
+}
