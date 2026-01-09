@@ -4979,32 +4979,19 @@
           }
         });
         
-        // Update Critical Alarms widget
-        updateCriticalAlarms();
+        // Update Critical Alarms widget on Alarms page
+        updateCriticalAlarmsForAlarmsPage();
       }
       
       // Update Critical Alarms Widget (for both Monitoring and Alarms pages)
-      function updateCriticalAlarms() {
-        // Update Monitoring page widget
-        const monitoringTbody = document.getElementById('criticalAlarmsWidget')?.querySelector('tbody');
-        if (monitoringTbody) {
-          updateCriticalAlarmsTable(monitoringTbody);
-        }
-        
-        // Update Alarms page widget
+      function updateCriticalAlarmsForAlarmsPage() {
+        // Update Alarms page widget only
         const alarmsTbody = document.getElementById('alarmsCriticalAlarmsWidget')?.querySelector('tbody');
-        if (alarmsTbody) {
-          updateCriticalAlarmsTable(alarmsTbody);
-        }
-      }
-      
-      // Helper function to update a critical alarms table
-      function updateCriticalAlarmsTable(tbody) {
-        if (!tbody) return;
+        if (!alarmsTbody) return;
         
         const currentMachine = machineData[selectedMachineId];
         if (!currentMachine) {
-          tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--text-muted); padding: var(--space-md); font-size: 9px;">No data</td></tr>';
+          alarmsTbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--text-muted); padding: var(--space-md); font-size: 9px;">No data</td></tr>';
           return;
         }
         
@@ -5053,20 +5040,17 @@
         criticalAlarms = criticalAlarms.slice(0, 10);
         
         if (criticalAlarms.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--text-muted); padding: var(--space-md); font-size: 9px;">No critical alarms</td></tr>';
+          alarmsTbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--text-muted); padding: var(--space-md); font-size: 9px;">No critical alarms</td></tr>';
           return;
         }
         
-        tbody.innerHTML = criticalAlarms.map(alarm => `
+        alarmsTbody.innerHTML = criticalAlarms.map(alarm => `
           <tr style="border-bottom: 1px solid var(--border-subtle);">
             <td style="padding: var(--space-xs); color: var(--text-muted); font-size: 8px;">${alarm.time}</td>
             <td style="padding: var(--space-xs); color: var(--status-error); font-size: 8px; font-weight: 700;">${alarm.sensor}</td>
           </tr>
         `).join('');
       }
-      
-      // Update Critical Alarms in main update loop (called from updateStats)
-      // This ensures both widgets stay in sync
       
       // Render Category Filter Bar for Alarms (deprecated - kept for compatibility)
       function renderAlarmsCategoryToggles() {
