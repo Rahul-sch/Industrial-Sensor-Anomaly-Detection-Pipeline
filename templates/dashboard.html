@@ -584,22 +584,6 @@
             
           </div>
         </div>
-                      <th class="config-table-header" style="font-weight: 900; padding: var(--space-xs); text-align: left;">SENSOR</th>
-                      <th class="config-table-header" style="font-weight: 900; padding: var(--space-xs); text-align: left;">VALUE</th>
-                      <th class="config-table-header" style="font-weight: 900; padding: var(--space-xs); text-align: left;">THRESHOLD</th>
-                      <th class="config-table-header" style="font-weight: 900; padding: var(--space-xs); text-align: left;">SEVERITY</th>
-                    </tr>
-                  </thead>
-                  <tbody id="alarmsListBody">
-                    <tr>
-                      <td colspan="5" style="text-align: center; color: var(--text-muted); padding: var(--space-md); font-size: 10px;">No active alarms</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
         
         <!-- Controls Section (Removed - moved to Operator Controls card) -->
         <div class="scada-section" id="section-controls" style="display: none;">
@@ -4853,26 +4837,50 @@
       
       // Toggle Alarms Category Widget (expand/collapse)
       function toggleAlarmsCategoryWidget(category) {
-        const contentId = `alarms${category.charAt(0).toUpperCase() + category.slice(1)}Content`;
-        const chevronId = `alarms${category.charAt(0).toUpperCase() + category.slice(1)}Chevron`;
+        // Map category to correct ID prefix
+        const idPrefixMap = {
+          'environmental': 'Env',
+          'mechanical': 'Mech',
+          'thermal': 'Therm',
+          'electrical': 'Elec',
+          'fluid': 'Fluid'
+        };
+        const idPrefix = idPrefixMap[category] || category.charAt(0).toUpperCase() + category.slice(1);
+        
+        const contentId = `alarms${idPrefix}Content`;
+        const chevronId = `alarms${idPrefix}Chevron`;
+        const gsItemId = `alarms-${category.substring(0, 4)}`; // e.g., alarms-env, alarms-mech
+        
+        // Special case for fluid
+        const widgetIdMap = {
+          'environmental': 'alarms-env',
+          'mechanical': 'alarms-mech',
+          'thermal': 'alarms-therm',
+          'electrical': 'alarms-elec',
+          'fluid': 'alarms-fluid'
+        };
+        const widgetId = widgetIdMap[category];
+        
         const content = document.getElementById(contentId);
         const chevron = document.getElementById(chevronId);
         
         if (content && chevron) {
           const isHidden = content.style.display === 'none';
-          content.style.display = isHidden ? 'flex' : 'none';
+          content.style.display = isHidden ? 'block' : 'none';
           chevron.textContent = isHidden ? '▲' : '▼';
           
-          // If expanding, render charts for this category
+          // If expanding, render charts for this category and resize widget
           if (isHidden) {
             renderCategorySensorCharts(category);
           }
           
-          // Update Gridstack layout after expand/collapse
-          if (alarmsChartGrid) {
-            setTimeout(() => {
-              alarmsChartGrid.batchUpdate();
-            }, 100);
+          // Resize the Gridstack widget
+          if (alarmsChartGrid && widgetId) {
+            const widgetEl = document.querySelector(`[data-gs-id="${widgetId}"]`);
+            if (widgetEl) {
+              const newHeight = isHidden ? 8 : 3; // Expanded: 8 rows, Collapsed: 3 rows
+              alarmsChartGrid.update(widgetEl, { h: newHeight });
+            }
           }
         }
       }
