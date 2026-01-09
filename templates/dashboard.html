@@ -4310,6 +4310,22 @@
       }
       
       // ============================================
+      // XSS PROTECTION - HTML Escaping
+      // ============================================
+      
+      /**
+       * Escape HTML to prevent XSS attacks
+       * @param {string} str - String to escape
+       * @returns {string} - Escaped string safe for HTML
+       */
+      function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+      }
+      
+      // ============================================
       // ALARM CONSOLE - Bottom Panel Table
       // ============================================
       
@@ -5063,8 +5079,10 @@
         let html = '';
         
         sensors.forEach(([sensorName, sensorData]) => {
-          const displayName = sensorName.replace(/_/g, ' ').toUpperCase();
-          const unit = sensorData.unit || '';
+          // XSS PROTECTION: Escape sensor name
+          const escapedSensorName = escapeHtml(sensorName);
+          const displayName = escapedSensorName.replace(/_/g, ' ').toUpperCase();
+          const unit = escapeHtml(sensorData.unit || '');
           const value = sensorData.current;
           
           // Get recent readings for sparkline (last 20)
@@ -5088,7 +5106,7 @@
           }
           
           html += `
-            <div class="alarms-sensor-chart-tile ${statusClass}" data-sensor="${sensorName}" style="background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px; padding: var(--space-xs); display: flex; flex-direction: column; gap: 2px;">
+            <div class="alarms-sensor-chart-tile ${statusClass}" data-sensor="${escapedSensorName}" style="background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px; padding: var(--space-xs); display: flex; flex-direction: column; gap: 2px;">
               <div style="font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayName}</div>
               <div style="font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: ${statusClass === 'crit' ? 'var(--status-error)' : statusClass === 'wrn' ? 'var(--status-warning)' : 'var(--theme-text-primary)'}; line-height: 1;">
                 ${value !== null && value !== undefined && !isNaN(value) ? value.toFixed(1) : '--'}
