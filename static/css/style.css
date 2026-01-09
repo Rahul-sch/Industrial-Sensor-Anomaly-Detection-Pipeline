@@ -1695,6 +1695,48 @@ h3 {
   font-weight: 700;
   color: var(--text-primary);
   text-transform: uppercase;
+}
+
+/* ============================================
+         CONFIG WIDGET STYLING
+         ============================================ */
+.config-widget {
+  background: var(--theme-bg-secondary) !important;
+  border: 1px solid var(--border-default);
+}
+
+.config-widget-header {
+  background: var(--theme-bg-tertiary) !important;
+  color: var(--theme-text-primary) !important;
+}
+
+/* Config inputs - dark theme, no white backgrounds */
+.config-widget .scada-input,
+.config-widget input[type="text"],
+.config-widget input[type="number"],
+.config-widget select {
+  background: var(--theme-bg-tertiary) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--theme-text-primary) !important;
+}
+
+.config-widget .scada-input:focus,
+.config-widget input[type="text"]:focus,
+.config-widget input[type="number"]:focus,
+.config-widget select:focus {
+  border-color: var(--theme-interactive-primary) !important;
+  outline: none;
+}
+
+/* Toggle switches - neon cyan when active */
+.config-widget input[type="checkbox"] {
+  accent-color: var(--theme-interactive-primary);
+  cursor: pointer;
+}
+
+.config-widget input[type="checkbox"]:checked {
+  accent-color: var(--theme-interactive-primary);
+}
   letter-spacing: 0.5px;
 }
 

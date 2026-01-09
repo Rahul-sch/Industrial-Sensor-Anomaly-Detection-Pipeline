@@ -590,64 +590,51 @@
             </div>
             
             <!-- Widget 1: Sensor Management Accordion (Left) -->
-            <div class="grid-stack-item" data-gs-x="0" data-gs-y="3" data-gs-width="4" data-gs-height="10">
+            <div class="grid-stack-item" data-gs-x="0" data-gs-y="3" data-gs-width="4" data-gs-height="7">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
-                <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
-                  <div class="rig-card-header">
+                <div class="rig-card config-widget" style="height: 100%; display: flex; flex-direction: column; background: var(--theme-bg-secondary);">
+                  <div class="rig-card-header config-widget-header" style="background: var(--theme-bg-tertiary); color: var(--theme-text-primary);">
                     <span>SENSOR MANAGEMENT - MACHINE <span id="configMachineLabel" style="color: var(--status-running);">A</span></span>
                     <span class="status-indicator status-nom"></span>
                   </div>
-                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md);">
-                    <!-- Connection Status -->
-                    <div class="rig-card" style="margin-bottom: var(--space-md);">
-                      <div class="rig-card-header">
-                        <span>CONNECTION STATUS</span>
+                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-sm);">
+                    <!-- Connection Status (Compact) -->
+                    <div class="rig-card" style="margin-bottom: var(--space-sm); background: var(--theme-bg-tertiary);">
+                      <div class="rig-card-header" style="background: var(--theme-bg-tertiary); padding: var(--space-xs) var(--space-sm);">
+                        <span style="font-size: 10px;">CONNECTION STATUS</span>
                         <span class="status-indicator status-nom"></span>
                       </div>
-                      <div class="rig-card-body" style="padding: var(--space-md);">
-                        <div style="display: grid; gap: var(--space-sm);">
+                      <div class="rig-card-body" style="padding: var(--space-sm);">
+                        <div style="display: grid; gap: var(--space-xs);">
                           <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span class="config-label" style="font-weight: 700;">PRODUCER</span>
+                            <span class="config-label" style="font-weight: 700; font-size: 9px;">PRODUCER</span>
                             <div style="display: flex; align-items: center; gap: var(--space-xs);">
                               <div class="scada-status-dot-indicator" id="configProducerStatus"></div>
-                              <span class="config-value" id="configProducerStatusText">STOPPED</span>
+                              <span class="config-value" id="configProducerStatusText" style="font-size: 9px;">STOPPED</span>
                             </div>
                           </div>
                           <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span class="config-label" style="font-weight: 700;">CONSUMER</span>
+                            <span class="config-label" style="font-weight: 700; font-size: 9px;">CONSUMER</span>
                             <div style="display: flex; align-items: center; gap: var(--space-xs);">
                               <div class="scada-status-dot-indicator" id="configConsumerStatus"></div>
-                              <span class="config-value" id="configConsumerStatusText">STOPPED</span>
+                              <span class="config-value" id="configConsumerStatusText" style="font-size: 9px;">STOPPED</span>
                             </div>
                           </div>
-                          <div style="display: flex; justify-content: space-between; align-items: center; padding-top: var(--space-sm); border-top: 1px solid var(--border-subtle);">
-                            <span class="config-label" style="font-weight: 700;">KAFKA</span>
+                          <div style="display: flex; justify-content: space-between; align-items: center; padding-top: var(--space-xs); border-top: 1px solid var(--border-subtle);">
+                            <span class="config-label" style="font-weight: 700; font-size: 9px;">KAFKA</span>
                             <div style="display: flex; align-items: center; gap: var(--space-xs);">
                               <div class="scada-status-dot-indicator" id="configKafkaStatus"></div>
-                              <span class="config-value" id="configKafkaStatusText">Checking...</span>
+                              <span class="config-value" id="configKafkaStatusText" style="font-size: 9px;">Checking...</span>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
                     
-                    <!-- Sensor Management Accordions (5 Categories) -->
+                    <!-- Sensor Management Accordions (5 Categories) - Dense List -->
                     <div id="configSensorAccordions" style="flex: 1; overflow-y: auto;">
                       <!-- Populated by renderConfigSensorAccordions() -->
-                    </div>
-                    
-                    <!-- Custom Sensors List -->
-                    <div class="rig-card">
-                      <div class="rig-card-header">
-                        <span>CUSTOM SENSORS</span>
-                        <span class="status-indicator status-nom"></span>
-                      </div>
-                      <div class="rig-card-body" style="padding: var(--space-md);">
-                        <div id="customSensorsList" style="max-height: 300px; overflow-y: auto;">
-                          <div class="config-value" style="text-align: center; padding: var(--space-lg);">Loading...</div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -655,13 +642,13 @@
             </div>
 
 
-            <!-- Widget 2: Add Custom Sensor Form (Center Top) -->
+            <!-- Widget 2: Custom Sensor Studio (Center Top) -->
             <div class="grid-stack-item" data-gs-x="4" data-gs-y="3" data-gs-width="4" data-gs-height="6">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
-                <div id="sectionConfigContent" class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
-                  <div class="rig-card-header">
-                    <span>➕ ADD CUSTOM SENSOR</span>
+                <div id="sectionConfigContent" class="rig-card config-widget" style="height: 100%; display: flex; flex-direction: column; background: var(--theme-bg-secondary);">
+                  <div class="rig-card-header config-widget-header" style="background: var(--theme-bg-tertiary); color: var(--theme-text-primary);">
+                    <span>🎨 CUSTOM SENSOR STUDIO</span>
                     <span class="status-indicator status-nom"></span>
                   </div>
                   <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md);">
@@ -672,12 +659,12 @@
                     <div style="display: grid; gap: var(--space-sm); margin-bottom: var(--space-md);">
                       <div>
                         <label class="config-label" style="font-weight: 700;">SENSOR NAME *</label>
-                        <input type="text" id="newSensorName" placeholder="bearing_vibration_rms" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                        <input type="text" id="newSensorName" placeholder="bearing_vibration_rms" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); color: var(--theme-text-primary);">
                       </div>
                       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
                         <div>
                           <label class="config-label" style="font-weight: 700;">CATEGORY</label>
-                          <select id="newSensorCategory" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; cursor: pointer;">
+                          <select id="newSensorCategory" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; cursor: pointer; background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); color: var(--theme-text-primary);">
                             <option value="custom">Custom</option>
                             <option value="environmental">Environmental</option>
                             <option value="mechanical">Mechanical</option>
@@ -688,27 +675,27 @@
                         </div>
                         <div>
                           <label class="config-label" style="font-weight: 700;">UNIT</label>
-                          <input type="text" id="newSensorUnit" placeholder="mm/s" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                          <input type="text" id="newSensorUnit" placeholder="mm/s" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); color: var(--theme-text-primary);">
                         </div>
                       </div>
                       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
                         <div>
                           <label class="config-label" style="font-weight: 700;">MIN RANGE *</label>
-                          <input type="number" step="any" id="newSensorMinRange" placeholder="0.0" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                          <input type="number" step="any" id="newSensorMinRange" placeholder="0.0" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); color: var(--theme-text-primary);">
                         </div>
                         <div>
                           <label class="config-label" style="font-weight: 700;">MAX RANGE *</label>
-                          <input type="number" step="any" id="newSensorMaxRange" placeholder="100.0" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                          <input type="number" step="any" id="newSensorMaxRange" placeholder="100.0" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); color: var(--theme-text-primary);">
                         </div>
                       </div>
                       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
                         <div>
                           <label class="config-label" style="font-weight: 700;">LOW THRESHOLD</label>
-                          <input type="number" step="any" id="newSensorLowThreshold" placeholder="Optional" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                          <input type="number" step="any" id="newSensorLowThreshold" placeholder="Optional" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); color: var(--theme-text-primary);">
                         </div>
                         <div>
                           <label class="config-label" style="font-weight: 700;">HIGH THRESHOLD</label>
-                          <input type="number" step="any" id="newSensorHighThreshold" placeholder="Optional" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px;">
+                          <input type="number" step="any" id="newSensorHighThreshold" placeholder="Optional" class="scada-input" style="width: 100%; padding: var(--space-sm); margin-top: 2px; background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); color: var(--theme-text-primary);">
                         </div>
                       </div>
                     </div>
@@ -765,7 +752,7 @@
             </div>
             
             <!-- Widget 4: Data Export (Right Bottom) -->
-            <div class="grid-stack-item" data-gs-x="8" data-gs-y="7" data-gs-width="4" data-gs-height="4">
+            <div class="grid-stack-item" data-gs-x="8" data-gs-y="7" data-gs-width="4" data-gs-height="3">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
                 <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
@@ -796,12 +783,66 @@
               </div>
             </div>
             
-            <!-- Widget 5: LSTM Analysis (Center Bottom) -->
-            <div class="grid-stack-item" data-gs-x="4" data-gs-y="9" data-gs-width="4" data-gs-height="4">
+            <!-- Widget 5: Bulk Sensor Controls (Center Bottom) -->
+            <div class="grid-stack-item" data-gs-x="4" data-gs-y="9" data-gs-width="4" data-gs-height="3">
               <div class="grid-stack-item-content">
                 <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
-                <div class="rig-card" style="height: 100%; display: flex; flex-direction: column;">
-                  <div class="rig-card-header">
+                <div class="rig-card config-widget" style="height: 100%; display: flex; flex-direction: column; background: var(--theme-bg-secondary);">
+                  <div class="rig-card-header config-widget-header" style="background: var(--theme-bg-tertiary); color: var(--theme-text-primary);">
+                    <span>⚡ BULK SENSOR CONTROLS</span>
+                    <span class="status-indicator status-nom"></span>
+                  </div>
+                  <div class="rig-card-body" style="flex: 1; overflow-y: auto; padding: var(--space-md);">
+                    <!-- Global Controls -->
+                    <div style="margin-bottom: var(--space-md);">
+                      <label class="config-label" style="font-weight: 900; margin-bottom: var(--space-sm); display: block; font-size: 10px;">GLOBAL</label>
+                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
+                        <button onclick="enableAllSensors()" class="scada-btn" style="width: 100%; background: var(--theme-interactive-primary); border-color: var(--theme-interactive-primary); font-weight: 700; font-size: 10px; padding: var(--space-sm);">
+                          ENABLE ALL
+                        </button>
+                        <button onclick="disableAllSensors()" class="scada-btn" style="width: 100%; background: var(--theme-bg-tertiary); border-color: var(--border-default); font-weight: 700; font-size: 10px; padding: var(--space-sm);">
+                          DISABLE ALL
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <!-- Category Toggles -->
+                    <div>
+                      <label class="config-label" style="font-weight: 900; margin-bottom: var(--space-sm); display: block; font-size: 10px;">CATEGORIES</label>
+                      <div style="display: grid; gap: var(--space-xs);">
+                        <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer; padding: var(--space-xs) var(--space-sm); background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px;">
+                          <input type="checkbox" id="bulkToggleEnvironmental" onchange="toggleCategorySensors('environmental', this.checked)" style="cursor: pointer; accent-color: var(--theme-interactive-primary);">
+                          <span style="font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: var(--theme-text-primary);">ENVIRONMENTAL</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer; padding: var(--space-xs) var(--space-sm); background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px;">
+                          <input type="checkbox" id="bulkToggleMechanical" onchange="toggleCategorySensors('mechanical', this.checked)" style="cursor: pointer; accent-color: var(--theme-interactive-primary);">
+                          <span style="font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: var(--theme-text-primary);">MECHANICAL</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer; padding: var(--space-xs) var(--space-sm); background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px;">
+                          <input type="checkbox" id="bulkToggleThermal" onchange="toggleCategorySensors('thermal', this.checked)" style="cursor: pointer; accent-color: var(--theme-interactive-primary);">
+                          <span style="font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: var(--theme-text-primary);">THERMAL</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer; padding: var(--space-xs) var(--space-sm); background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px;">
+                          <input type="checkbox" id="bulkToggleElectrical" onchange="toggleCategorySensors('electrical', this.checked)" style="cursor: pointer; accent-color: var(--theme-interactive-primary);">
+                          <span style="font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: var(--theme-text-primary);">ELECTRICAL</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer; padding: var(--space-xs) var(--space-sm); background: var(--theme-bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px;">
+                          <input type="checkbox" id="bulkToggleFluid" onchange="toggleCategorySensors('fluid', this.checked)" style="cursor: pointer; accent-color: var(--theme-interactive-primary);">
+                          <span style="font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: var(--theme-text-primary);">FLUID</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Widget 6: LSTM Analysis (Center Bottom) -->
+            <div class="grid-stack-item" data-gs-x="4" data-gs-y="12" data-gs-width="4" data-gs-height="4">
+              <div class="grid-stack-item-content">
+                <div class="grid-item-drag-handle" style="display: none; position: absolute; top: 4px; right: 4px; color: var(--theme-interactive-primary); font-size: 12px; font-weight: bold; z-index: 1000; background: rgba(0, 0, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-family: var(--font-mono); pointer-events: none;">⋮⋮ DRAG</div>
+                <div class="rig-card config-widget" style="height: 100%; display: flex; flex-direction: column; background: var(--theme-bg-secondary);">
+                  <div class="rig-card-header config-widget-header" style="background: var(--theme-bg-tertiary); color: var(--theme-text-primary);">
                     <span>🔮 LSTM ANALYSIS</span>
                     <span class="status-indicator status-info"></span>
                   </div>
@@ -8196,6 +8237,47 @@ Report generated by Sensor Data Pipeline Dashboard
           const isHidden = content.style.display === 'none';
           content.style.display = isHidden ? 'block' : 'none';
           if (chevron) chevron.textContent = isHidden ? '▲' : '▼';
+        }
+      }
+      
+      // Bulk Sensor Control Functions
+      function enableAllSensors() {
+        const allCategories = ['environmental', 'mechanical', 'thermal', 'electrical', 'fluid'];
+        allCategories.forEach(category => {
+          enableAllInCategory(category, true);
+        });
+        // Update bulk toggle checkboxes
+        allCategories.forEach(category => {
+          const checkbox = document.getElementById(`bulkToggle${category.charAt(0).toUpperCase() + category.slice(1)}`);
+          if (checkbox) checkbox.checked = true;
+        });
+        // Refresh accordions
+        if (typeof renderConfigSensorAccordions === 'function') {
+          renderConfigSensorAccordions();
+        }
+      }
+      
+      function disableAllSensors() {
+        const allCategories = ['environmental', 'mechanical', 'thermal', 'electrical', 'fluid'];
+        allCategories.forEach(category => {
+          enableAllInCategory(category, false);
+        });
+        // Update bulk toggle checkboxes
+        allCategories.forEach(category => {
+          const checkbox = document.getElementById(`bulkToggle${category.charAt(0).toUpperCase() + category.slice(1)}`);
+          if (checkbox) checkbox.checked = false;
+        });
+        // Refresh accordions
+        if (typeof renderConfigSensorAccordions === 'function') {
+          renderConfigSensorAccordions();
+        }
+      }
+      
+      function toggleCategorySensors(category, enabled) {
+        enableAllInCategory(category, enabled);
+        // Refresh accordions
+        if (typeof renderConfigSensorAccordions === 'function') {
+          renderConfigSensorAccordions();
         }
       }
       
