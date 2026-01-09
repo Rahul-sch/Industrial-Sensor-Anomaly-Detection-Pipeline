@@ -4828,44 +4828,57 @@
         renderAlarmMatrix();
       }
       
-      // Barbie Mode Toggle Button
-      let barbieModeEnabled = false;
-      function toggleBarbieModeButton() {
-        barbieModeEnabled = !barbieModeEnabled;
-        toggleBarbieMode(barbieModeEnabled);
-        const statusEl = document.getElementById('barbieModeStatus');
-        if (statusEl) {
-          statusEl.textContent = barbieModeEnabled ? 'ON' : 'OFF';
-        }
-        const btn = document.getElementById('barbieModeToggle');
-        if (btn) {
-          if (barbieModeEnabled) {
-            btn.style.background = '#ff69b4';
-            btn.style.borderColor = '#ff69b4';
-          } else {
-            btn.style.background = 'var(--theme-interactive-primary)';
-            btn.style.borderColor = 'var(--theme-interactive-primary)';
+      // Theme Engine - Central setTheme function
+      function setTheme(themeName) {
+        const html = document.documentElement;
+        if (themeName === 'pink') {
+          html.setAttribute('data-theme', 'pink');
+          // Update button status
+          const statusEl = document.getElementById('barbieModeStatus');
+          if (statusEl) statusEl.textContent = 'ON';
+          const btn = document.getElementById('barbieModeToggle');
+          if (btn) {
+            btn.style.background = '#ff4d94';
+            btn.style.borderColor = '#ff4d94';
+          }
+        } else if (themeName === 'default') {
+          html.removeAttribute('data-theme');
+          // Reset all theme buttons
+          const barbieStatus = document.getElementById('barbieModeStatus');
+          if (barbieStatus) barbieStatus.textContent = 'OFF';
+          const barbieBtn = document.getElementById('barbieModeToggle');
+          if (barbieBtn) {
+            barbieBtn.style.background = 'var(--theme-interactive-primary)';
+            barbieBtn.style.borderColor = 'var(--theme-interactive-primary)';
+          }
+          const matrixStatus = document.getElementById('matrixModeStatus');
+          if (matrixStatus) matrixStatus.textContent = 'OFF';
+          const matrixBtn = document.getElementById('matrixModeToggle');
+          if (matrixBtn) {
+            matrixBtn.style.background = 'var(--theme-interactive-primary)';
+            matrixBtn.style.borderColor = 'var(--theme-interactive-primary)';
+            matrixBtn.style.color = 'var(--text-primary)';
           }
         }
       }
       
-      // Barbie Mode Toggle
+      // Barbie Mode Toggle Button
+      let barbieModeEnabled = false;
+      function toggleBarbieModeButton() {
+        barbieModeEnabled = !barbieModeEnabled;
+        if (barbieModeEnabled) {
+          setTheme('pink');
+        } else {
+          setTheme('default');
+        }
+      }
+      
+      // Legacy function - redirects to setTheme
       function toggleBarbieMode(enabled) {
         if (enabled) {
-          document.documentElement.style.setProperty('--theme-bg-base', '#1a0a1a');
-          document.documentElement.style.setProperty('--theme-bg-primary', '#2a1a2a');
-          document.documentElement.style.setProperty('--theme-bg-secondary', '#3a2a3a');
-          document.documentElement.style.setProperty('--theme-interactive-primary', '#ff69b4');
-          document.documentElement.style.setProperty('--theme-status-running', '#ff1493');
-          document.documentElement.style.setProperty('--theme-status-info', '#ff69b4');
+          setTheme('pink');
         } else {
-          // Reset to default theme
-          document.documentElement.style.removeProperty('--theme-bg-base');
-          document.documentElement.style.removeProperty('--theme-bg-primary');
-          document.documentElement.style.removeProperty('--theme-bg-secondary');
-          document.documentElement.style.removeProperty('--theme-interactive-primary');
-          document.documentElement.style.removeProperty('--theme-status-running');
-          document.documentElement.style.removeProperty('--theme-status-info');
+          setTheme('default');
         }
       }
       
