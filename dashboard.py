@@ -2306,7 +2306,7 @@ def api_ml_stats():
                     COUNT(*) FILTER (WHERE status = 'completed') as completed_reports
                 FROM analysis_reports
             """)
-        report_stats = cursor.fetchone()
+            report_stats = cursor.fetchone()
         except:
             report_stats = (0, 0)
         
@@ -2819,9 +2819,9 @@ def api_machines():
 def api_start_machine(machine_id):
     """Start a machine (set running state and start producer/consumer)"""
     try:
-    if machine_id not in ['A', 'B', 'C']:
-        return jsonify({'success': False, 'error': 'Invalid machine ID'}), 400
-    
+        if machine_id not in ['A', 'B', 'C']:
+            return jsonify({'success': False, 'error': 'Invalid machine ID'}), 400
+        
         # Check if machine is already running
         with machine_state_lock:
             if machine_state[machine_id]['running']:
