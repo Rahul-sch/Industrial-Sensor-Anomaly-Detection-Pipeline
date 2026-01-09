@@ -3841,7 +3841,7 @@ input:checked + .toggle-slider:before {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: var(--space-md);
@@ -3850,7 +3850,8 @@ input:checked + .toggle-slider:before {
 .config-label {
   font-family: var(--font-mono);
   font-size: 9px;
-  color: var(--text-muted);
+  font-weight: 700;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -3865,7 +3866,7 @@ input:checked + .toggle-slider:before {
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--text-primary);
   text-transform: uppercase;
   padding: var(--space-sm);
   text-align: left;
@@ -3875,7 +3876,7 @@ input:checked + .toggle-slider:before {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: var(--space-sm);
@@ -3886,7 +3887,8 @@ input:checked + .toggle-slider:before {
 .config-label {
   font-family: var(--font-mono);
   font-size: 9px;
-  color: var(--text-muted);
+  font-weight: 700;
+  color: var(--text-primary);
   text-transform: uppercase;
   display: block;
 }
@@ -4417,4 +4419,34 @@ input:checked + .toggle-slider:before {
 .grid-stack.edit-mode .grid-stack-item-content:hover {
   box-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
   border-color: var(--theme-interactive-hover) !important;
+}
+
+/* Ensure config grid also gets edit mode styling */
+#configGrid.edit-mode .grid-stack-item-content {
+  cursor: move !important;
+  border: 2px dashed var(--theme-interactive-primary) !important;
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+}
+
+#configGrid.edit-mode .grid-stack-item-content:hover {
+  box-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
+  border-color: var(--theme-interactive-hover) !important;
+}
+
+/* High contrast for Sensor Management accordion text */
+#configGrid .rig-card-header span {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Bold labels in config forms */
+#configGrid .config-label {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Ensure zero-scroll for config grid */
+#configGrid {
+  height: calc(100vh - 60px - var(--space-lg) * 2);
+  overflow: hidden;
 }
