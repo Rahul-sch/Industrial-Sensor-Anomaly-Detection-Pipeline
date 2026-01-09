@@ -4854,19 +4854,6 @@
       function renderAlarmsChartMatrix() {
         renderAlarmMatrix();
       }
-        
-        const currentMachine = machineData[selectedMachineId];
-        if (!currentMachine || !currentMachine.statsData) {
-          gridEl.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: var(--space-lg);">No sensor data available</div>';
-          return;
-        }
-        
-        // Get all sensors from stats data
-        const statsData = currentMachine.statsData;
-        let allSensors = [];
-        
-        // Collect sensors from all categories
-        if (statsData.stats_by_category) {
           Object.values(statsData.stats_by_category).forEach(catData => {
             if (catData.sensors) {
               Object.entries(catData.sensors).forEach(([sensorName, sensorData]) => {
