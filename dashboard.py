@@ -2798,24 +2798,36 @@ def api_start_machine(machine_id):
         if not is_component_running('producer'):
             try:
                 producer_result = start_component('producer')
-                producer_data = producer_result.get_json() if producer_result else None
+                # Handle tuple response (response, status_code) from Flask
+                if isinstance(producer_result, tuple):
+                    producer_response, _ = producer_result
+                else:
+                    producer_response = producer_result
+                
+                producer_data = producer_response.get_json() if producer_response and hasattr(producer_response, 'get_json') else None
                 if not producer_data or not producer_data.get('success'):
                     error_msg = producer_data.get('error') if producer_data else 'Unknown error starting producer'
                     return jsonify({'success': False, 'error': f"Failed to start producer: {error_msg}"}), 500
             except Exception as e:
-                logger.error(f"Error starting producer: {e}")
+                logger.error(f"Error starting producer: {e}", exc_info=True)
                 return jsonify({'success': False, 'error': f"Failed to start producer: {str(e)}"}), 500
         
         # Start consumer if not running
         if not is_component_running('consumer'):
             try:
                 consumer_result = start_component('consumer')
-                consumer_data = consumer_result.get_json() if consumer_result else None
+                # Handle tuple response (response, status_code) from Flask
+                if isinstance(consumer_result, tuple):
+                    consumer_response, _ = consumer_result
+                else:
+                    consumer_response = consumer_result
+                
+                consumer_data = consumer_response.get_json() if consumer_response and hasattr(consumer_response, 'get_json') else None
                 if not consumer_data or not consumer_data.get('success'):
                     error_msg = consumer_data.get('error') if consumer_data else 'Unknown error starting consumer'
                     return jsonify({'success': False, 'error': f"Failed to start consumer: {error_msg}"}), 500
             except Exception as e:
-                logger.error(f"Error starting consumer: {e}")
+                logger.error(f"Error starting consumer: {e}", exc_info=True)
                 return jsonify({'success': False, 'error': f"Failed to start consumer: {str(e)}"}), 500
         
         with machine_state_lock:
