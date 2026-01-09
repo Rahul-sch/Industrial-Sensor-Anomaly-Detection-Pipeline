@@ -123,6 +123,7 @@ if TALISMAN_AVAILABLE:
             "'self'",
             "'unsafe-inline'",  # Required for inline styles
             'https://cdnjs.cloudflare.com',  # For Inter font
+            'https://cdn.jsdelivr.net',  # For Gridstack CSS
             'https://fonts.googleapis.com'  # For Google Fonts if used
         ],
         'connect-src': [
