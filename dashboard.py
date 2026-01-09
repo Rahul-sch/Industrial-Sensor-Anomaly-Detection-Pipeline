@@ -2741,32 +2741,46 @@ def api_machines():
 @require_machine_access('machine_id')
 def api_start_machine(machine_id):
     """Start a machine (set running state and start producer/consumer)"""
-    if machine_id not in ['A', 'B', 'C']:
-        return jsonify({'success': False, 'error': 'Invalid machine ID'}), 400
-    
-    # Check if machine is already running
-    with machine_state_lock:
-        if machine_state[machine_id]['running']:
-            return jsonify({'success': False, 'error': f'Machine {machine_id} is already running'}), 409
-    
-    # Start producer if not running
-    if not is_component_running('producer'):
-        producer_result = start_component('producer')
-        producer_data = producer_result.get_json()
-        if not producer_data.get('success'):
-            return jsonify({'success': False, 'error': f"Failed to start producer: {producer_data.get('error')}"}), 500
-    
-    # Start consumer if not running
-    if not is_component_running('consumer'):
-        consumer_result = start_component('consumer')
-        consumer_data = consumer_result.get_json()
-        if not consumer_data.get('success'):
-            return jsonify({'success': False, 'error': f"Failed to start consumer: {consumer_data.get('error')}"}), 500
-    
-    with machine_state_lock:
-        machine_state[machine_id]['running'] = True
-    
-    return jsonify({'success': True, 'machine_id': machine_id, 'running': True})
+    try:
+        if machine_id not in ['A', 'B', 'C']:
+            return jsonify({'success': False, 'error': 'Invalid machine ID'}), 400
+        
+        # Check if machine is already running
+        with machine_state_lock:
+            if machine_state[machine_id]['running']:
+                return jsonify({'success': False, 'error': f'Machine {machine_id} is already running'}), 409
+        
+        # Start producer if not running
+        if not is_component_running('producer'):
+            try:
+                producer_result = start_component('producer')
+                producer_data = producer_result.get_json() if producer_result else None
+                if not producer_data or not producer_data.get('success'):
+                    error_msg = producer_data.get('error') if producer_data else 'Unknown error starting producer'
+                    return jsonify({'success': False, 'error': f"Failed to start producer: {error_msg}"}), 500
+            except Exception as e:
+                logger.error(f"Error starting producer: {e}")
+                return jsonify({'success': False, 'error': f"Failed to start producer: {str(e)}"}), 500
+        
+        # Start consumer if not running
+        if not is_component_running('consumer'):
+            try:
+                consumer_result = start_component('consumer')
+                consumer_data = consumer_result.get_json() if consumer_result else None
+                if not consumer_data or not consumer_data.get('success'):
+                    error_msg = consumer_data.get('error') if consumer_data else 'Unknown error starting consumer'
+                    return jsonify({'success': False, 'error': f"Failed to start consumer: {error_msg}"}), 500
+            except Exception as e:
+                logger.error(f"Error starting consumer: {e}")
+                return jsonify({'success': False, 'error': f"Failed to start consumer: {str(e)}"}), 500
+        
+        with machine_state_lock:
+            machine_state[machine_id]['running'] = True
+        
+        return jsonify({'success': True, 'machine_id': machine_id, 'running': True})
+    except Exception as e:
+        logger.error(f"Error in api_start_machine: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': f"Internal server error: {str(e)}"}), 500
 
 @app.route('/api/machines/<machine_id>/stop', methods=['POST'])
 @require_machine_access('machine_id')
