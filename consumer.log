@@ -1,0 +1,178 @@
+2026-01-12 01:47:26,089 [KETCHUP-CONSUMER] INFO: ============================================================
+2026-01-12 01:47:26,089 [KETCHUP-CONSUMER] INFO: KETCHUP FACTORY SENSOR CONSUMER
+2026-01-12 01:47:26,090 [KETCHUP-CONSUMER] INFO: ============================================================
+2026-01-12 01:47:26,095 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 01:47:26,103 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=bootstrap-0 host=localhost:9092 <checking_api_versions_recv> [IPv6 ('::1', 9092, 0, 0)]>: Broker version identified as 2.6
+2026-01-12 01:47:26,104 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2026-01-12 01:47:26,104 [KETCHUP-CONSUMER] INFO: Updating subscribed topics to: ('ketchup-sensor-data',)
+2026-01-12 01:47:26,104 [KETCHUP-CONSUMER] INFO: Connected to Kafka topic: ketchup-sensor-data
+2026-01-12 01:47:26,155 [KETCHUP-CONSUMER] ERROR: Database connection failed: connection to server at "localhost" (::1), port 5432 failed: FATAL:  password authentication failed for user "postgres"
+
+2026-01-12 01:47:26,155 [KETCHUP-CONSUMER] ERROR: Database connection failed: connection to server at "localhost" (::1), port 5432 failed: FATAL:  password authentication failed for user "postgres"
+
+2026-01-12 01:47:26,155 [KETCHUP-CONSUMER] WARNING: Running without database - data will not be persisted
+2026-01-12 01:47:26,155 [KETCHUP-CONSUMER] INFO: Consumer started. Listening for ketchup sensor data...
+2026-01-12 01:47:26,158 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 01:47:26,159 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2026-01-12 01:47:26,159 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. 
+2026-01-12 01:47:26,263 [KETCHUP-CONSUMER] INFO: Coordinator for group/ketchup-consumer-group is BrokerMetadata(nodeId='coordinator-1', host='localhost', port=9092, rack=None)
+2026-01-12 01:47:26,263 [KETCHUP-CONSUMER] INFO: Discovered coordinator coordinator-1 for group ketchup-consumer-group
+2026-01-12 01:47:26,263 [KETCHUP-CONSUMER] INFO: Starting new heartbeat thread
+2026-01-12 01:47:26,264 [KETCHUP-CONSUMER] INFO: Revoking previously assigned partitions set() for group ketchup-consumer-group
+2026-01-12 01:47:26,264 [KETCHUP-CONSUMER] INFO: Failed to join group ketchup-consumer-group: NodeNotReadyError: coordinator-1
+2026-01-12 01:47:26,265 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=coordinator-1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 01:47:26,265 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=coordinator-1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2026-01-12 01:47:26,354 [KETCHUP-CONSUMER] INFO: (Re-)joining group ketchup-consumer-group
+2026-01-12 01:47:26,386 [KETCHUP-CONSUMER] INFO: Received member id kafka-python-2.3.0-5d7348ff-08cf-4e17-9a3d-6db5719a9def for group ketchup-consumer-group; will retry join-group
+2026-01-12 01:47:26,386 [KETCHUP-CONSUMER] INFO: Failed to join group ketchup-consumer-group: [Error 79] MemberIdRequiredError
+2026-01-12 01:47:26,386 [KETCHUP-CONSUMER] INFO: (Re-)joining group ketchup-consumer-group
+2026-01-12 01:47:29,580 [KETCHUP-CONSUMER] INFO: Successfully joined group ketchup-consumer-group <Generation 6 (member_id: kafka-python-2.3.0-5d7348ff-08cf-4e17-9a3d-6db5719a9def, protocol: range)>
+2026-01-12 01:47:29,581 [KETCHUP-CONSUMER] INFO: Elected group leader -- performing partition assignments using range
+2026-01-12 01:47:29,593 [KETCHUP-CONSUMER] INFO: Updated partition assignment: [TopicPartition(topic='ketchup-sensor-data', partition=0)]
+2026-01-12 01:47:29,593 [KETCHUP-CONSUMER] INFO: Setting newly assigned partitions {TopicPartition(topic='ketchup-sensor-data', partition=0)} for group ketchup-consumer-group
+2026-01-12 01:47:32,690 [KETCHUP-CONSUMER] WARNING: ANOMALY [L03]: overfill (score=1.00)
+2026-01-12 01:48:11,714 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: Socket EVENT_READ without in-flight-requests
+2026-01-12 01:48:11,714 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=coordinator-1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: socket disconnected
+2026-01-12 01:48:11,715 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=coordinator-1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: socket disconnected
+2026-01-12 01:48:11,715 [KETCHUP-CONSUMER] ERROR: Error sending HeartbeatRequest_v3 to node coordinator-1 [KafkaConnectionError: socket disconnected]
+2026-01-12 01:48:11,715 [KETCHUP-CONSUMER] WARNING: Marking the coordinator dead (node coordinator-1) for group ketchup-consumer-group: KafkaConnectionError: socket disconnected.
+2026-01-12 01:48:11,821 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: connecting to localhost:9092 [('127.0.0.1', 9092) IPv4]
+2026-01-12 01:48:11,837 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Connection complete.
+2026-01-12 01:48:11,947 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: socket disconnected
+2026-01-12 01:48:11,948 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Closing connection. KafkaConnectionError: socket disconnected
+2026-01-12 01:48:11,948 [KETCHUP-CONSUMER] WARNING: Node 1 connection failed -- refreshing metadata
+2026-01-12 01:48:11,948 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: socket disconnected]
+2026-01-12 01:48:12,057 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 01:48:12,058 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2026-01-12 01:48:12,166 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Error receiving network data closing socket
+Traceback (most recent call last):
+  File "C:\Users\rahul\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\kafka\conn.py", line 1171, in _recv
+    data = self._sock.recv(self.config['sock_chunk_bytes'])
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:12,192 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:12,192 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine]
+2026-01-12 01:48:12,308 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: connecting to localhost:9092 [('127.0.0.1', 9092) IPv4]
+2026-01-12 01:48:12,308 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Connection complete.
+2026-01-12 01:48:12,417 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: socket disconnected
+2026-01-12 01:48:12,417 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Closing connection. KafkaConnectionError: socket disconnected
+2026-01-12 01:48:12,418 [KETCHUP-CONSUMER] WARNING: Node 1 connection failed -- refreshing metadata
+2026-01-12 01:48:12,418 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: socket disconnected]
+2026-01-12 01:48:12,524 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 01:48:12,526 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2026-01-12 01:48:12,632 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Error receiving network data closing socket
+Traceback (most recent call last):
+  File "C:\Users\rahul\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\kafka\conn.py", line 1171, in _recv
+    data = self._sock.recv(self.config['sock_chunk_bytes'])
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:12,633 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:12,633 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine]
+2026-01-12 01:48:12,742 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: connecting to localhost:9092 [('127.0.0.1', 9092) IPv4]
+2026-01-12 01:48:12,742 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Connection complete.
+2026-01-12 01:48:12,851 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: socket disconnected
+2026-01-12 01:48:12,852 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Closing connection. KafkaConnectionError: socket disconnected
+2026-01-12 01:48:12,852 [KETCHUP-CONSUMER] WARNING: Node 1 connection failed -- refreshing metadata
+2026-01-12 01:48:12,852 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: socket disconnected]
+2026-01-12 01:48:12,962 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 01:48:12,962 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2026-01-12 01:48:13,072 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Error receiving network data closing socket
+Traceback (most recent call last):
+  File "C:\Users\rahul\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\kafka\conn.py", line 1171, in _recv
+    data = self._sock.recv(self.config['sock_chunk_bytes'])
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:13,072 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:13,073 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine]
+2026-01-12 01:48:13,185 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: connecting to localhost:9092 [('127.0.0.1', 9092) IPv4]
+2026-01-12 01:48:13,185 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Connection complete.
+2026-01-12 01:48:13,298 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: socket disconnected
+2026-01-12 01:48:13,298 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Closing connection. KafkaConnectionError: socket disconnected
+2026-01-12 01:48:13,298 [KETCHUP-CONSUMER] WARNING: Node 1 connection failed -- refreshing metadata
+2026-01-12 01:48:13,298 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: socket disconnected]
+2026-01-12 01:48:13,409 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 01:48:13,410 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2026-01-12 01:48:13,521 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Error receiving network data closing socket
+Traceback (most recent call last):
+  File "C:\Users\rahul\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\kafka\conn.py", line 1171, in _recv
+    data = self._sock.recv(self.config['sock_chunk_bytes'])
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:13,522 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:13,522 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine]
+2026-01-12 01:48:13,624 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: connecting to localhost:9092 [('127.0.0.1', 9092) IPv4]
+2026-01-12 01:48:13,625 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Connection complete.
+2026-01-12 01:48:13,727 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: socket disconnected
+2026-01-12 01:48:13,727 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Closing connection. KafkaConnectionError: socket disconnected
+2026-01-12 01:48:13,728 [KETCHUP-CONSUMER] WARNING: Node 1 connection failed -- refreshing metadata
+2026-01-12 01:48:13,728 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: socket disconnected]
+2026-01-12 01:48:13,837 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 01:48:13,838 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2026-01-12 01:48:13,943 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Error receiving network data closing socket
+Traceback (most recent call last):
+  File "C:\Users\rahul\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\kafka\conn.py", line 1171, in _recv
+    data = self._sock.recv(self.config['sock_chunk_bytes'])
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:13,943 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:13,943 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine]
+2026-01-12 01:48:14,049 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: connecting to localhost:9092 [('127.0.0.1', 9092) IPv4]
+2026-01-12 01:48:14,065 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Connection complete.
+2026-01-12 01:48:14,173 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: socket disconnected
+2026-01-12 01:48:14,174 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Closing connection. KafkaConnectionError: socket disconnected
+2026-01-12 01:48:14,174 [KETCHUP-CONSUMER] WARNING: Node 1 connection failed -- refreshing metadata
+2026-01-12 01:48:14,174 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: socket disconnected]
+2026-01-12 01:48:14,279 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 01:48:14,280 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2026-01-12 01:48:14,386 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Error receiving network data closing socket
+Traceback (most recent call last):
+  File "C:\Users\rahul\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\kafka\conn.py", line 1171, in _recv
+    data = self._sock.recv(self.config['sock_chunk_bytes'])
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:14,387 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:14,387 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine]
+2026-01-12 01:48:14,496 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: connecting to localhost:9092 [('127.0.0.1', 9092) IPv4]
+2026-01-12 01:48:14,496 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Connection complete.
+2026-01-12 01:48:22,825 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: socket disconnected
+2026-01-12 01:48:22,825 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Closing connection. KafkaConnectionError: socket disconnected
+2026-01-12 01:48:22,825 [KETCHUP-CONSUMER] WARNING: Node 1 connection failed -- refreshing metadata
+2026-01-12 01:48:22,825 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: socket disconnected]
+2026-01-12 01:48:22,935 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 01:48:22,936 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2026-01-12 01:48:23,044 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Error receiving network data closing socket
+Traceback (most recent call last):
+  File "C:\Users\rahul\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\kafka\conn.py", line 1171, in _recv
+    data = self._sock.recv(self.config['sock_chunk_bytes'])
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:23,044 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-01-12 01:48:23,044 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: [WinError 10053] An established connection was aborted by the software in your host machine]
+2026-01-12 01:48:23,153 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: connecting to localhost:9092 [('127.0.0.1', 9092) IPv4]
+2026-01-12 01:48:23,154 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Connection complete.
+2026-01-12 01:48:25,883 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Error receiving network data closing socket
+Traceback (most recent call last):
+  File "C:\Users\rahul\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\kafka\conn.py", line 1171, in _recv
+    data = self._sock.recv(self.config['sock_chunk_bytes'])
+ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+2026-01-12 01:48:25,884 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connected> [IPv4 ('127.0.0.1', 9092)]>: Closing connection. KafkaConnectionError: [WinError 10054] An existing connection was forcibly closed by the remote host
+2026-01-12 01:48:25,884 [KETCHUP-CONSUMER] WARNING: Node 1 connection failed -- refreshing metadata
+2026-01-12 01:48:25,884 [KETCHUP-CONSUMER] ERROR: Error sending FindCoordinatorRequest_v2 to node 1 [KafkaConnectionError: [WinError 10054] An existing connection was forcibly closed by the remote host]
+2026-01-12 01:48:25,992 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 01:49:01,022 [KETCHUP-CONSUMER] WARNING: ANOMALY [L21]: thermal_spike (score=1.00)
+2026-01-12 02:03:19,010 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: Connection attempt timed out
+2026-01-12 02:03:19,011 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: timeout
+2026-01-12 02:03:19,110 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: connecting to localhost:9092 [('127.0.0.1', 9092) IPv4]
+2026-01-12 02:03:26,982 [KETCHUP-CONSUMER] WARNING: ANOMALY [L01]: overfill (score=1.00)
+2026-01-12 09:33:07,616 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: Connection attempt timed out
+2026-01-12 09:33:07,617 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: Closing connection. KafkaConnectionError: timeout
+2026-01-12 09:33:07,617 [KETCHUP-CONSUMER] WARNING: Node 1 connection failed -- refreshing metadata
+2026-01-12 09:33:07,734 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2026-01-12 09:33:43,532 [KETCHUP-CONSUMER] WARNING: ANOMALY [L21]: viscosity_fault (score=1.00)
+2026-01-12 09:34:42,290 [KETCHUP-CONSUMER] WARNING: ANOMALY [L24]: thermal_spike (score=0.94)
+2026-01-12 09:37:35,703 [KETCHUP-CONSUMER] WARNING: ANOMALY [L10]: overfill (score=1.00)
+2026-01-12 09:38:14,642 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: Connection attempt timed out
+2026-01-12 09:38:14,644 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: timeout
+2026-01-12 09:38:14,749 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: connecting to localhost:9092 [('127.0.0.1', 9092) IPv4]
+2026-01-12 09:38:52,350 [KETCHUP-CONSUMER] WARNING: ANOMALY [L23]: overfill (score=1.00)
+2026-01-12 09:39:12,494 [KETCHUP-CONSUMER] WARNING: ANOMALY [L08]: thermal_spike (score=0.85)
+2026-01-12 09:39:42,729 [KETCHUP-CONSUMER] WARNING: ANOMALY [L23]: thermal_spike (score=1.00)
+2026-01-12 09:42:17,975 [KETCHUP-CONSUMER] WARNING: ANOMALY [L25]: overfill (score=1.00)
+2026-01-12 09:43:12,323 [KETCHUP-CONSUMER] WARNING: ANOMALY [L02]: viscosity_fault (score=1.00)
+2026-01-12 09:43:19,861 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: Connection attempt timed out
+2026-01-12 09:43:19,862 [KETCHUP-CONSUMER] ERROR: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: Closing connection. KafkaConnectionError: timeout
+2026-01-12 09:43:19,862 [KETCHUP-CONSUMER] WARNING: Node 1 connection failed -- refreshing metadata
+2026-01-12 09:43:19,971 [KETCHUP-CONSUMER] INFO: <BrokerConnection client_id=kafka-python-2.3.0, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
