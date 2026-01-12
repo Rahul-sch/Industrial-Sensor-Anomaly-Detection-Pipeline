@@ -15,6 +15,13 @@ import psycopg2
 from psycopg2 import sql, OperationalError
 from psycopg2.extras import Json
 
+# HTTP requests for 3D Twin telemetry updates
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
+
 import config
 
 # ML Detection imports - Combined Pipeline (Isolation Forest + LSTM)
@@ -341,24 +348,27 @@ class SensorDataConsumer:
 
     def run_ml_detection(self, reading, reading_id):
         """Run ML-based anomaly detection using combined pipeline.
-        
+
         Uses Isolation Forest and/or LSTM Autoencoder based on config.
         Strategy is set via config.HYBRID_DETECTION_STRATEGY.
-        
+
         Args:
             reading: Dict with sensor values
             reading_id: ID of the inserted reading
+
+        Returns:
+            dict: ML detection result with score and method, or None if unavailable
         """
         if not ML_AVAILABLE:
-            return
-        
+            return None
+
         try:
             # Get combined detector (handles IF + LSTM)
             detector = get_combined_detector()
-            
+
             # Run detection with configured strategy
             is_anomaly, score, contributing_sensors, method = detector.detect(reading, reading_id)
-            
+
             # Record the detection result
             detection_id = detector.record_detection(
                 reading_id=reading_id,
@@ -367,7 +377,7 @@ class SensorDataConsumer:
                 sensors=contributing_sensors,
                 method=method
             )
-            
+
             if is_anomaly:
                 sensors_str = ', '.join(contributing_sensors[:5]) if contributing_sensors else 'multiple parameters'
                 method_display = method.upper().replace('_', ' ')
@@ -380,9 +390,65 @@ class SensorDataConsumer:
                     f"Contributing sensors: {sensors_str}",
                     severity='HIGH'
                 )
-            
+
+            # Return result for 3D Twin telemetry
+            return {
+                'is_anomaly': is_anomaly,
+                'score': score,
+                'contributing_sensors': contributing_sensors,
+                'method': method
+            }
+
         except Exception as e:
             self.logger.error(f"ML detection failed: {e}")
+            return None
+
+    def update_3d_telemetry(self, reading, ml_result):
+        """Push telemetry data to 3D Digital Twin dashboard via internal API.
+
+        This updates the WebSocket broadcast cache so real-time visualizations
+        can animate based on current sensor values.
+
+        Args:
+            reading: Dict with sensor values
+            ml_result: Optional dict with ML detection result
+        """
+        if not REQUESTS_AVAILABLE:
+            return
+
+        try:
+            # Extract anomaly score from ML result
+            anomaly_score = 0
+            detection_method = 'none'
+            detected_sensors = []
+
+            if ml_result:
+                anomaly_score = ml_result.get('score', 0)
+                detection_method = ml_result.get('method', 'hybrid')
+                detected_sensors = ml_result.get('contributing_sensors', [])
+
+            # POST to internal telemetry endpoint (non-blocking with short timeout)
+            requests.post(
+                'http://localhost:5000/api/internal/telemetry-update',
+                json={
+                    'machine_id': reading.get('machine_id', 'A'),
+                    'rpm': reading.get('rpm', 0),
+                    'temperature': reading.get('temperature', 70),
+                    'vibration': reading.get('vibration', 0),
+                    'pressure': reading.get('pressure', 100),
+                    'bearing_temp': reading.get('bearing_temp', 120),
+                    'anomaly_score': anomaly_score,
+                    'detection_method': detection_method,
+                    'detected_sensors': detected_sensors
+                },
+                timeout=0.5  # Quick timeout to not block consumer
+            )
+        except requests.exceptions.RequestException:
+            # Silently ignore - 3D Twin might not be running
+            pass
+        except Exception as e:
+            # Log but don't fail - this is non-critical
+            self.logger.debug(f"3D telemetry update skipped: {e}")
 
     def process_message(self, message):
         """Process a single message from Kafka."""
@@ -426,7 +492,10 @@ class SensorDataConsumer:
                 self.logger.info(f"[OK] {log_msg}")
 
                 # Run ML-based anomaly detection (non-blocking)
-                self.run_ml_detection(data, reading_id)
+                ml_result = self.run_ml_detection(data, reading_id)
+
+                # Update 3D Digital Twin telemetry cache (non-blocking)
+                self.update_3d_telemetry(data, ml_result)
 
                 # Log progress every N messages
                 if self.message_count % config.LOG_PROGRESS_INTERVAL == 0:

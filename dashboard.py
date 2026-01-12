@@ -5,6 +5,14 @@ Provides controls and monitoring for the Kafka pipeline
 
 from flask import Flask, render_template, jsonify, request, make_response, session
 from werkzeug.security import generate_password_hash, check_password_hash
+
+# Flask-SocketIO for WebSocket support (3D Digital Twin)
+try:
+    from flask_socketio import SocketIO, emit
+    SOCKETIO_AVAILABLE = True
+except ImportError:
+    SOCKETIO_AVAILABLE = False
+    print("Warning: Flask-SocketIO not available. Real-time 3D updates will not work.")
 import psycopg2
 import subprocess
 import os
@@ -76,6 +84,20 @@ except ImportError as e:
     print(f"ML report generation not available: {e}")
 
 app = Flask(__name__)
+
+# ============================================================================
+# SOCKETIO INITIALIZATION - For 3D Digital Twin Real-Time Updates
+# ============================================================================
+if SOCKETIO_AVAILABLE:
+    socketio = SocketIO(
+        app,
+        cors_allowed_origins="*",
+        async_mode='threading',
+        logger=False,
+        engineio_logger=False
+    )
+else:
+    socketio = None
 
 # ============================================================================
 # RATE LIMITING - Initialize Flask-Limiter
@@ -259,6 +281,41 @@ HEARTBEAT_INTERVAL_SECONDS = 10
 last_kafka_status = None
 heartbeat_thread_started = False
 heartbeat_lock = threading.Lock()
+
+# ============================================================================
+# TELEMETRY CACHE - For 3D Digital Twin WebSocket Broadcasting
+# ============================================================================
+telemetry_cache = {
+    'A': {'rpm': 0, 'temperature': 70, 'vibration': 0, 'pressure': 100, 'bearing_temp': 120, 'anomaly_score': 0},
+    'B': {'rpm': 0, 'temperature': 70, 'vibration': 0, 'pressure': 100, 'bearing_temp': 120, 'anomaly_score': 0},
+    'C': {'rpm': 0, 'temperature': 70, 'vibration': 0, 'pressure': 100, 'bearing_temp': 120, 'anomaly_score': 0}
+}
+telemetry_lock = threading.Lock()
+telemetry_broadcast_started = False
+
+def telemetry_broadcast_worker():
+    """Background thread that emits rig telemetry via WebSocket every 100ms (10 Hz)"""
+    if not SOCKETIO_AVAILABLE or not socketio:
+        return
+
+    while True:
+        try:
+            with telemetry_lock:
+                for machine_id, data in telemetry_cache.items():
+                    socketio.emit('rig_telemetry', {
+                        'machine_id': machine_id,
+                        'rpm': data.get('rpm', 0),
+                        'temperature': data.get('temperature', 70),
+                        'vibration': data.get('vibration', 0),
+                        'pressure': data.get('pressure', 100),
+                        'bearing_temp': data.get('bearing_temp', 120),
+                        'anomaly_score': data.get('anomaly_score', 0),
+                        'timestamp': datetime.now(timezone.utc).isoformat()
+                    })
+            time.sleep(0.1)  # 10 Hz update rate
+        except Exception as e:
+            logging.error(f"Telemetry broadcast error: {e}")
+            time.sleep(1)  # Back off on error
 
 def get_db_connection():
     """Get PostgreSQL connection from pool."""
@@ -4314,7 +4371,86 @@ def api_list_users():
 # Bootstrap admin user on module load
 bootstrap_admin_user()
 
+# ============================================================================
+# SOCKETIO EVENT HANDLERS - For 3D Digital Twin
+# ============================================================================
+if SOCKETIO_AVAILABLE and socketio:
+    @socketio.on('connect')
+    def handle_connect():
+        """Handle new WebSocket connection"""
+        emit('system_status', {
+            'connected': True,
+            'machines': list(machine_state.keys()),
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        })
+        logging.info("3D Twin client connected")
+
+    @socketio.on('disconnect')
+    def handle_disconnect():
+        """Handle WebSocket disconnection"""
+        logging.info("3D Twin client disconnected")
+
+    @socketio.on('subscribe_machines')
+    def handle_subscribe(data):
+        """Handle machine subscription request"""
+        machines = data.get('machines', ['A', 'B', 'C'])
+        emit('machines_subscribed', {'machines': machines})
+        logging.info(f"3D Twin client subscribed to machines: {machines}")
+
+# ============================================================================
+# INTERNAL API - Telemetry Update (Called by Consumer)
+# ============================================================================
+@app.route('/api/internal/telemetry-update', methods=['POST'])
+def update_telemetry():
+    """
+    Internal endpoint for consumer to push real-time sensor data.
+    This data is cached and broadcast to 3D Twin clients via WebSocket.
+    """
+    global telemetry_cache
+    try:
+        data = request.get_json()
+        machine_id = data.get('machine_id', 'A')
+
+        if machine_id not in ['A', 'B', 'C']:
+            return jsonify({'error': 'Invalid machine_id'}), 400
+
+        with telemetry_lock:
+            telemetry_cache[machine_id] = {
+                'rpm': data.get('rpm', 0),
+                'temperature': data.get('temperature', 70),
+                'vibration': data.get('vibration', 0),
+                'pressure': data.get('pressure', 100),
+                'bearing_temp': data.get('bearing_temp', 120),
+                'anomaly_score': data.get('anomaly_score', 0)
+            }
+
+        # Also emit anomaly alert if score is high
+        if SOCKETIO_AVAILABLE and socketio and data.get('anomaly_score', 0) > 0.5:
+            socketio.emit('anomaly_alert', {
+                'machine_id': machine_id,
+                'anomaly_score': data.get('anomaly_score', 0),
+                'detection_method': data.get('detection_method', 'hybrid'),
+                'detected_sensors': data.get('detected_sensors', []),
+                'timestamp': datetime.now(timezone.utc).isoformat()
+            })
+
+        return jsonify({'status': 'ok'}), 200
+    except Exception as e:
+        logging.error(f"Telemetry update error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     # Run startup check
     check_custom_sensors_table()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+
+    # Use SocketIO runner if available (for WebSocket support)
+    if SOCKETIO_AVAILABLE and socketio:
+        # Start telemetry broadcast background task
+        socketio.start_background_task(telemetry_broadcast_worker)
+        logging.info("Starting Flask with SocketIO (WebSocket enabled for 3D Twin)")
+        socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    else:
+        # Fallback to standard Flask
+        logging.info("Starting Flask without SocketIO")
+        app.run(debug=True, host='0.0.0.0', port=5000)

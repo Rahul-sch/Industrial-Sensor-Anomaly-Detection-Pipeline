@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles */
+:root {
+  --color-bg: #0a0a0a;
+  --color-cyan: #00ffff;
+  --color-green: #00ff41;
+  --color-yellow: #ffd700;
+  --color-red: #ff1744;
+  --color-orange: #ff6600;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--color-bg);
+  color: white;
+  cursor: crosshair;
+}
+
+/* Hide scrollbars */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom scrollbar for HUD panels */
+.hud-scroll::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+}
+
+.hud-scroll::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.hud-scroll::-webkit-scrollbar-thumb {
+  background: #00ffff;
+  border-radius: 2px;
+}
+
+/* Glow effects */
+.glow-cyan {
+  text-shadow: 0 0 5px var(--color-cyan), 0 0 10px var(--color-cyan);
+}
+
+.glow-red {
+  text-shadow: 0 0 5px var(--color-red), 0 0 10px var(--color-red);
+}
+
+.glow-green {
+  text-shadow: 0 0 5px var(--color-green), 0 0 10px var(--color-green);
+}
+
+/* HUD panel styles */
+.hud-panel {
+  @apply bg-black/80 border border-rig-cyan/30 rounded-lg backdrop-blur-sm;
+}
+
+.hud-panel-danger {
+  @apply bg-black/80 border border-rig-red/50 rounded-lg backdrop-blur-sm;
+}
+
+/* Status indicators */
+.status-dot {
+  @apply w-2 h-2 rounded-full;
+}
+
+.status-dot-live {
+  @apply bg-rig-green animate-pulse;
+}
+
+.status-dot-warning {
+  @apply bg-rig-yellow animate-pulse;
+}
+
+.status-dot-error {
+  @apply bg-rig-red animate-pulse;
+}
+
+/* Scanline effect (optional) */
+.scanlines::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 255, 0.03) 2px,
+    rgba(0, 255, 255, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
