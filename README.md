@@ -49,43 +49,43 @@ Primary flows:
 
 ```mermaid
 flowchart TB
-    subgraph Edge["🔵 Edge / Data Generation"]
-        Producer[Sensor Producer\nproducer.py] -->|JSON messages| Kafka
-        API[External API\nPOST /api/v1/ingest] -->|JSON messages| Kafka
-    end
+  subgraph Edge["🔵 Edge / Data Generation"]
+    Producer["Sensor Producer<br/>producer.py"] -->|JSON messages| Kafka
+    API["External API<br/>POST /api/v1/ingest"] -->|JSON messages| Kafka
+  end
 
-    subgraph Stream["🟣 Streaming Layer (Kafka)"]
-        Kafka[(Kafka Broker\n9092)]
-        ZK[Zookeeper\n2181] --> Kafka
-    end
+  subgraph Stream["🟣 Streaming Layer (Kafka)"]
+    Kafka[("Kafka Broker<br/>9092")]
+    ZK["Zookeeper<br/>2181"] --> Kafka
+  end
 
-    subgraph Processing["🟠 Processing & ML"]
-        Consumer[Consumer Service\nconsumer.py]
-        Combined[Combined Detector\ncombined_pipeline.py]
-        IF[Isolation Forest\nml_detector.py]
-        LSTM[LSTM Autoencoder\nlstm_detector.py]
-        Consumer -->|call detect| Combined
-        Combined --> IF
-        Combined --> LSTM
-    end
+  subgraph Processing["🟠 Processing & ML"]
+    Consumer["Consumer Service<br/>consumer.py"]
+    Combined["Combined Detector<br/>combined_pipeline.py"]
+    IF["Isolation Forest<br/>ml_detector.py"]
+    LSTM["LSTM Autoencoder<br/>lstm_detector.py"]
+    Consumer -->|call detect| Combined
+    Combined --> IF
+    Combined --> LSTM
+  end
 
-    subgraph Storage["🟢 Storage & Audit"]
-        Postgres[(PostgreSQL\nsensordb)]
-        Consumer -->|persist readings & detections| Postgres
-        Audit[(audit_logs_v2)]
-        Dashboard -->|audit actions| Audit
-    end
+  subgraph Storage["🟢 Storage & Audit"]
+    Postgres[("PostgreSQL<br/>sensordb")]
+    Consumer -->|persist readings & detections| Postgres
+    Audit[("audit_logs_v2")]
+    Dashboard -->|audit actions| Audit
+  end
 
-    subgraph Presentation["🔶 Dashboard & 3D Twin"]
-        Dashboard[Flask Dashboard\ndashboard.py]\n
-        Twin[3D Digital Twin\nfrontend-3d] 
-        Dashboard -->|WebSocket / APIs| Twin
-        Dashboard -->|queries| Postgres
-    end
+  subgraph Presentation["🔶 Dashboard & 3D Twin"]
+    Dashboard["Flask Dashboard<br/>dashboard.py"]
+    Twin["3D Digital Twin<br/>frontend-3d"]
+    Dashboard -->|WebSocket / APIs| Twin
+    Dashboard -->|queries| Postgres
+  end
 
-    Kafka -->|consume| Consumer
-    Producer -->|publish| Kafka
-    API -->|publish| Kafka
+  Kafka -->|consume| Consumer
+  Producer -->|publish| Kafka
+  API -->|publish| Kafka
 ```
 
 Click the architecture boxes in this README (or search the file) to jump to the corresponding component sections below.
@@ -176,7 +176,7 @@ Design notes:
 Files: `dashboard.py`, `templates/`, `frontend-3d/`, `static/`
 
 Responsibilities:
-- Serve a classic Flask dashboard with controls, charts, and system commands
+- Serve a classic Flask dashboard with controls, user management, reports and charts
 - Expose REST APIs for ingestion, model status, and RUL predictions
 - Host WebSocket (Socket.IO) endpoints for the 3D Twin telemetry (10 Hz by default)
 - Provide admin functionality (custom sensors, AI parsing, audit viewing)
@@ -212,7 +212,7 @@ docker-compose up -d
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
-.\.venv\Scripts\activate   # Windows PowerShell
+.\\.venv\\Scripts\\activate   # Windows PowerShell
 pip install -r requirements.txt
 ```
 
