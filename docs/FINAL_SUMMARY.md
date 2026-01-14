@@ -1,21 +1,22 @@
-## Rig Alpha – Final Summary Report (Concise)
+# Rig Alpha – Final Summary Report
 
-### 1. What Rig Alpha Is
+## 1. What Rig Alpha Is
 
 Rig Alpha is an **end-to-end Industrial IoT monitoring and predictive maintenance platform** for factory and process equipment. It:
 - **Collects** real-time data from 50+ industrial sensors (environmental, mechanical, thermal, electrical, fluid).
 - **Streams** data through **Apache Kafka** with exactly-once delivery semantics.
 - **Detects anomalies** using a **hybrid ML approach** (Isolation Forest for point anomalies + LSTM autoencoder for sequence/temporal anomalies).
-- **Predicts failures** via **Remaining Useful Life (RUL)** estimation.
+- **Predicts failures** via **Remaining Useful Life (RUL)** and **Time-to-Failure (PTTF)** countdowns.
 - **Analyzes root causes** and generates **AI-written reports** using **Groq-hosted LLaMA models**.
-- **Visualizes** machine health in both a classic web dashboard and a **3D digital twin** built with React Three Fiber.
-- **Logs and audits** all user and system actions for compliance.
+- **Automates Onboarding** via **AI Smart Onboarding**, parsing PDF/CSV sensor specs to auto-configure rig parameters.
+- **Visualizes** machine health in a high-fidelity "Dark Mode" web dashboard and a **3D digital twin** built with React Three Fiber.
+- **Logs and audits** all user and system actions with a tamper-evident cloud-based audit trail.
 
-Rig Alpha behaves like a 24/7 expert maintenance engineer and data scientist watching every critical parameter, warning you early, and explaining what’s happening in plain language.
+Rig Alpha behaves like a 24/7 expert maintenance engineer and data scientist watching every critical parameter, warning you early, and explaining what's happening in plain language.
 
 ---
 
-### 2. Why It Was Built & Business Impact
+## 2. Why It Was Built & Business Impact
 
 Modern industrial plants have thousands of sensors and complex machines where:
 - **Downtime is extremely expensive** (hundreds of thousands of dollars per hour).
@@ -27,242 +28,379 @@ Rig Alpha implements **Condition-Based Monitoring (CBM)** and **Predictive Maint
 - Detects early patterns of degradation (vibration, temperature rise, pressure changes, etc.).
 - Predicts when components are likely to fail so maintenance can be scheduled in planned downtime.
 
-Typical improvements (based on industry benchmarks documented in the project):
+**Typical Business Impact:**
 - **30–50% reduction** in maintenance costs.
 - **20–40% increase** in equipment lifespan.
 - Up to **70% reduction** in unplanned downtime.
-- Example medium factory: **$300k–$500k/year** in savings plus better safety, quality, and employee well‑being.
+- Example medium factory: **$300k–$500k/year** in savings plus better safety.
 
 ---
 
-### 3. Who It Serves & How It Helps
+## 3. Who It Serves & How It Helps
 
-- **Factory Operators**
-  - Simple **Green/Yellow/Red health indicators** per machine and sensor group.
-  - Clear alerts with guidance on whether to keep running or stop.
-  - Fewer 3 AM emergency callouts; issues are caught during normal shifts.
+### Factory Operators
+- **High-Contrast "Dark Mode" UI:** Optimized for control rooms with a "Zero-Scroll" layout using **Gridstack** (configurable drag-and-drop tiles).
+- **Live Telemetry:** Real-time Message Velocity (MPS), sparklines for trends, and simple **Green/Yellow/Red** health indicators.
+- **Visual Alarms:** Full-screen alerts and PTTF countdowns allow operators to see risks immediately without digging into data.
 
-- **Maintenance Engineers**
-  - **Detailed anomaly and trend reports** with top contributing sensors and correlations.
-  - Know **which component is failing, why, and how soon**, before opening a panel.
-  - Access to full sensor histories, anomaly detections, RUL estimates, and audit trails.
+### Maintenance Engineers
+- **Detailed Anomaly Reports:** AI-generated narratives explaining root causes (e.g., "Lubrication loss causing bearing overheat").
+- **Forensics:** Access to full sensor histories, anomaly detections, RUL estimates, and audit trails.
+- **3D Digital Twin:** Provides immediate physical context (e.g., which specific motor is vibrating).
 
-- **Plant Managers / Executives**
-  - Executive dashboard with **KPIs**, downtime and anomaly statistics, and machine‑level status.
-  - Visibility into **cost of failures vs. cost of interventions** and compliance evidence.
+### Plant Managers / Executives
+- **Executive Dashboard:** KPIs, downtime/anomaly statistics, and machine‑level status (Isolation of Machine A/B/C).
+- **ROI Tracking:** Visibility into cost of failures vs. cost of interventions.
 
-- **Developers & Integrators**
-  - Fully open, documented codebase (Python + JavaScript/React).
-  - Modular architecture: producer, Kafka streaming, consumer + ML, analysis engine, AI report generator, dashboard API, and 3D frontend.
-  - Easy to extend with **custom sensors**, new ML models, or additional integrations.
+### Developers & Integrators
+- **Open Architecture:** Modular codebase (Python + React) featuring **Ithena branding** elements.
+- **AI Smart Onboarding:** Drag-and-drop sensor spec sheets (PDF/CSV) to auto-map parameters using LLMs.
+- **Universal Ingest:** "Universal Alias Mapping" simplifies integration with legacy hardware that uses non-standard naming.
 
 ---
 
-### 4. Core Technologies & Architecture
+## 4. Core Technologies & Architecture
 
 Rig Alpha follows a **layered architecture**:
 
-1. **Edge / Producer Layer**
-   - `producer.py` simulates 50+ sensors with realistic **correlated behavior**:
-     - **Environmental**: temperature, pressure, humidity, air quality, CO₂, noise, light, etc.
-     - **Mechanical**: vibration, RPM, torque, shaft alignment, bearing temperature, motor current, belt tension, etc.
-     - **Thermal**: coolant, exhaust, oil, core and surface temps, thermal efficiency.
-     - **Electrical**: voltage, current, power factor, frequency, harmonics, ground fault.
-     - **Fluid**: flow rate, fluid pressure, viscosity, Reynolds number, pump efficiency, valve position, etc.
-   - Sensor values are **physically consistent** (e.g., higher RPM → higher temperature, vibration, and current; low lubrication pressure → rising bearing temp and vibration).
-   - Supports **custom sensors** defined at runtime (stored in DB and added to each reading under a `custom_sensors` JSONB field).
-   - Includes **anomaly injection** (manual, scheduled, or API‑driven) to simulate realistic faults for testing.
+### 1. Edge / Producer Layer
+- **Simulation:** `producer.py` simulates 50+ sensors with realistic correlated behavior (e.g., higher RPM → higher Temp/Vibration).
+- **Universal Ingest:** Supports legacy hardware integration via alias mapping through `/api/v1/ingest`.
+- **Anomaly Injection:** "Inject Anomaly NOW" button allows immediate testing of fault logic (manual, scheduled, or API‑driven).
 
-2. **Streaming Layer (Apache Kafka)**
-   - All readings go to a `sensor-data` topic on Kafka (local Docker or cloud via Upstash).
-   - **Producer config**: `acks='all'`, retries with **exponential backoff**, `max_in_flight_requests_per_connection=1` to preserve ordering.
-   - **Consumer config**: manual offset commits (`enable_auto_commit=False`), `auto_offset_reset='earliest'`, and consumer groups for horizontal scaling.
-   - Provides **exactly-once processing** when combined with idempotent DB writes and manual offset commits.
+### 2. Streaming Layer (Apache Kafka)
+- **Topic:** `sensor-data` (Local Docker or Cloud via Upstash).
+- **Reliability:** `acks='all'`, retries with exponential backoff, and `max_in_flight_requests_per_connection=1` to preserve ordering.
+- **Semantics:** Provides **exactly-once processing** when combined with idempotent DB writes and manual offset commits.
 
-3. **Processing & ML Layer (Consumers + Anomaly Detection)**
-   - `consumer.py` pipeline:
-     - Decode & validate messages (required core fields like timestamp, temperature, pressure, humidity, vibration, RPM).
-     - **Rule-based checks** against configured safe thresholds (e.g., bearing_temp > 180°F, impossible pressures) for immediate safety alerts.
-     - **Insert all 50 sensor values + custom_sensors into PostgreSQL** in a single atomic transaction.
-     - **Run ML detection**:
-       - **Isolation Forest** (`ml_detector.py`) for point anomalies:
-         - Trained on historical normal data (100+ samples).
-         - 100 trees, 5% contamination; uses `StandardScaler` and stored feature means/stds for later z‑score analysis.
-       - **LSTM Autoencoder** (`lstm_detector.py`) for sequence anomalies:
-         - Analyzes last **20 readings × 50 features**.
-         - Encoder–decoder LSTM architecture with a 32‑dimensional bottleneck.
-         - Trained only on normal sequences; high reconstruction error = anomaly.
-       - **Hybrid strategy** (`combined_pipeline.py`), default **`hybrid_smart`**:
-         - Run Isolation Forest first; if it flags an anomaly, alert immediately.
-         - If Isolation Forest says normal, run LSTM to catch **gradual or contextual** issues.
-     - Store ML results in `anomaly_detections` (method, score, contributing sensors, timestamp).
-     - Push a **telemetry update** to the dashboard for the 3D twin.
-     - **Commit Kafka offset only after successful DB write**, enabling exactly‑once semantics.
+### 3. Processing & ML Layer (Consumers + Anomaly Detection)
+- **Pipeline:**
+  - Decode & validate messages.
+  - **Rule-based checks** against configured safe thresholds (min/max limits for all 50 parameters).
+  - **Atomic DB Writes:** Inserts 50+ sensor values in a single transaction.
+  - **ML Detection:**
+    - **Isolation Forest:** For point anomalies.
+    - **LSTM Autoencoder:** For sequence/temporal anomalies (last 20 readings) to detect subtle time-based patterns and provide early warning.
+    - **Hybrid Strategy:** Combines speed of Forest with context of LSTM.
+  - **RUL Engine:** Computes "Time-to-Failure" (PTTF) based on degradation velocity.
+  - **Telemetry Push:** Updates the 3D twin via Socket.IO.
 
-4. **Storage Layer (PostgreSQL / Neon.tech)**
-   - Core tables include:
-     - `sensor_readings`: main time‑series of all 50 core sensors + `custom_sensors` (JSONB).
-     - `anomaly_detections`: ML results linked to readings.
-     - `ai_reports`: AI‑generated root cause and recommendation text per anomaly.
-     - `users`, `alerts`, `custom_sensors`, `audit_logs_v2` (full compliance logging).
-   - Uses **connection pooling** (`ThreadedConnectionPool` 5–50 connections) for performance.
-   - **JSONB** enables flexible custom sensors per deployment while remaining queryable.
-   - Supports both **local Postgres** and **Neon.tech serverless Postgres** via `DATABASE_URL` and SSL.
+### 4. Storage Layer (PostgreSQL / Neon.tech)
+- **Cloud-Native Serverless:** Migrated to **Neon.tech** for serverless scaling and global accessibility.
+- **Tables:** `sensor_readings`, `anomaly_detections`, `ai_reports`, `users`, `alerts`, `custom_sensors`, `audit_logs_v2`.
+- **Thread Safety:** Implemented `ThreadedConnectionPool` (5–50 connections) and component locking logic to prevent leaks during high-velocity bursts.
 
-5. **AI Analysis & Reporting Layer**
-   - `analysis_engine.py` builds a **context window** around each anomaly (10 readings before + anomaly + 10 after) and computes:
-     - Significant **sensor correlations** (with p‑values).
-     - **Z‑scores** for each sensor to highlight the largest deviations.
-     - Recognizable failure patterns (e.g., lubrication loss → bearing_temp ↑, vibration ↑, lubrication_pressure ↓).
-   - `report_generator.py` builds a rich **prompt** for Groq‑hosted **LLaMA** models:
-     - Includes detection method and score, top deviating sensors, correlations, and context.
-     - Asks for structured sections: **Root Cause, Affected Systems, Severity, Recommendations, Immediate Actions**.
-   - Uses Groq via an OpenAI‑compatible API (`llama-3.3-70b-versatile` for detailed reports; smaller models for fast parsing).
-   - If the AI API is unavailable, a **deterministic fallback** generates a data‑driven report directly from z‑scores and correlations.
+### 5. AI Analysis & Reporting Layer
+- **Analysis Engine:** Builds a context window (pre/post anomaly) and computes correlations/Z-scores.
+- **Generative AI:** Uses Groq‑hosted **LLaMA** models to write structured reports (Root Cause, Severity, Recommended Actions).
+- **Smart Onboarding:** Parses unstructured PDF/CSV/JSON manuals to auto-configure sensor metadata (units, thresholds, categories).
 
-6. **Presentation Layer (Dashboard + 3D Digital Twin)**
-   - **Flask Dashboard (`dashboard.py`)**:
-     - Classic web UI showing system stats, recent anomalies, per‑machine metrics, and controls.
-     - **User authentication and RBAC**:
-       - `users` table with `role` (`admin` / `operator`) and `machines_access`.
-       - Session‑based auth with secure cookies and Content Security Policy (CSP) to reduce XSS/CSRF risks.
-     - **REST API** for:
-       - Stats and machine‑specific data (`/api/stats`, `/api/machines/<id>/stats`, `/api/anomalies`).
-       - Admin functions for **custom sensors** and **AI sensor spec parsing** from uploaded files.
-       - External **ingestion endpoint** (`/api/v1/ingest`) protected by an API key for real hardware integration.
-     - **Audit logging** (`audit_logs_v2`):
-       - Logs user, role, IP, user agent, action type, resource, previous/new state, timestamp, and retention period.
-   - **3D Digital Twin Frontend (`frontend-3d/`)**:
-     - Built with **React 18**, **React Three Fiber**, **Three.js**, **Zustand**, and **Socket.IO**.
-     - First‑person 3D scene with **three machines (A, B, C)**, environment, lights, and effects (bloom, vignette).
-     - Real‑time telemetry:
-       - Flask broadcasts `rig_telemetry` events at ~10 Hz via Socket.IO.
-       - Frontend `useSocket` hook updates **transient state** in a plain JS object (no React re‑render on every tick).
-       - `useFrame` in `RigModel` reads transient state at 60 FPS and maps sensors to visuals:
-         - **RPM → fan/turbine rotation speed**.
-         - **Temperature → emissive color & glow** (black → red → orange/yellow).
-         - **Vibration → rig shake** amplitude.
-         - **Anomaly score → warning lights and particle effects**.
-     - HUD overlays show machine IDs, status, and key metrics; WASD + mouse controls via Pointer Lock API.
+### 6. Presentation Layer (Dashboard + 3D Digital Twin)
 
-#### 4.1 High-Level Class Diagram
+#### Flask Dashboard (`dashboard.py`)
+- **Security:** 
+  - `Flask-Limiter` (rate limiting: login 5/min, ingest 200/min)
+  - `Flask-Talisman` (Content Security Policy)
+  - Strict input sanitization with `.textContent` and float-casting to block XSS/corruption
+  - Secure cookies
+- **Industrial UX:** 
+  - Dark mode optimized for control rooms
+  - Persistent Gridstack layouts via localStorage
+  - Sparklines for real-time trend visualization
+  - "Zero-Scroll" high-density layout
+- **Metrics:** 
+  - Live CPU Load tracking
+  - Database Latency monitoring (<100ms targets) in header
+  - Message Velocity (MPS) display
+- **RBAC & Auditing:** 
+  - Strict Admin vs. Operator roles
+  - SQL-backed **Audit Log V2** tracks every state change with immutable timestamps
+  - Machine-specific access control (assign operators to Machine A, B, or C)
+- **Custom Sensors:**
+  - Admin can add dynamic custom parameters with metadata
+  - Per-machine enable/disable configuration
+  - Drag-and-drop sensor organization
 
-The following diagram summarizes the main backend and frontend components and how they interact:
+#### 3D Digital Twin (`frontend-3d`)
+- **Tech Stack:** React 18, React Three Fiber, Three.js, Zustand.
+- **Physical Feedback:**
+  - **Vibration → Jitter:** Model shakes dynamically based on sensor data.
+  - **Temperature → Color:** Wireframe glows Red/Neon as heat rises > 80°F.
+- **Performance:** Updates at 60 FPS using transient state (no React re-renders for telemetry).
+- **Live Kafka Integration:** Real-time synchronization with cloud telemetry.
+
+---
+
+## 5. High-Level Class Diagram
+
+Below is a simplified class diagram showing the main components and their relationships:
 
 ```mermaid
 classDiagram
     class SensorDataProducer {
-      +generate_sensor_reading()
-      +send_message()
+        +simulate_readings()
+        +inject_anomaly()
+        +send_to_kafka()
     }
+    
     class KafkaBroker {
-      +topic: sensor-data
+        +topic: sensor-data
+        +receive_message()
+        +deliver_message()
     }
+    
     class SensorConsumer {
-      +process_message()
-      +insert_reading()
-      +run_ml_detection()
-      +update_3d_telemetry()
+        +consume_from_kafka()
+        +validate_reading()
+        +store_to_db()
+        +trigger_ml_detection()
     }
+    
     class AnomalyDetector {
-      +train()
-      +detect()
+        +isolation_forest_model
+        +detect_point_anomaly()
     }
+    
     class LSTMDetector {
-      +train()
-      +detect()
+        +lstm_autoencoder
+        +detect_sequence_anomaly()
+        +calculate_reconstruction_error()
     }
+    
     class CombinedDetector {
-      +detect_hybrid()
+        +run_hybrid_detection()
+        +trigger_analysis()
     }
+    
     class AnalysisEngine {
-      +get_context_window()
-      +compute_correlations()
+        +build_context_window()
+        +compute_correlations()
+        +generate_ai_report()
     }
+    
     class ReportGenerator {
-      +build_prompt()
-      +generate_report()
+        +groq_client
+        +call_llama_model()
+        +format_report()
     }
+    
     class PredictionEngine {
-      +predict_rul()
+        +calculate_rul()
+        +estimate_pttf()
+        +predict_failure_window()
     }
+    
     class PostgresDB {
-      +sensor_readings
-      +anomaly_detections
-      +ai_reports
-      +users
-      +audit_logs_v2
+        +sensor_readings
+        +anomaly_detections
+        +ai_reports
+        +audit_logs_v2
+        +custom_sensors
     }
+    
     class FlaskApp {
-      +/api/stats
-      +/api/machines/:id/stats
-      +/api/anomalies
-      +/api/v1/ingest
-      +/api/admin/custom-sensors
+        +serve_dashboard()
+        +handle_api_requests()
+        +enforce_rbac()
     }
+    
     class SocketServer {
-      +rig_telemetry events
+        +broadcast_telemetry()
+        +push_alerts()
     }
+    
     class ThreeDFrontend {
-      +FactoryScene
-      +RigModel
-      +HUD
+        +render_digital_twin()
+        +apply_physical_feedback()
+        +update_at_60fps()
     }
+    
     class SensorStore {
-      +transient rigs state
-      +UI state (alerts, selection)
+        +zustand_state
+        +handle_socket_events()
     }
-
-    SensorDataProducer --> KafkaBroker : publishes sensor-data
-    KafkaBroker --> SensorConsumer : consumes messages
-    SensorConsumer --> PostgresDB : write sensor_readings
-    SensorConsumer --> CombinedDetector : detect()
-    CombinedDetector --> AnomalyDetector
-    CombinedDetector --> LSTMDetector
-    CombinedDetector --> PostgresDB : write anomaly_detections
-    CombinedDetector --> AnalysisEngine
-    AnalysisEngine --> ReportGenerator
-    ReportGenerator --> PostgresDB : write ai_reports
-    AnalysisEngine --> PredictionEngine
-    PredictionEngine --> PostgresDB
-    FlaskApp --> PostgresDB : queries stats, readings, anomalies
-    FlaskApp --> SocketServer : emit rig_telemetry
-    SocketServer --> ThreeDFrontend : push telemetry
-    ThreeDFrontend --> SensorStore : update state
-    ThreeDFrontend ..> FlaskApp : REST API calls
+    
+    SensorDataProducer --> KafkaBroker: publishes
+    KafkaBroker --> SensorConsumer: delivers
+    SensorConsumer --> PostgresDB: writes
+    SensorConsumer --> AnomalyDetector: invokes
+    SensorConsumer --> LSTMDetector: invokes
+    AnomalyDetector --> CombinedDetector: feeds
+    LSTMDetector --> CombinedDetector: feeds
+    CombinedDetector --> AnalysisEngine: triggers
+    AnalysisEngine --> ReportGenerator: uses
+    AnalysisEngine --> PostgresDB: writes reports
+    SensorConsumer --> PredictionEngine: invokes
+    PredictionEngine --> PostgresDB: reads/writes
+    FlaskApp --> PostgresDB: queries
+    FlaskApp --> SocketServer: emits
+    SocketServer --> ThreeDFrontend: broadcasts
+    ThreeDFrontend --> SensorStore: updates
 ```
 
----
-
-### 5. How It’s Used (Operations & Workflows)
-
-- **Getting Started**
-  - Use Docker Compose to launch Kafka, Zookeeper, and PostgreSQL.
-  - Install Python dependencies (`requirements.txt`) and Node.js packages for the 3D frontend.
-  - Run `train_combined_detector.py` once to generate initial Isolation Forest and LSTM models from normal data.
-  - Start `dashboard.py`, `producer.py`, `consumer.py`, and `frontend-3d` dev server; open the dashboard (`:5000`) and 3D twin (`:3000`).
-
-- **Day-to-Day Monitoring**
-  - Operators watch the dashboard’s **health cards and telemetry grid**, plus the 3D rigs for intuitive status.
-  - When anomalies occur:
-    - Rule-based checks and ML detectors create alerts and anomaly records.
-    - Operators see color changes, warning icons, and can request an **AI analysis report**.
-    - Maintenance teams use these reports + trend plots to plan inspections and parts replacement.
-
-- **Extending & Integrating**
-  - Add new sensors via the **Custom Sensors** admin UI or API; values appear in `custom_sensors` and are used by detection.
-  - Ingest real plant data by posting to `/api/v1/ingest` instead of (or in addition to) the simulator.
-  - Deploy to cloud using **Neon.tech** (Postgres) and **Upstash** (Kafka), with the Flask app hosted on platforms like Render and the 3D frontend on Vercel/Netlify.
+**Key Relationships:**
+- **Producer → Kafka → Consumer**: Data ingestion pipeline with exactly-once semantics
+- **Consumer → ML Models**: Hybrid anomaly detection (Isolation Forest + LSTM)
+- **ML → Analysis Engine → LLM**: AI-powered root cause analysis
+- **Flask API → Socket.IO → 3D Frontend**: Real-time visualization pipeline
+- **All components → PostgresDB**: Centralized cloud storage (Neon)
 
 ---
 
-### 6. Big Picture Takeaways
+## 6. How It's Used (Operations & Workflows)
 
-- Rig Alpha shows **a full, realistic industrial data pipeline**: from sensor generation to streaming, ML, AI, storage, dashboards, and 3D visualization.
-- The system is designed around **reliability (exactly‑once processing, ACID DB, audit logs)** and **explainability** (z‑scores, correlations, AI narratives).
-- The **hybrid anomaly detection** (Isolation Forest + LSTM) and **RUL prediction** provide both fast alerts and foresight into slowly developing problems.
-- With its open, modular architecture and strong documentation (00–08), Rig Alpha can be:
-  - A teaching tool for industrial IoT and MLOps concepts.
-  - A foundation for real plant integrations.
-  - A portfolio‑grade demonstration of full‑stack, data‑driven industrial engineering.
+### Getting Started & Configuration
+1. **Smart Onboarding:** Admin uploads a sensor manual (PDF/CSV); AI parses specs and configures the DB.
+2. **Machine Isolation:** Assign Operators to Machine A, B, or C via the Admin panel.
+3. **Thresholds:** Adjust min/max limits or use the "Inject Anomaly" button to test system response.
+4. **Custom Sensors:** Add new dynamic parameters via the Admin UI with drag-and-drop organization.
 
+### Day-to-Day Monitoring
+1. Operators watch the **"Control Tower" view** (Dark Mode with zero-scroll layout).
+2. **3D Visualization:** If the digital twin shakes or glows red, operators know instantly there is a physical issue.
+3. **Visual Alarms:** Full-screen warnings and PTTF countdowns trigger on critical faults.
+4. **Live Metrics:** Monitor Message Velocity (MPS), CPU Load, and Database Latency in real-time.
+
+### Anomaly Response Workflow
+1. **Detection:** Hybrid ML (Isolation Forest + LSTM) flags anomaly.
+2. **Analysis:** System correlates affected parameters and computes Z-scores.
+3. **Report Generation:** Groq/LLaMA generates plain-language explanation with root cause and recommended actions.
+4. **Prediction:** RUL engine estimates time-to-failure (PTTF countdown).
+5. **Audit Trail:** All actions logged to `audit_logs_v2` with immutable timestamps.
+
+### Extending & Integrating
+1. Add new sensors via **Custom Sensors** admin UI or API.
+2. Post data to `/api/v1/ingest` using legacy hardware aliases (Universal Alias Mapping).
+3. Deploy globally using Neon (DB) and Upstash (Kafka) for cloud-native scalability.
+
+---
+
+## 7. Key Features Summary (Checklist from Development)
+
+**Core Pipeline:**
+- ✅ Threshold Alerts System (min/max safe limits for 50 parameters)
+- ✅ ML Anomaly Detection with Isolation Forest
+- ✅ LSTM Autoencoder for time-based pattern detection
+- ✅ Groq/LLaMA AI-written reports (correlations, root cause, prevention)
+- ✅ "Inject Anomaly NOW" button for testing
+
+**Machine Management:**
+- ✅ Machine isolation (A/B/C) with per-machine state
+- ✅ Operator/Admin dashboard separation
+- ✅ Per-machine sensor configuration
+- ✅ Form-based authentication with RBAC
+
+**Custom Sensors & Configuration:**
+- ✅ Dynamic custom sensor support (add parameters at runtime)
+- ✅ Drag-and-drop sensor organization
+- ✅ Per-machine enable/disable for custom sensors
+- ✅ AI Smart Onboarding (drag-and-drop PDF/CSV parsing)
+
+**UI & Visualization:**
+- ✅ High-contrast "Dark Mode" aesthetic for control rooms
+- ✅ Persistent Gridstack layouts via localStorage
+- ✅ Message Velocity (MPS) tracking
+- ✅ Sparklines for trend visualization
+- ✅ CPU Load and Database Latency metrics in header
+- ✅ LSTM-driven visual alerts with PTTF countdown
+- ✅ Full-screen visual alarms
+- ✅ 3D Digital Twin with vibration jitter and thermal color-coding
+
+**Security & Compliance:**
+- ✅ Flask-Limiter rate limiting (login 5/min, ingest 200/min)
+- ✅ Flask-Talisman CSP + secure cookies
+- ✅ XSS protection (.textContent + float-casting)
+- ✅ SQL-backed Audit Logs V2 (immutable, timestamped)
+
+**Cloud & Scalability:**
+- ✅ Cloud-Native Serverless Postgres (Neon) migration
+- ✅ ThreadedConnectionPool for thread safety
+- ✅ Component locking to prevent connection leaks
+- ✅ Universal alias-mapping ingest for legacy hardware via `/api/v1/ingest`
+- ✅ `/api/v1/predictive-health` endpoint for RUL data
+
+**AI & Intelligence:**
+- ✅ RUL (Remaining Useful Life) estimation
+- ✅ PTTF (Predicted Time To Failure) countdown
+- ✅ Groq/LLaMA sensor spec parsing from PDF/CSV/JSON
+- ✅ Context-aware anomaly analysis with correlations
+
+**Branding:**
+- ✅ Ithena branding integration (logos, fonts, professional styling)
+
+---
+
+## 8. Big Picture Takeaways
+
+- **Production-Grade Pipeline:** Rig Alpha is not just a demo; it handles real-time streaming, exactly-once processing, and thread-safe concurrency.
+- **Hybrid Intelligence:** Combines statistical ML (Isolation Forest/LSTM) with Generative AI (LLaMA reports) for complete situational awareness.
+- **Immersive UX:** The 3D Digital Twin translates complex data into immediate physical intuition (shake/glow).
+- **Secure & Compliant:** Built with RBAC, Rate Limiting, CSP, and immutable Audit Logs for industrial environments.
+- **Cloud-Native:** Fully migrated to serverless infrastructure (Neon DB) for global scalability.
+- **AI-Powered Operations:** From Smart Onboarding to predictive maintenance reports, AI is embedded throughout the workflow.
+- **Industrial-Grade UX:** Dark mode, zero-scroll layouts, and persistent configurations designed for 24/7 control room operations.
+
+---
+
+## 9. Technology Stack
+
+**Backend:**
+- Python 3.x
+- Flask (web framework)
+- Apache Kafka (streaming)
+- PostgreSQL via Neon.tech (cloud database)
+- psycopg2 with ThreadedConnectionPool
+- Flask-SocketIO (real-time communication)
+- Flask-Limiter (rate limiting)
+- Flask-Talisman (security headers)
+
+**Machine Learning:**
+- scikit-learn (Isolation Forest)
+- TensorFlow/Keras (LSTM Autoencoder)
+- Groq API with LLaMA models (AI report generation)
+
+**Frontend (Dashboard):**
+- HTML5/CSS3/JavaScript
+- Gridstack.js (drag-and-drop layouts)
+- Chart.js (sparklines and visualizations)
+- Socket.IO client (real-time updates)
+
+**Frontend (3D Digital Twin):**
+- React 18
+- React Three Fiber
+- Three.js
+- Zustand (state management)
+- Vite (build tool)
+
+**Infrastructure:**
+- Docker (Kafka, local development)
+- Neon.tech (Serverless Postgres)
+- Upstash (Cloud Kafka - optional)
+
+---
+
+## 10. Documentation & Resources
+
+**Comprehensive Documentation:**
+- `docs/comprehensive/00-MASTER-INDEX.md` - Complete project index
+- `docs/comprehensive/01-CORE-CONCEPTS.md` - Core concepts and principles
+- `docs/comprehensive/02-ARCHITECTURE.md` - System architecture
+- `docs/comprehensive/03-SENSORS-REFERENCE.md` - All 50+ sensor parameters
+- `docs/comprehensive/04-CODE-BACKEND.md` - Backend implementation details
+- `docs/comprehensive/05-CODE-DASHBOARD.md` - Dashboard code walkthrough
+- `docs/comprehensive/06-CODE-3D-FRONTEND.md` - 3D twin implementation
+- `docs/comprehensive/07-HOW-TO-GUIDES.md` - Setup and operation guides
+- `docs/comprehensive/08-REFERENCE-APPENDIX.md` - API reference and troubleshooting
+
+**Quick Start:**
+- `README.md` - Project overview and setup instructions
+- `PROJECT_OVERVIEW.md` - High-level project description
+
+**Architecture & Planning:**
+- `docs/ARCHITECTURE_AND_DEVELOPMENT_PLAN.md`
+- `docs/uml_diagrams.md`
+
+---
+
+**Developed by Arnav Golia & Rahul Bainsla**  
+**Powered by Ithena**
