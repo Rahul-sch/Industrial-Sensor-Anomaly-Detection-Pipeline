@@ -1,9 +1,12 @@
+import type { Difficulty } from '@/lib/types';
+
 export interface FAQ {
   id: string;
   question: string;
   answer: string;
   tags: string[];
   priority: 'critical' | 'high' | 'medium';
+  difficulty: Difficulty;
   category: 'architecture' | 'kafka' | 'ml' | 'database' | 'security' | 'frontend' | 'scaling';
   relatedWiki?: string[];
   relatedXray?: { file: string; entryId: string }[];
@@ -28,6 +31,7 @@ export const faqData: FAQ[] = [
 **Code evidence:** See \`consumer.py:82-111\` - Kafka consumer config with manual offset commits`,
     tags: ['kafka', 'architecture', 'messaging'],
     priority: 'critical',
+    difficulty: 'critical',
     category: 'kafka',
     relatedWiki: ['kafka-deep-dive', 'exactly-once-semantics'],
     relatedXray: [{ file: 'consumer.py', entryId: 'consumer-kafka-connect' }],
@@ -54,6 +58,7 @@ export const faqData: FAQ[] = [
 **Code:** \`config.py:INITIAL_RETRY_DELAY=1\`, \`BACKOFF_MULTIPLIER=2\`, \`MAX_RETRY_DELAY=60\``,
     tags: ['kafka', 'reliability', 'fault-tolerance'],
     priority: 'critical',
+    difficulty: 'intermediate',
     category: 'kafka',
     relatedWiki: ['kafka-deep-dive', 'graceful-shutdown'],
     relatedXray: [{ file: 'consumer.py', entryId: 'consumer-kafka-connect' }],
@@ -82,6 +87,7 @@ INSERT sensor reading
 **Code:** \`consumer.py:453-516\` (process_message function)`,
     tags: ['exactly-once', 'reliability', 'database'],
     priority: 'critical',
+    difficulty: 'critical',
     category: 'architecture',
     relatedWiki: ['exactly-once-semantics', 'database-schema'],
     relatedXray: [{ file: 'consumer.py', entryId: 'consumer-process-message' }],
@@ -109,6 +115,7 @@ INSERT sensor reading
 **Strategy selection:** \`config.HYBRID_DETECTION_STRATEGY = 'ensemble'\``,
     tags: ['machine-learning', 'anomaly-detection', 'architecture'],
     priority: 'critical',
+    difficulty: 'advanced',
     category: 'ml',
     relatedWiki: ['ml-detection', 'hybrid-strategies'],
     relatedXray: [{ file: 'consumer.py', entryId: 'consumer-ml-detection' }],
@@ -137,6 +144,7 @@ KAFKA_CONSUMER_CONFIG = {
 **Location:** \`config.py:90-109\` (KAFKA_CONSUMER_CONFIG)`,
     tags: ['kafka', 'exactly-once', 'offsets'],
     priority: 'critical',
+    difficulty: 'critical',
     category: 'kafka',
     relatedWiki: ['offset-management', 'exactly-once-semantics'],
     relatedXray: [{ file: 'consumer.py', entryId: 'consumer-process-message' }],
@@ -166,6 +174,7 @@ KAFKA_CONSUMER_CONFIG = {
 **Why wide:** Real-time dashboard requires sub-100ms queries`,
     tags: ['database', 'schema', 'postgresql'],
     priority: 'critical',
+    difficulty: 'intermediate',
     category: 'database',
     relatedWiki: ['database-schema'],
     relatedXray: [{ file: 'consumer.py', entryId: 'consumer-insert-reading' }],
@@ -197,6 +206,7 @@ KAFKA_CONSUMER_CONFIG = {
 **Code path:** \`consumer.py\` main loop is stateless`,
     tags: ['scaling', 'architecture', 'performance'],
     priority: 'critical',
+    difficulty: 'advanced',
     category: 'scaling',
     relatedWiki: ['connection-pooling'],
   },
@@ -223,6 +233,7 @@ cursor.execute(f"SELECT * FROM t WHERE id = '{id}'")
 \`\`\``,
     tags: ['security', 'authentication', 'best-practices'],
     priority: 'critical',
+    difficulty: 'intermediate',
     category: 'security',
     relatedWiki: ['audit-logging', 'rbac'],
   },
@@ -251,6 +262,7 @@ This MUST be atomic. InfluxDB is **eventually consistent**.
 **Neon bonus:** Serverless PostgreSQL with instant branching for dev/staging`,
     tags: ['database', 'time-series', 'architecture'],
     priority: 'high',
+    difficulty: 'intermediate',
     category: 'database',
     relatedWiki: ['database-schema', 'neon-deployment'],
   },
@@ -282,6 +294,7 @@ MIN_TRAINING_SAMPLES = 100
 **Code:** \`consumer.py:27-37\` (conditional ML import)`,
     tags: ['machine-learning', 'fault-tolerance', 'graceful-degradation'],
     priority: 'critical',
+    difficulty: 'intermediate',
     category: 'ml',
     relatedWiki: ['ml-detection'],
     relatedXray: [{ file: 'consumer.py', entryId: 'consumer-imports-ml' }],
@@ -317,6 +330,7 @@ MAX_RETRIES = 10
 \`\`\``,
     tags: ['reliability', 'fault-tolerance', 'patterns'],
     priority: 'high',
+    difficulty: 'beginner',
     category: 'architecture',
     relatedWiki: ['graceful-shutdown'],
     relatedXray: [{ file: 'consumer.py', entryId: 'consumer-kafka-connect' }],
@@ -349,6 +363,7 @@ def signal_handler(self, signum, frame):
 - SIGBREAK (Windows)`,
     tags: ['reliability', 'graceful-shutdown', 'best-practices'],
     priority: 'high',
+    difficulty: 'intermediate',
     category: 'architecture',
     relatedWiki: ['graceful-shutdown'],
     relatedXray: [{ file: 'consumer.py', entryId: 'consumer-signal-handler' }],
@@ -386,6 +401,7 @@ useFrame(() => {
 | Anomaly score → | Warning light + sparkles |`,
     tags: ['frontend', '3d', 'websocket'],
     priority: 'high',
+    difficulty: 'advanced',
     category: 'frontend',
     relatedWiki: ['3d-twin-architecture', 'websocket-streaming'],
     relatedXray: [{ file: 'consumer.py', entryId: 'consumer-3d-telemetry' }],
@@ -422,6 +438,7 @@ useFrame(() => {
 **When to use:** High-frequency updates that drive animations`,
     tags: ['frontend', 'performance', 'react'],
     priority: 'medium',
+    difficulty: 'advanced',
     category: 'frontend',
     relatedWiki: ['3d-twin-architecture'],
   },
@@ -458,6 +475,7 @@ def validate_custom_sensors(self, raw):
 **Code:** \`consumer.py:199-256\``,
     tags: ['sensors', 'extensibility', 'database'],
     priority: 'medium',
+    difficulty: 'intermediate',
     category: 'architecture',
     relatedXray: [{ file: 'consumer.py', entryId: 'consumer-custom-sensors' }],
   },
@@ -493,6 +511,7 @@ IsolationForest(
 - Misses temporal patterns (use LSTM for that)`,
     tags: ['machine-learning', 'isolation-forest', 'anomaly-detection'],
     priority: 'medium',
+    difficulty: 'intermediate',
     category: 'ml',
     relatedWiki: ['isolation-forest'],
   },
@@ -527,6 +546,7 @@ is_anomaly = error > threshold
 \`\`\``,
     tags: ['machine-learning', 'lstm', 'deep-learning'],
     priority: 'medium',
+    difficulty: 'advanced',
     category: 'ml',
     relatedWiki: ['lstm-autoencoder'],
   },
