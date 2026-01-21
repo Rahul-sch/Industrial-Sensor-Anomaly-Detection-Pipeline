@@ -191,3 +191,162 @@ export interface HighlightedLine {
     fontStyle?: number;
   }>;
 }
+
+// ===================
+// Study Mode Types
+// ===================
+
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced' | 'critical';
+
+export type AnnotationType = 'how' | 'why' | 'critical' | 'note' | 'warning';
+
+export interface StudySession {
+  id: string;
+  startTime: string;
+  endTime: string | null;
+  mode: 'reading' | 'flashcards' | 'quiz';
+  contentId: string;
+  timeSpentSeconds: number;
+  completed: boolean;
+}
+
+export interface UserProgress {
+  // Core stats
+  totalTimeSpentMinutes: number;
+  streakDays: number;
+  lastActiveDate: string;
+
+  // Content progress
+  articlesRead: string[];
+  articlesInProgress: string[];
+
+  // Flashcard progress
+  flashcardsReviewed: number;
+  flashcardsMastered: number;
+
+  // Quiz progress
+  quizzesCompleted: number;
+  quizzesPassed: number;
+  averageQuizScore: number;
+
+  // Sessions
+  sessions: StudySession[];
+
+  // Achievements
+  achievements: string[];
+}
+
+// ===================
+// Flashcard Types
+// ===================
+
+export interface FlashCard {
+  id: string;
+  front: string;
+  back: string;
+  category: WikiCategory | 'general';
+  tags: string[];
+  difficulty: Difficulty;
+  relatedWiki?: string[];
+  relatedXray?: { file: string; entryId: string }[];
+}
+
+export interface FlashCardProgress {
+  cardId: string;
+  reviewCount: number;
+  correctCount: number;
+  lastReview: string | null;
+  nextReview: string;
+  interval: number;       // Days until next review
+  easeFactor: number;     // SM-2 ease factor (default 2.5)
+  status: 'new' | 'learning' | 'review' | 'mastered';
+}
+
+// ===================
+// Quiz Types
+// ===================
+
+export type QuizQuestionType = 'multiple-choice' | 'true-false' | 'fill-blank';
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  type: QuizQuestionType;
+  options?: string[];
+  correctAnswer: string | number;
+  explanation: string;
+  category: WikiCategory | 'general';
+  difficulty: Difficulty;
+  relatedWiki?: string[];
+  relatedFaq?: string[];
+}
+
+export interface Quiz {
+  id: string;
+  title: string;
+  description: string;
+  category: WikiCategory | 'general';
+  difficulty: Difficulty;
+  questions: QuizQuestion[];
+  timeLimit?: number;     // Minutes, optional
+  passingScore: number;   // Percentage (0-100)
+}
+
+export interface QuizAttempt {
+  quizId: string;
+  attemptId: string;
+  startTime: string;
+  endTime: string | null;
+  answers: Record<string, string | number>;
+  score: number | null;
+  passed: boolean | null;
+}
+
+export interface QuizProgress {
+  quizId: string;
+  attempts: number;
+  bestScore: number;
+  lastAttempt: string | null;
+  passed: boolean;
+}
+
+// ===================
+// Achievement Types
+// ===================
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  requirement: {
+    type: 'streak' | 'articles' | 'quizzes' | 'flashcards' | 'time' | 'score';
+    value: number;
+  };
+  unlockedAt?: string;
+}
+
+// ===================
+// Study Annotation Types
+// ===================
+
+export interface StudyHighlight {
+  id: string;
+  contentId: string;
+  text: string;
+  type: AnnotationType;
+  position: {
+    startOffset: number;
+    endOffset: number;
+  };
+  note?: string;
+  createdAt: string;
+}
+
+export interface StudyNote {
+  id: string;
+  contentId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
