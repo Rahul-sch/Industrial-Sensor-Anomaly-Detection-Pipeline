@@ -1,0 +1,213 @@
+{
+  "filePath": "HUD.jsx",
+  "fileHash": "hud-jsx-v1",
+  "lastModified": "2025-01-22T00:00:00Z",
+  "language": "javascript",
+  "entries": [
+    {
+      "id": "hud-overview",
+      "title": "HUD Component Overview",
+      "startLine": 1,
+      "endLine": 50,
+      "anchors": [
+        {"kind": "import", "value": "useSensorStore", "line": 1},
+        {"kind": "function", "value": "HUD", "line": 15}
+      ],
+      "why": "The HUD (Heads-Up Display) overlays critical information on the 3D view without obscuring the scene. It's the operator's primary interface for monitoring real-time status.",
+      "whatItDoes": "Imports Zustand store selectors for: connected status, alerts, selected rig/line, view mode. Renders fixed overlay with pointer-events-none (clicks pass through to 3D). Organizes sub-components: ConnectionStatus (top-left), AlertsPanel (top-right), Crosshair (center), QuickStats (bottom-left), Controls (bottom-right).",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "pointer-events-none prevents HUD from blocking 3D interactions",
+      "securityNotes": null,
+      "relatedDocs": ["frontend-3d-twin"],
+      "relatedNodes": ["dashboard-3d"]
+    },
+    {
+      "id": "hud-view-toggle",
+      "title": "View Mode Toggle (Rig/Ketchup)",
+      "startLine": 52,
+      "endLine": 82,
+      "anchors": [
+        {"kind": "function", "value": "ViewModeToggle", "line": 55}
+      ],
+      "why": "The system supports two factory simulations: Rig Alpha (industrial machinery) and Ketchup Factory (food processing). Users switch between them to view different production scenarios.",
+      "whatItDoes": "Two toggle buttons: 'RIG ALPHA' (cyan when active) and 'KETCHUP' (red when active). Clicking calls setViewMode('rig') or setViewMode('ketchup') to switch the Zustand store state.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "hud-connection-status",
+      "title": "WebSocket Connection Status",
+      "startLine": 84,
+      "endLine": 113,
+      "anchors": [
+        {"kind": "function", "value": "ConnectionStatus", "line": 87}
+      ],
+      "why": "Real-time monitoring requires a live WebSocket connection. Operators need to see at a glance whether data is flowing or if there's a connection issue.",
+      "whatItDoes": "Shows green pulsing dot + 'LIVE' when connected, red dot + error message when disconnected. When live, also displays 'Streaming @ 10 Hz' to confirm update rate.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "hud-alerts-panel",
+      "title": "Anomaly Alerts Panel",
+      "startLine": 115,
+      "endLine": 170,
+      "anchors": [
+        {"kind": "function", "value": "AlertsPanel", "line": 118}
+      ],
+      "why": "When ML detects anomalies, operators need immediate notification with context: which machine, severity, contributing sensors. The alerts panel is the primary notification mechanism.",
+      "whatItDoes": "Renders scrollable list of alerts (max-height with overflow). Each alert shows: machine/line ID, message, severity (critical=red, warning=yellow), anomaly score percentage, detection method. Dismiss button removes individual alerts.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "maxAlerts in store prevents unbounded memory growth",
+      "securityNotes": null,
+      "relatedDocs": ["anomaly-detection"],
+      "relatedNodes": ["ml-detection"]
+    },
+    {
+      "id": "hud-crosshair",
+      "title": "Center Crosshair Reticle",
+      "startLine": 172,
+      "endLine": 186,
+      "anchors": [
+        {"kind": "function", "value": "Crosshair", "line": 175}
+      ],
+      "why": "FPS-style controls need a visual center point for aiming/selecting. The crosshair indicates where clicks will register in the 3D scene.",
+      "whatItDoes": "Renders centered SVG-style crosshair using Tailwind: outer circle (6x6), center dot (1x1), and four arms (left, right, top, bottom). All in cyan with 40% opacity for subtlety.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "hud-quick-stats",
+      "title": "Rig Quick Stats Panel",
+      "startLine": 188,
+      "endLine": 218,
+      "anchors": [
+        {"kind": "function", "value": "QuickStats", "line": 191}
+      ],
+      "why": "Operators need at-a-glance status of all three rigs without clicking each one. The quick stats panel shows key metrics (RPM, temp, vibration) for rigs A, B, C.",
+      "whatItDoes": "Uses useEffect with setInterval (500ms) to poll transient state (avoiding React re-renders). Maps over rigs A/B/C, rendering RigStatRow for each with key metrics and anomaly warnings.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "500ms polling is a tradeoff: not too frequent (perf) but responsive enough (UX)",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "hud-ketchup-stats",
+      "title": "Ketchup Factory Grid Overview",
+      "startLine": 220,
+      "endLine": 290,
+      "anchors": [
+        {"kind": "function", "value": "KetchupQuickStats", "line": 223}
+      ],
+      "why": "The ketchup factory has 25 production lines - too many for detailed rows. A 5x5 grid visualization shows status at a glance with color coding.",
+      "whatItDoes": "Polls ketchup transient state every 500ms. Renders 5x5 grid where each cell represents one line (L01-L25). Colors: green (normal), red (anomaly), yellow (fill level warning). Summary shows active line count and anomaly count.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "Grid rendering is cheap - just 25 small divs",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "hud-rig-stat-row",
+      "title": "Individual Rig Stat Row",
+      "startLine": 292,
+      "endLine": 311,
+      "anchors": [
+        {"kind": "function", "value": "RigStatRow", "line": 295}
+      ],
+      "why": "Each rig needs a consistent display format showing the most important metrics with color-coded warnings for out-of-range values.",
+      "whatItDoes": "Displays one row: rig letter (A/B/C), RPM (cyan), Temperature (red if > 85°F), Vibration (yellow if > 4.5 mm/s). Shows pulsing '⚠ ANOMALY' badge if anomalyScore > 0.5.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "hud-controls-hint",
+      "title": "Controls Hint & Branding",
+      "startLine": 313,
+      "endLine": 343,
+      "anchors": [
+        {"kind": "function", "value": "ControlsHint", "line": 316}
+      ],
+      "why": "New users need guidance on controls. The hint bar shows keyboard/mouse bindings and provides a link back to the original 2D dashboard.",
+      "whatItDoes": "Bottom bar showing: 'WASD Move | MOUSE Look | CLICK Select | ESC Deselect'. Also displays version string ('RIG ALPHA DIGITAL TWIN v2.0') and link to localhost:5000 dashboard.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "hud-rig-info-panel",
+      "title": "Detailed Rig Inspection Panel",
+      "startLine": 345,
+      "endLine": 379,
+      "anchors": [
+        {"kind": "function", "value": "RigInfoPanel", "line": 348}
+      ],
+      "why": "When a user selects a specific rig (clicks on it in 3D), they want detailed sensor readings. This panel appears on the right side with all relevant parameters.",
+      "whatItDoes": "Polls selected rig's transient state every 100ms (faster for interactivity). Shows: RPM, Temperature, Vibration, Pressure, Bearing Temp, and Anomaly Score. Color-codes values: green=normal, red=out-of-range.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "100ms polling for selected item - acceptable overhead for 1 item",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "hud-ketchup-info-panel",
+      "title": "Ketchup Line Inspection Panel",
+      "startLine": 381,
+      "endLine": 456,
+      "anchors": [
+        {"kind": "function", "value": "KetchupLineInfoPanel", "line": 384}
+      ],
+      "why": "Ketchup factory lines have different sensors than industrial rigs: fill level, viscosity, sauce temp, cap torque, etc. This panel shows ketchup-specific parameters.",
+      "whatItDoes": "Shows: Fill Level (with visual bar), Viscosity, Sauce Temp, Cap Torque, Flow Rate, Label Alignment, Bottle Count, Anomaly Score. Range checks determine color (e.g., fill 88-98% is normal). Shows anomaly type badge if anomaly_score > 0.5.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "hud-data-row",
+      "title": "DataRow Helper Component",
+      "startLine": 458,
+      "endLine": 472,
+      "anchors": [
+        {"kind": "function", "value": "DataRow", "line": 461}
+      ],
+      "why": "Multiple panels display label/value pairs with conditional coloring. A reusable component reduces code duplication and ensures consistent styling.",
+      "whatItDoes": "Renders: label (gray) on left, value + unit (green if normal, red if not) on right. Uses Tailwind flexbox for alignment.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    }
+  ]
+}

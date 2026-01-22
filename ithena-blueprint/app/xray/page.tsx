@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Code2, FileCode, ArrowRight } from 'lucide-react';
 
 const xrayFiles = [
+  // Backend - Core Pipeline
   {
     name: 'consumer.py',
     path: 'consumer.py',
@@ -11,22 +12,94 @@ const xrayFiles = [
     tags: ['Kafka', 'PostgreSQL', 'ML', 'Core'],
   },
   {
-    name: 'combined_pipeline.py',
-    path: 'combined_pipeline.py',
-    description: 'Hybrid ML anomaly detection orchestrator combining Isolation Forest and LSTM Autoencoder.',
-    sections: 12,
-    lines: 310,
-    tags: ['ML', 'Detection', 'Hybrid'],
-    coming: true,
+    name: 'producer.py',
+    path: 'producer.py',
+    description: 'Kafka producer generating 50 correlated sensor parameters with physics-based relationships and anomaly injection.',
+    sections: 10,
+    lines: 900,
+    tags: ['Kafka', 'Sensors', 'Physics', 'Core'],
+  },
+  {
+    name: 'dashboard.py',
+    path: 'dashboard.py',
+    description: 'Flask server with SocketIO for real-time 3D digital twin updates, rate limiting, CSP headers, and database pooling.',
+    sections: 10,
+    lines: 4000,
+    tags: ['Flask', 'SocketIO', 'WebSocket', 'API'],
   },
   {
     name: 'config.py',
     path: 'config.py',
-    description: 'Central configuration for Kafka, database, sensor ranges, and ML parameters.',
+    description: 'Centralized configuration management with type-safe dataclasses for Kafka, database, ML, WebSocket, and security settings.',
+    sections: 17,
+    lines: 646,
+    tags: ['Config', 'Settings', 'Security'],
+  },
+  // Backend - ML Detection
+  {
+    name: 'combined_pipeline.py',
+    path: 'combined_pipeline.py',
+    description: 'Hybrid ML anomaly detection orchestrator combining Rule-based, Isolation Forest, and LSTM Autoencoder detectors.',
+    sections: 17,
+    lines: 646,
+    tags: ['ML', 'Detection', 'Hybrid', 'LSTM'],
+  },
+  {
+    name: 'ml_detector.py',
+    path: 'ml_detector.py',
+    description: 'Isolation Forest anomaly detector with incremental training, multivariate analysis, and feature importance scoring.',
+    sections: 9,
+    lines: 394,
+    tags: ['ML', 'Isolation Forest', 'Detection'],
+  },
+  {
+    name: 'lstm_detector.py',
+    path: 'lstm_detector.py',
+    description: 'LSTM Autoencoder for temporal pattern anomaly detection with sequence windowing and reconstruction error analysis.',
+    sections: 10,
+    lines: 405,
+    tags: ['ML', 'LSTM', 'Deep Learning', 'Temporal'],
+  },
+  {
+    name: 'analysis_engine.py',
+    path: 'analysis_engine.py',
+    description: 'Context analyzer computing correlations, z-scores, and patterns around anomalies for root cause analysis.',
     sections: 8,
-    lines: 480,
-    tags: ['Config', 'Settings'],
-    coming: true,
+    lines: 392,
+    tags: ['Analysis', 'Statistics', 'Context'],
+  },
+  // Frontend - 3D Digital Twin
+  {
+    name: 'App.jsx',
+    path: 'App.jsx',
+    description: 'React Three Fiber main component with Canvas setup, scene composition, and conditional factory/rig rendering.',
+    sections: 7,
+    lines: 153,
+    tags: ['React', 'Three.js', 'R3F', '3D'],
+  },
+  {
+    name: 'HUD.jsx',
+    path: 'HUD.jsx',
+    description: 'Heads-up display overlay with connection status, sensor stats grid, alerts panel, and metric formatting utilities.',
+    sections: 12,
+    lines: 473,
+    tags: ['React', 'UI', 'HUD', 'Overlay'],
+  },
+  {
+    name: 'useSocket.js',
+    path: 'useSocket.js',
+    description: 'Socket.IO React hook managing real-time connection lifecycle, event handlers, and transient state updates at 10Hz.',
+    sections: 8,
+    lines: 207,
+    tags: ['React', 'Socket.IO', 'Hooks', 'Real-time'],
+  },
+  {
+    name: 'useSensorStore.js',
+    path: 'useSensorStore.js',
+    description: 'Zustand store with dual-layer state: transient (direct mutation for 10Hz) and reactive (UI triggers re-renders).',
+    sections: 7,
+    lines: 202,
+    tags: ['Zustand', 'State', 'Performance'],
   },
 ];
 
@@ -63,12 +136,8 @@ export default function XRayIndex() {
           {xrayFiles.map((file) => (
             <Link
               key={file.path}
-              href={file.coming ? '#' : `/xray/${file.path}`}
-              className={`block bg-[var(--background-secondary)] border border-[var(--background-tertiary)] rounded-lg p-6 transition-all ${
-                file.coming
-                  ? 'opacity-60 cursor-not-allowed'
-                  : 'hover:border-[var(--accent-cyan)] hover:shadow-[0_0_20px_rgba(6,182,212,0.2)]'
-              } group`}
+              href={`/xray/${file.path}`}
+              className="block bg-[var(--background-secondary)] border border-[var(--background-tertiary)] rounded-lg p-6 transition-all hover:border-[var(--accent-cyan)] hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] group"
             >
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-lg bg-[var(--code-bg)] flex items-center justify-center shrink-0">
@@ -77,14 +146,7 @@ export default function XRayIndex() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-mono font-semibold text-[var(--accent-cyan)]">{file.name}</h3>
-                    {file.coming && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-[var(--background-tertiary)] text-[var(--foreground-muted)]">
-                        Coming Soon
-                      </span>
-                    )}
-                    {!file.coming && (
-                      <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0 text-[var(--accent-cyan)]" />
-                    )}
+                    <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0 text-[var(--accent-cyan)]" />
                   </div>
                   <p className="text-sm text-[var(--foreground-muted)] mb-3">{file.description}</p>
                   <div className="flex flex-wrap items-center gap-3">

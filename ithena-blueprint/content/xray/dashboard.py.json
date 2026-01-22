@@ -1,0 +1,226 @@
+{
+  "filePath": "dashboard.py",
+  "fileHash": "dashboard-v1",
+  "lastModified": "2025-01-22T00:00:00Z",
+  "language": "python",
+  "entries": [
+    {
+      "id": "dashboard-imports",
+      "title": "Flask & Extension Imports",
+      "startLine": 1,
+      "endLine": 85,
+      "anchors": [
+        {"kind": "import", "value": "Flask", "line": 5},
+        {"kind": "import", "value": "SocketIO", "line": 11},
+        {"kind": "import", "value": "Talisman", "line": 34},
+        {"kind": "import", "value": "Limiter", "line": 43}
+      ],
+      "why": "The dashboard is a Flask web application with multiple security and real-time extensions. Conditional imports allow graceful degradation if optional dependencies are missing.",
+      "whatItDoes": "Imports: Flask core, Flask-SocketIO (WebSockets), Flask-Talisman (CSP headers), Flask-Limiter (rate limiting), PyPDF2 (PDF parsing), Groq (AI), Kafka client, and ML components. Each optional import sets an *_AVAILABLE flag.",
+      "failureModes": [
+        {
+          "condition": "Flask-SocketIO missing",
+          "behavior": "SOCKETIO_AVAILABLE=False, 3D twin won't get real-time updates",
+          "recovery": "pip install flask-socketio"
+        },
+        {
+          "condition": "Flask-Talisman missing",
+          "behavior": "No CSP headers, minor security reduction",
+          "recovery": "pip install flask-talisman"
+        }
+      ],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": "Optional security imports allow running in minimal mode during development",
+      "relatedDocs": ["security-architecture"],
+      "relatedNodes": ["dashboard"]
+    },
+    {
+      "id": "dashboard-socketio-init",
+      "title": "Socket.IO Initialization",
+      "startLine": 88,
+      "endLine": 100,
+      "anchors": [
+        {"kind": "variable", "value": "socketio", "line": 92}
+      ],
+      "why": "Flask-SocketIO enables real-time bidirectional communication with the 3D digital twin. It supports both WebSocket and HTTP long-polling fallback.",
+      "whatItDoes": "Creates SocketIO instance with: cors_allowed_origins='*' (allow any origin for dev), async_mode='threading' (use Python threads, not eventlet/gevent), disabled loggers (reduce noise).",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "Threading mode is simpler but less scalable than eventlet/gevent",
+      "securityNotes": "cors_allowed_origins='*' should be restricted in production",
+      "relatedDocs": ["websockets"],
+      "relatedNodes": ["websocket-server"]
+    },
+    {
+      "id": "dashboard-rate-limiting",
+      "title": "Rate Limiting Configuration",
+      "startLine": 102,
+      "endLine": 120,
+      "anchors": [
+        {"kind": "variable", "value": "limiter", "line": 106}
+      ],
+      "why": "Rate limiting prevents API abuse and DoS attacks. The dashboard's polling endpoints need higher limits than typical APIs.",
+      "whatItDoes": "Creates Flask-Limiter with: key_func=get_remote_address (rate limit by IP), default_limits='1000 per minute' (high for dashboard polling), storage_uri='memory://' (in-memory, not Redis).",
+      "failureModes": [
+        {
+          "condition": "Flask-Limiter not available",
+          "behavior": "DummyLimiter class provides no-op decorators",
+          "recovery": "No rate limiting, accept the risk or install flask-limiter"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "In-memory storage loses limits on restart; use Redis for persistence",
+      "securityNotes": "1000/min is high - consider lowering for public deployments",
+      "relatedDocs": ["security-architecture"],
+      "relatedNodes": []
+    },
+    {
+      "id": "dashboard-error-handlers",
+      "title": "JSON Error Handlers for API Routes",
+      "startLine": 122,
+      "endLine": 163,
+      "anchors": [
+        {"kind": "function", "value": "handle_500_error", "line": 124},
+        {"kind": "function", "value": "handle_404_error", "line": 136}
+      ],
+      "why": "API routes should always return JSON, even on errors. Default Flask error pages return HTML, which breaks JavaScript clients expecting JSON.",
+      "whatItDoes": "Registers error handlers for 500, 404, 403, 429, 401. Each checks if request.path.startswith('/api/') and returns JSON {'success': False, 'error': '...'} with appropriate status code.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": "Error messages don't leak stack traces to clients",
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "dashboard-db-pool",
+      "title": "Database Connection Pool",
+      "startLine": 174,
+      "endLine": 200,
+      "anchors": [
+        {"kind": "function", "value": "init_db_pool", "line": 179},
+        {"kind": "variable", "value": "db_pool", "line": 177}
+      ],
+      "why": "Connection pooling is critical for performance. Creating a new database connection per request is expensive (~50ms). Pools reuse connections, reducing latency to ~1ms.",
+      "whatItDoes": "Creates ThreadedConnectionPool with minconn=5 (always have 5 ready), maxconn=50 (handle concurrent API requests). Logs connection info for debugging. Falls back to direct connections if pool fails.",
+      "failureModes": [
+        {
+          "condition": "Database unavailable at startup",
+          "behavior": "db_pool=None, logs error",
+          "recovery": "get_db_connection() falls back to direct psycopg2.connect()"
+        },
+        {
+          "condition": "Pool exhausted (50 concurrent requests)",
+          "behavior": "getconn() blocks until connection available",
+          "recovery": "Increase maxconn or optimize query performance"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "50 connections can handle ~500 requests/sec with 100ms avg query time",
+      "securityNotes": null,
+      "relatedDocs": ["timescaledb-integration"],
+      "relatedNodes": ["timescaledb"]
+    },
+    {
+      "id": "dashboard-csp",
+      "title": "Content Security Policy (CSP)",
+      "startLine": 202,
+      "endLine": 224,
+      "anchors": [
+        {"kind": "variable", "value": "csp", "line": 208}
+      ],
+      "why": "CSP headers prevent XSS attacks by controlling which scripts, styles, and connections are allowed. Three.js requires 'unsafe-eval' for shader compilation.",
+      "whatItDoes": "Configures CSP: script-src allows self + CDNs + unsafe-inline/eval (for Three.js), style-src allows CDNs + Google Fonts, connect-src allows Neon database + CDNs, frame-ancestors='none' (prevent clickjacking).",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": "unsafe-eval is a security tradeoff for Three.js compatibility. Consider using CSP reports to monitor.",
+      "relatedDocs": ["security-architecture"],
+      "relatedNodes": []
+    },
+    {
+      "id": "dashboard-machine-state",
+      "title": "Machine State Management",
+      "startLine": 243,
+      "endLine": 278,
+      "anchors": [
+        {"kind": "variable", "value": "machine_state", "line": 248}
+      ],
+      "why": "Tracks which machines (A, B, C) are running and their sensor configurations. This in-memory state is used for real-time display and controls.",
+      "whatItDoes": "Initializes machine_state dict with rigs A, B, C, each having: running (bool), sensors (dict of sensor_name → {enabled, baseline}). initialize_machine_sensors() populates sensor configs from SENSOR_RANGES.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "In-memory state is lost on restart - consider persistence for production",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": ["producer"]
+    },
+    {
+      "id": "dashboard-telemetry-cache",
+      "title": "Telemetry Cache for 3D Digital Twin",
+      "startLine": 292,
+      "endLine": 314,
+      "anchors": [
+        {"kind": "variable", "value": "telemetry_cache", "line": 295},
+        {"kind": "variable", "value": "ketchup_telemetry_cache", "line": 306}
+      ],
+      "why": "The 3D frontend needs current sensor values. Rather than query the database on every request, we cache the latest readings in memory for instant access.",
+      "whatItDoes": "telemetry_cache: Dict with A/B/C keys, each containing rpm, temperature, vibration, pressure, bearing_temp, anomaly_score. ketchup_telemetry_cache: Dict with L01-L25 keys for 25 production lines.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "O(1) access vs O(log N) database query",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": ["dashboard-3d"]
+    },
+    {
+      "id": "dashboard-telemetry-broadcast",
+      "title": "WebSocket Broadcast Workers (10 Hz)",
+      "startLine": 316,
+      "endLine": 367,
+      "anchors": [
+        {"kind": "function", "value": "telemetry_broadcast_worker", "line": 316},
+        {"kind": "function", "value": "ketchup_telemetry_broadcast_worker", "line": 341}
+      ],
+      "why": "The 3D digital twin needs continuous updates at 10 Hz (100ms). Background threads emit cached telemetry to all connected WebSocket clients.",
+      "whatItDoes": "Infinite loops sleeping 100ms between broadcasts. Each iteration: acquires telemetry_lock, iterates over cache, emits 'rig_telemetry' or 'ketchup_telemetry' event with machine/line data + timestamp.",
+      "failureModes": [
+        {
+          "condition": "socketio.emit() throws",
+          "behavior": "Logs error, backs off 1 second, continues",
+          "recovery": "Self-healing loop - temporary errors don't crash worker"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "10 Hz * 3 rigs = 30 emits/sec; 10 Hz * 25 lines = 250 emits/sec",
+      "securityNotes": null,
+      "relatedDocs": ["websockets"],
+      "relatedNodes": ["websocket-server", "dashboard-3d"]
+    },
+    {
+      "id": "dashboard-db-helpers",
+      "title": "Database Connection Helpers",
+      "startLine": 368,
+      "endLine": 400,
+      "anchors": [
+        {"kind": "function", "value": "get_db_connection", "line": 368},
+        {"kind": "function", "value": "return_db_connection", "line": 389}
+      ],
+      "why": "Pool management is error-prone. These helpers abstract getting/returning connections with proper fallbacks and error handling.",
+      "whatItDoes": "get_db_connection(): Gets connection from pool, falls back to direct connect if pool unavailable. return_db_connection(): Returns connection to pool, closes directly if pool fails.",
+      "failureModes": [
+        {
+          "condition": "Pool connection fails",
+          "behavior": "Returns None, caller must handle",
+          "recovery": "Callers should check for None and return appropriate error"
+        }
+      ],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": ["timescaledb-integration"],
+      "relatedNodes": ["timescaledb"]
+    }
+  ]
+}

@@ -1,0 +1,239 @@
+{
+  "filePath": "lstm_detector.py",
+  "fileHash": "lstm-detector-v1",
+  "lastModified": "2025-01-22T00:00:00Z",
+  "language": "python",
+  "entries": [
+    {
+      "id": "lstm-module-overview",
+      "title": "LSTM Autoencoder for Temporal Anomaly Detection",
+      "startLine": 1,
+      "endLine": 28,
+      "anchors": [
+        {"kind": "import", "value": "tensorflow", "line": 19},
+        {"kind": "variable", "value": "TENSORFLOW_AVAILABLE", "line": 25}
+      ],
+      "why": "While Isolation Forest detects multivariate outliers, it ignores TIME. LSTM Autoencoders learn TEMPORAL patterns - they can detect anomalies that unfold over multiple timesteps, like gradual bearing degradation.",
+      "whatItDoes": "Conditionally imports TensorFlow/Keras. If unavailable, sets TENSORFLOW_AVAILABLE=False and the module gracefully degrades. This allows the system to run without GPU/TensorFlow on lightweight deployments.",
+      "failureModes": [
+        {
+          "condition": "TensorFlow not installed",
+          "behavior": "TENSORFLOW_AVAILABLE = False, class instantiation raises ImportError",
+          "recovery": "System falls back to Isolation Forest only"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "TensorFlow import takes 2-5 seconds - import at module level to amortize",
+      "securityNotes": null,
+      "relatedDocs": ["anomaly-detection", "ml-pipelines"],
+      "relatedNodes": ["ml-detection"]
+    },
+    {
+      "id": "lstm-class-columns",
+      "title": "LSTMAutoencoder Class & Sensor Features",
+      "startLine": 30,
+      "endLine": 51,
+      "anchors": [
+        {"kind": "class", "value": "LSTMAutoencoder", "line": 30},
+        {"kind": "variable", "value": "SENSOR_COLUMNS", "line": 39}
+      ],
+      "why": "The LSTM processes the same 50 sensor parameters as Isolation Forest, enabling direct comparison and ensemble fusion. Same feature space = compatible anomaly scores.",
+      "whatItDoes": "Defines the LSTMAutoencoder class with a docstring explaining the reconstruction error principle: the model learns to 'reconstruct' normal sequences, and high reconstruction error indicates anomalies.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "lstm-init",
+      "title": "Initialization with Hyperparameters",
+      "startLine": 52,
+      "endLine": 82,
+      "anchors": [
+        {"kind": "function", "value": "__init__", "line": 52}
+      ],
+      "why": "LSTM Autoencoders have three key hyperparameters: sequence_length (how many timesteps to look at), encoding_dim (compressed representation size), and threshold_percentile (what reconstruction error is 'too high').",
+      "whatItDoes": "1) Validates TensorFlow availability (raises ImportError if not), 2) Sets sequence_length=20 (look at 20 readings), encoding_dim=32 (compress 50 features to 32), threshold_percentile=95 (top 5% errors are anomalies), 3) Tries to load existing model.",
+      "failureModes": [
+        {
+          "condition": "TensorFlow not available",
+          "behavior": "Raises ImportError immediately",
+          "recovery": "Caller should check is_lstm_available() first"
+        }
+      ],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "lstm-build-model",
+      "title": "LSTM Autoencoder Architecture",
+      "startLine": 93,
+      "endLine": 114,
+      "anchors": [
+        {"kind": "function", "value": "_build_model", "line": 93}
+      ],
+      "why": "The autoencoder architecture compresses input sequences to a low-dimensional 'bottleneck' then reconstructs them. The bottleneck forces the model to learn essential patterns, making it sensitive to deviations.",
+      "whatItDoes": "ENCODER: Input(seq_len, 50 features) → LSTM(128) → LSTM(64) → Dense(32) = encoded representation. DECODER: RepeatVector(seq_len) → LSTM(64) → LSTM(128) → TimeDistributed(Dense(50)) = reconstruction. Loss: MSE (mean squared error between input and output).",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "2 LSTM layers in encoder/decoder = ~400K parameters for 50 features",
+      "securityNotes": null,
+      "relatedDocs": ["anomaly-detection"],
+      "relatedNodes": ["ml-detection"]
+    },
+    {
+      "id": "lstm-save-load",
+      "title": "Model Persistence (.keras format)",
+      "startLine": 116,
+      "endLine": 141,
+      "anchors": [
+        {"kind": "function", "value": "_load_model", "line": 116},
+        {"kind": "function", "value": "_save_model", "line": 131}
+      ],
+      "why": "Training LSTM models is expensive (minutes to hours). Persisting trained models enables fast cold starts and model versioning. The .keras format is TensorFlow 2.x standard.",
+      "whatItDoes": "Saves three files: 1) lstm_autoencoder.keras (model weights and architecture), 2) lstm_autoencoder_scaler.pkl (fitted StandardScaler), 3) lstm_autoencoder_threshold.pkl (anomaly threshold value).",
+      "failureModes": [
+        {
+          "condition": "Model file corrupted",
+          "behavior": "Logs warning, is_trained=False",
+          "recovery": "Model will be retrained on demand"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Keras model files can be 5-50MB depending on architecture",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "lstm-create-sequences",
+      "title": "Sliding Window Sequence Creation",
+      "startLine": 182,
+      "endLine": 194,
+      "anchors": [
+        {"kind": "function", "value": "_create_sequences", "line": 182}
+      ],
+      "why": "LSTMs need 3D input: (samples, timesteps, features). This function creates overlapping windows from time-series data using a sliding window approach.",
+      "whatItDoes": "Given N rows of data, creates N - sequence_length + 1 sequences. Each sequence is a window of sequence_length consecutive readings. For sequence_length=20 and 1000 readings, produces 981 sequences.",
+      "failureModes": [],
+      "tests": [
+        {
+          "what": "Test sequence shape",
+          "how": "Input (100, 50), verify output (81, 20, 50) for seq_len=20"
+        }
+      ],
+      "perfNotes": "Creates copies - memory usage is O(N * sequence_length * features)",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "lstm-train",
+      "title": "Training with Early Stopping",
+      "startLine": 196,
+      "endLine": 270,
+      "anchors": [
+        {"kind": "function", "value": "train", "line": 196}
+      ],
+      "why": "LSTM training can overfit, especially on small datasets. Early stopping monitors validation loss and stops when it stops improving, preventing overfitting while saving time.",
+      "whatItDoes": "1) Fetches training data, validates minimum samples, 2) Fills NaN with means, scales with StandardScaler, 3) Creates sequences with sliding window, 4) Builds model if not exists, 5) Trains with early stopping (patience=5 epochs), 6) Calculates threshold from training reconstruction errors at threshold_percentile.",
+      "failureModes": [
+        {
+          "condition": "Not enough data for sequences",
+          "behavior": "Returns False if len(sequences) < 10",
+          "recovery": "Wait for more historical data"
+        },
+        {
+          "condition": "Training fails (GPU OOM, etc.)",
+          "behavior": "Logs error, returns False",
+          "recovery": "Reduce batch_size or sequence_length"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Training 1000 sequences for 50 epochs: ~5-10 min on CPU, ~1 min on GPU",
+      "securityNotes": null,
+      "relatedDocs": ["anomaly-detection"],
+      "relatedNodes": ["ml-detection"]
+    },
+    {
+      "id": "lstm-detect",
+      "title": "Sequence-Based Anomaly Detection",
+      "startLine": 272,
+      "endLine": 335,
+      "anchors": [
+        {"kind": "function", "value": "detect", "line": 272}
+      ],
+      "why": "Detection requires a SEQUENCE of readings (not a single point). The model reconstructs the sequence and compares to the original - high reconstruction error indicates the pattern is unusual.",
+      "whatItDoes": "1) Validates model is trained, 2) Takes last sequence_length readings from input, 3) Scales and reshapes to (1, seq_len, features), 4) Calls model.predict() to get reconstruction, 5) Calculates MSE between input and reconstruction, 6) Compares to threshold, 7) Identifies high-error sensors as contributors.",
+      "failureModes": [
+        {
+          "condition": "Fewer than sequence_length readings",
+          "behavior": "Returns (False, 0.0, [])",
+          "recovery": "Need to wait for more data to accumulate"
+        },
+        {
+          "condition": "Model not trained",
+          "behavior": "Logs warning, returns (False, 0.0, [])",
+          "recovery": "Train model first"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Inference: ~10-50ms per sequence on CPU, ~1-5ms on GPU",
+      "securityNotes": null,
+      "relatedDocs": ["anomaly-detection"],
+      "relatedNodes": ["ml-detection", "consumer"]
+    },
+    {
+      "id": "lstm-get-sequence",
+      "title": "Fetch Historical Sequence from DB",
+      "startLine": 337,
+      "endLine": 377,
+      "anchors": [
+        {"kind": "function", "value": "get_recent_sequence", "line": 337}
+      ],
+      "why": "When a new reading arrives, we need the preceding sequence_length-1 readings to form a complete sequence. This function fetches them from the database by reading_id.",
+      "whatItDoes": "Queries sensor_readings table for the last sequence_length readings up to and including reading_id, ordered by ID descending then reversed to chronological order.",
+      "failureModes": [
+        {
+          "condition": "Fewer than sequence_length readings exist",
+          "behavior": "Returns None",
+          "recovery": "LSTM detection skipped for early readings"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Index on (id) makes this query fast even with millions of rows",
+      "securityNotes": null,
+      "relatedDocs": ["timescaledb-integration"],
+      "relatedNodes": ["timescaledb"]
+    },
+    {
+      "id": "lstm-singleton",
+      "title": "Singleton Instance & Availability Check",
+      "startLine": 380,
+      "endLine": 405,
+      "anchors": [
+        {"kind": "function", "value": "get_lstm_detector", "line": 384},
+        {"kind": "function", "value": "is_lstm_available", "line": 401}
+      ],
+      "why": "LSTM models are memory-intensive. The singleton pattern ensures only one instance exists. is_lstm_available() allows callers to check TensorFlow availability before attempting to use LSTM.",
+      "whatItDoes": "get_lstm_detector() creates or returns the global LSTMAutoencoder instance. Returns None if TensorFlow unavailable. is_lstm_available() simply returns the TENSORFLOW_AVAILABLE flag.",
+      "failureModes": [
+        {
+          "condition": "Instance creation fails",
+          "behavior": "Logs error, returns None",
+          "recovery": "Caller should handle None gracefully"
+        }
+      ],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    }
+  ]
+}

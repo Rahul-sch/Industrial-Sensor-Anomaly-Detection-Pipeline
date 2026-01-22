@@ -1,0 +1,542 @@
+{
+  "filePath": "combined_pipeline.py",
+  "fileHash": "ml-pipeline-v1",
+  "lastModified": "2025-01-22T00:00:00Z",
+  "language": "python",
+  "entries": [
+    {
+      "id": "ml-module-docstring",
+      "title": "Module Documentation & Purpose",
+      "startLine": 1,
+      "endLine": 12,
+      "anchors": [],
+      "why": "Clear documentation upfront explains the hybrid approach: combining rule-based detection (fast, interpretable) with Isolation Forest (multivariate outliers) and LSTM (temporal patterns). This helps new developers understand the architecture before diving into code.",
+      "whatItDoes": "Documents the three-layer detection strategy: 1) Rule-based for known failure patterns, 2) Isolation Forest for unusual sensor combinations, 3) LSTM Autoencoder for time-series anomalies. The pipeline generates alerts with confidence scores.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": ["ml-detection", "hybrid-strategies"],
+      "relatedNodes": ["ml-detection"]
+    },
+    {
+      "id": "ml-conditional-imports",
+      "title": "Conditional ML Library Imports",
+      "startLine": 22,
+      "endLine": 38,
+      "anchors": [
+        {"kind": "import", "value": "IsolationForest", "line": 24},
+        {"kind": "import", "value": "tensorflow", "line": 31},
+        {"kind": "variable", "value": "SKLEARN_AVAILABLE", "line": 26},
+        {"kind": "variable", "value": "TF_AVAILABLE", "line": 34}
+      ],
+      "why": "ML libraries are heavy dependencies (TensorFlow can be 500MB+). Making them optional allows the system to run in degraded mode when libraries aren't available - critical for edge deployments or containers with size constraints.",
+      "whatItDoes": "Attempts to import scikit-learn and TensorFlow, setting availability flags. If imports fail, logs a warning but doesn't crash. This pattern enables graceful degradation - rule-based detection still works without ML libraries.",
+      "failureModes": [
+        {
+          "condition": "scikit-learn not installed",
+          "behavior": "SKLEARN_AVAILABLE = False, Isolation Forest disabled",
+          "recovery": "System continues with rule-based and LSTM detection only"
+        },
+        {
+          "condition": "TensorFlow not installed",
+          "behavior": "TF_AVAILABLE = False, LSTM disabled",
+          "recovery": "System continues with rule-based and Isolation Forest only"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test degraded mode without ML libraries",
+          "how": "Mock import failures and verify pipeline still functions with rules only"
+        }
+      ],
+      "perfNotes": "Import checks happen once at module load, no runtime overhead",
+      "securityNotes": null,
+      "relatedDocs": ["ml-detection"],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-enums-dataclasses",
+      "title": "Type Definitions: Enums and Dataclasses",
+      "startLine": 41,
+      "endLine": 75,
+      "anchors": [
+        {"kind": "class", "value": "AnomalyType", "line": 41},
+        {"kind": "class", "value": "Severity", "line": 49},
+        {"kind": "class", "value": "AnomalyResult", "line": 57},
+        {"kind": "class", "value": "SensorReading", "line": 71}
+      ],
+      "why": "Strong typing with enums and dataclasses prevents bugs from string typos and provides IDE autocomplete. The structured AnomalyResult ensures all detectors return consistent data that downstream systems can rely on.",
+      "whatItDoes": "Defines four key types: AnomalyType (categorizes detection method), Severity (1-4 levels), AnomalyResult (full detection output with confidence, affected sensors, recommendations), and SensorReading (normalized input format).",
+      "failureModes": [],
+      "tests": [
+        {
+          "what": "Verify dataclass immutability expectations",
+          "how": "Test that AnomalyResult fields behave correctly with default_factory"
+        }
+      ],
+      "perfNotes": "Dataclasses have minimal overhead compared to dicts but provide type safety",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-rule-detector-class",
+      "title": "Rule-Based Detector: Threshold Definitions",
+      "startLine": 78,
+      "endLine": 108,
+      "anchors": [
+        {"kind": "class", "value": "RuleBasedDetector", "line": 78},
+        {"kind": "variable", "value": "DEFAULT_THRESHOLDS", "line": 89},
+        {"kind": "variable", "value": "CRITICAL_THRESHOLDS", "line": 101}
+      ],
+      "why": "Rule-based detection is the first line of defense - it's fast, interpretable, and catches obvious failures. Two threshold tiers (default and critical) allow different response urgencies. Domain experts can tune thresholds without touching code.",
+      "whatItDoes": "Defines safe operating ranges for 8 sensor types (temperature, pressure, vibration, etc.) with units. CRITICAL_THRESHOLDS are tighter bounds that trigger immediate alerts. The class supports custom threshold overrides at initialization.",
+      "failureModes": [
+        {
+          "condition": "Threshold too tight",
+          "behavior": "Excessive false positives flood alert system",
+          "recovery": "Analyze historical data to calibrate appropriate thresholds"
+        },
+        {
+          "condition": "Threshold too loose",
+          "behavior": "Real anomalies missed until equipment damage occurs",
+          "recovery": "Review incident reports to identify missed patterns"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test boundary conditions",
+          "how": "Verify values exactly at min/max thresholds are handled correctly"
+        }
+      ],
+      "perfNotes": "O(n) where n = number of sensors, very fast",
+      "securityNotes": null,
+      "relatedDocs": ["isolation-forest-explained"],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-rule-check-method",
+      "title": "Rule-Based Detection Logic",
+      "startLine": 110,
+      "endLine": 156,
+      "anchors": [
+        {"kind": "function", "value": "check", "line": 114},
+        {"kind": "function", "value": "_find_threshold_key", "line": 144},
+        {"kind": "function", "value": "_format_violation", "line": 152}
+      ],
+      "why": "The check method iterates through all sensor values, matching each to its threshold rule. The fuzzy matching (_find_threshold_key) handles sensor naming variations like 'temp_motor_1' matching 'temperature' rules.",
+      "whatItDoes": "For each sensor value: 1) Find matching threshold rule by name substring, 2) Check if value exceeds min/max, 3) Check critical bounds for severity, 4) Build AnomalyResult with 100% confidence (rules are deterministic).",
+      "failureModes": [
+        {
+          "condition": "Sensor name doesn't match any threshold key",
+          "behavior": "Sensor is silently skipped",
+          "recovery": "Add custom threshold or rename sensor to match patterns"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test all sensor types trigger correctly",
+          "how": "Provide readings above/below thresholds for each sensor type"
+        },
+        {
+          "what": "Test critical vs normal severity",
+          "how": "Verify critical thresholds produce CRITICAL severity"
+        }
+      ],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-isolation-forest-class",
+      "title": "Isolation Forest Detector Setup",
+      "startLine": 169,
+      "endLine": 207,
+      "anchors": [
+        {"kind": "class", "value": "IsolationForestDetector", "line": 169},
+        {"kind": "function", "value": "__init__", "line": 180}
+      ],
+      "why": "Isolation Forest excels at finding multivariate outliers - combinations of values that are individually normal but collectively unusual. It's unsupervised (no labels needed) and handles high-dimensional data well.",
+      "whatItDoes": "Initializes sklearn's IsolationForest with configurable contamination rate (expected outlier proportion), number of trees, and random seed for reproducibility. StandardScaler normalizes features to prevent scale bias.",
+      "failureModes": [
+        {
+          "condition": "sklearn not available",
+          "behavior": "RuntimeError raised at initialization",
+          "recovery": "Check SKLEARN_AVAILABLE flag before creating detector"
+        },
+        {
+          "condition": "contamination set too high",
+          "behavior": "Normal readings flagged as outliers",
+          "recovery": "Start with 0.01 (1%) and adjust based on false positive rate"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test initialization without sklearn",
+          "how": "Mock SKLEARN_AVAILABLE=False, verify RuntimeError"
+        }
+      ],
+      "perfNotes": "n_jobs=-1 uses all CPU cores for parallel tree building",
+      "securityNotes": null,
+      "relatedDocs": ["isolation-forest-explained", "isolation-forest"],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-isolation-forest-fit",
+      "title": "Isolation Forest Training",
+      "startLine": 209,
+      "endLine": 232,
+      "anchors": [
+        {"kind": "function", "value": "fit", "line": 209}
+      ],
+      "why": "Training requires sufficient normal data to learn what 'normal' looks like. The 100-sample minimum prevents underfitting. Feature names are stored to ensure prediction-time data matches training structure.",
+      "whatItDoes": "Converts sensor readings to numpy matrix, fits StandardScaler for normalization, then trains the IsolationForest. Stores feature_names to validate future predictions. Sets is_fitted flag when complete.",
+      "failureModes": [
+        {
+          "condition": "Less than 100 training samples",
+          "behavior": "Training skipped with warning, is_fitted stays False",
+          "recovery": "Collect more historical data before training"
+        },
+        {
+          "condition": "Training data contains anomalies",
+          "behavior": "Model learns anomalies as normal, reducing detection accuracy",
+          "recovery": "Pre-filter training data using rule-based detector"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test minimum sample requirement",
+          "how": "Call fit() with 50 samples, verify is_fitted=False"
+        },
+        {
+          "what": "Test feature extraction",
+          "how": "Verify feature_names matches unique sensors from training data"
+        }
+      ],
+      "perfNotes": "Training is O(n * trees * log(n)), can take minutes for large datasets",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-isolation-forest-detect",
+      "title": "Isolation Forest Detection",
+      "startLine": 234,
+      "endLine": 280,
+      "anchors": [
+        {"kind": "function", "value": "detect", "line": 234},
+        {"kind": "function", "value": "_readings_to_matrix", "line": 268},
+        {"kind": "function", "value": "_identify_anomalous_features", "line": 276}
+      ],
+      "why": "Detection must handle the case where model isn't trained or features don't match. The anomaly score (-score_samples) indicates how isolated a point is - higher means more anomalous.",
+      "whatItDoes": "Converts reading to matrix, scales it, gets prediction (-1=outlier) and anomaly score. For outliers, maps score to severity and identifies which features (sensors) contributed most by checking standard deviations.",
+      "failureModes": [
+        {
+          "condition": "Feature mismatch (different sensors than training)",
+          "behavior": "Detection skipped with warning, returns None",
+          "recovery": "Retrain model or ensure consistent sensor set"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test detection without training",
+          "how": "Call detect() before fit(), verify returns None"
+        },
+        {
+          "what": "Test outlier severity mapping",
+          "how": "Verify score>0.7 gives HIGH, score>0.5 gives MEDIUM"
+        }
+      ],
+      "perfNotes": "Detection is O(trees * log(n)), very fast at runtime",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-lstm-class",
+      "title": "LSTM Autoencoder Detector Setup",
+      "startLine": 283,
+      "endLine": 326,
+      "anchors": [
+        {"kind": "class", "value": "LSTMAutoencoderDetector", "line": 283},
+        {"kind": "function", "value": "__init__", "line": 296}
+      ],
+      "why": "LSTM Autoencoders learn temporal patterns - how sensor values typically change over time. They catch gradual drift, unusual oscillations, or sequences that don't match learned patterns. The autoencoder architecture learns to compress and reconstruct normal sequences.",
+      "whatItDoes": "Initializes with sequence_length (timesteps per sample), latent_dim (compression size), and threshold_percentile (what reconstruction error counts as anomaly). Uses a deque to maintain rolling history of readings.",
+      "failureModes": [
+        {
+          "condition": "TensorFlow not available",
+          "behavior": "RuntimeError at initialization",
+          "recovery": "Check TF_AVAILABLE flag before creating detector"
+        },
+        {
+          "condition": "sequence_length too long",
+          "behavior": "Need many readings before detection starts",
+          "recovery": "Balance between pattern detection and responsiveness (50 is good default)"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test initialization without TensorFlow",
+          "how": "Mock TF_AVAILABLE=False, verify RuntimeError"
+        }
+      ],
+      "perfNotes": "History deque has O(1) append, automatically discards old readings",
+      "securityNotes": null,
+      "relatedDocs": ["lstm-autoencoder-explained", "lstm-autoencoder"],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-lstm-architecture",
+      "title": "LSTM Autoencoder Architecture",
+      "startLine": 328,
+      "endLine": 346,
+      "anchors": [
+        {"kind": "function", "value": "build_model", "line": 328}
+      ],
+      "why": "The encoder-decoder architecture compresses sequences to a latent representation, then reconstructs them. Normal patterns compress well; anomalies have high reconstruction error because they don't match learned patterns.",
+      "whatItDoes": "Builds a symmetric autoencoder: Encoder (LSTM 64 -> LSTM latent_dim), Bottleneck (RepeatVector), Decoder (LSTM latent_dim -> LSTM 64 -> TimeDistributed Dense). Uses MSE loss to measure reconstruction quality.",
+      "failureModes": [
+        {
+          "condition": "latent_dim too small",
+          "behavior": "Even normal patterns have high reconstruction error",
+          "recovery": "Increase latent_dim or reduce sequence complexity"
+        },
+        {
+          "condition": "latent_dim too large",
+          "behavior": "Model memorizes instead of learning patterns, poor generalization",
+          "recovery": "Reduce latent_dim to force meaningful compression"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test model architecture",
+          "how": "Build model and verify input/output shapes match"
+        }
+      ],
+      "perfNotes": "Model size scales with latent_dim and sequence_length, keep both reasonable",
+      "securityNotes": null,
+      "relatedDocs": ["lstm-autoencoder"],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-lstm-training",
+      "title": "LSTM Autoencoder Training",
+      "startLine": 348,
+      "endLine": 382,
+      "anchors": [
+        {"kind": "function", "value": "fit", "line": 348}
+      ],
+      "why": "Training on ONLY normal data is crucial - the model learns what normal sequences look like. The threshold is set at a high percentile of training reconstruction errors, so anything worse is likely anomalous.",
+      "whatItDoes": "Prepares sequences from readings, builds model, trains for specified epochs with 10% validation split. After training, computes reconstruction errors on training data to set the anomaly threshold at the specified percentile.",
+      "failureModes": [
+        {
+          "condition": "Training data contains anomalies",
+          "behavior": "Model learns anomalous patterns as normal, threshold too high",
+          "recovery": "Pre-filter training data to remove known anomalies"
+        },
+        {
+          "condition": "Insufficient training data",
+          "behavior": "Model underfits, poor pattern recognition",
+          "recovery": "Need at least 2x sequence_length samples, ideally much more"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test minimum data requirement",
+          "how": "Train with sequence_length*1.5 samples, verify training skipped"
+        },
+        {
+          "what": "Test threshold calculation",
+          "how": "Verify threshold is at specified percentile of training errors"
+        }
+      ],
+      "perfNotes": "Training can take minutes to hours depending on data size and epochs",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-lstm-detect",
+      "title": "LSTM Temporal Anomaly Detection",
+      "startLine": 384,
+      "endLine": 438,
+      "anchors": [
+        {"kind": "function", "value": "detect", "line": 384},
+        {"kind": "function", "value": "_prepare_sequences", "line": 419},
+        {"kind": "function", "value": "_error_to_severity", "line": 432}
+      ],
+      "why": "Detection maintains a rolling history and checks if the current sequence's reconstruction error exceeds the learned threshold. This catches patterns that develop over time rather than instant spikes.",
+      "whatItDoes": "Adds reading to history deque, prepares sequence when enough history exists, computes reconstruction error via model.predict(). If error exceeds threshold, identifies which sensors had highest reconstruction error.",
+      "failureModes": [
+        {
+          "condition": "Not enough history yet",
+          "behavior": "Returns None until history fills to sequence_length",
+          "recovery": "Wait for initial buffer to fill, or reduce sequence_length"
+        },
+        {
+          "condition": "Sensor set changes",
+          "behavior": "Sequence preparation may fail",
+          "recovery": "Retrain model when sensor configuration changes"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test detection before history fills",
+          "how": "Send fewer than sequence_length readings, verify returns None"
+        },
+        {
+          "what": "Test severity mapping",
+          "how": "Inject sequences with known error ratios, verify severity levels"
+        }
+      ],
+      "perfNotes": "Inference is fast but runs on every reading - consider batching for high-volume streams",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-combined-pipeline",
+      "title": "Combined Pipeline Orchestration",
+      "startLine": 441,
+      "endLine": 492,
+      "anchors": [
+        {"kind": "class", "value": "CombinedPipeline", "line": 441},
+        {"kind": "function", "value": "__init__", "line": 452}
+      ],
+      "why": "The combined pipeline is the master orchestrator that runs all detectors and fuses their outputs. Having configurable enables and fusion weights allows tuning the system for different deployment scenarios.",
+      "whatItDoes": "Initializes each detector based on enable flags and library availability. Sets fusion weights that determine how much each detector's confidence contributes to the final score. Logs which detectors are active.",
+      "failureModes": [
+        {
+          "condition": "All detectors disabled or unavailable",
+          "behavior": "Pipeline always returns is_anomaly=False",
+          "recovery": "Ensure at least rule-based detection is enabled"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test partial initialization",
+          "how": "Disable LSTM, verify pipeline still works with rules + IF"
+        }
+      ],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": ["hybrid-strategies"],
+      "relatedNodes": ["ml-detection"]
+    },
+    {
+      "id": "ml-pipeline-detect",
+      "title": "Multi-Detector Fusion",
+      "startLine": 501,
+      "endLine": 527,
+      "anchors": [
+        {"kind": "function", "value": "detect", "line": 501},
+        {"kind": "function", "value": "train", "line": 494}
+      ],
+      "why": "Running all detectors and fusing results provides defense in depth - each detector catches different types of anomalies. The fusion logic combines their outputs into a single actionable result.",
+      "whatItDoes": "Runs rule-based check (returns list), Isolation Forest (returns single result or None), and LSTM (returns single result or None). Collects all anomalies and passes to _fuse_results for combination.",
+      "failureModes": [
+        {
+          "condition": "One detector throws exception",
+          "behavior": "Detection fails entirely",
+          "recovery": "Wrap each detector in try/except with logging"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test with all detectors returning anomalies",
+          "how": "Inject reading that triggers all three, verify combined result"
+        },
+        {
+          "what": "Test with no anomalies",
+          "how": "Inject normal reading, verify is_anomaly=False"
+        }
+      ],
+      "perfNotes": "Runs all detectors sequentially - could parallelize for latency-sensitive apps",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-fusion-logic",
+      "title": "Result Fusion Algorithm",
+      "startLine": 529,
+      "endLine": 585,
+      "anchors": [
+        {"kind": "function", "value": "_fuse_results", "line": 529},
+        {"kind": "function", "value": "_get_weight", "line": 571},
+        {"kind": "function", "value": "_get_combined_action", "line": 581}
+      ],
+      "why": "Fusion combines multiple detector outputs intelligently. Using weighted confidence prevents one noisy detector from dominating. The max severity ensures we don't downgrade critical alerts.",
+      "whatItDoes": "Aggregates affected sensors (union), concatenates descriptions, takes max severity, computes weighted average confidence. If multiple anomaly types detected, marks as COMBINED. Returns unified AnomalyResult.",
+      "failureModes": [
+        {
+          "condition": "Conflicting detector outputs",
+          "behavior": "Combined result may be confusing",
+          "recovery": "Human review for COMBINED type anomalies"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test confidence weighting",
+          "how": "Mock results with known confidences and weights, verify calculation"
+        },
+        {
+          "what": "Test severity aggregation",
+          "how": "Combine LOW + HIGH anomalies, verify result is HIGH"
+        }
+      ],
+      "perfNotes": "O(n) where n = number of anomalies, typically small",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-batch-processing",
+      "title": "Batch Processing Function",
+      "startLine": 588,
+      "endLine": 623,
+      "anchors": [
+        {"kind": "function", "value": "process_batch", "line": 588}
+      ],
+      "why": "Batch processing is useful for historical analysis, backfilling, or systems that process readings in chunks rather than real-time. The function converts raw dicts to typed objects and returns results as dicts for JSON serialization.",
+      "whatItDoes": "Iterates through raw reading dictionaries, converts each to SensorReading, runs through pipeline.detect(), and collects results. Only includes anomalies in output. Returns list of dict-serialized AnomalyResults.",
+      "failureModes": [
+        {
+          "condition": "Invalid timestamp format",
+          "behavior": "datetime.fromisoformat() raises ValueError",
+          "recovery": "Add try/except with fallback to current time"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test batch with mixed normal/anomaly",
+          "how": "Provide 10 readings with 2 anomalies, verify 2 results returned"
+        }
+      ],
+      "perfNotes": "Linear time in batch size, consider chunking for very large batches",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-main-example",
+      "title": "Example Usage and Entry Point",
+      "startLine": 626,
+      "endLine": 646,
+      "anchors": [
+        {"kind": "variable", "value": "__name__", "line": 626}
+      ],
+      "why": "The main block provides a runnable example demonstrating how to use the pipeline. It shows the typical flow: create pipeline, create reading, detect anomalies. Useful for testing and as documentation.",
+      "whatItDoes": "Sets up logging, creates CombinedPipeline with available detectors, creates a test SensorReading with sample values, runs detection, and prints the result summary.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "Only runs when script is executed directly, not when imported",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    }
+  ]
+}

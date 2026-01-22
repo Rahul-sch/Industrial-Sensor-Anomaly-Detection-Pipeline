@@ -1,0 +1,135 @@
+{
+  "filePath": "useSensorStore.js",
+  "fileHash": "use-sensor-store-v1",
+  "lastModified": "2025-01-22T00:00:00Z",
+  "language": "javascript",
+  "entries": [
+    {
+      "id": "store-transient-state",
+      "title": "Transient State for High-Frequency Updates",
+      "startLine": 1,
+      "endLine": 46,
+      "anchors": [
+        {"kind": "variable", "value": "transientState", "line": 16}
+      ],
+      "why": "At 10 Hz updates across 3 rigs (30 updates/sec), using React state would cause 30 re-renders per second - way too many. Transient state is a plain object mutated directly, bypassing React entirely.",
+      "whatItDoes": "Defines transientState object with nested structure: rigs.A, rigs.B, rigs.C, each containing rpm, temperature, vibration, pressure, bearing_temp, anomalyScore, isRunning. Initial values are realistic defaults.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "Direct mutation = no React overhead. 3D useFrame reads this every frame.",
+      "securityNotes": null,
+      "relatedDocs": ["frontend-3d-twin"],
+      "relatedNodes": ["dashboard-3d"]
+    },
+    {
+      "id": "store-ketchup-transient",
+      "title": "Ketchup Factory Transient State (25 Lines)",
+      "startLine": 48,
+      "endLine": 79,
+      "anchors": [
+        {"kind": "variable", "value": "ketchupTransientState", "line": 62}
+      ],
+      "why": "The ketchup factory has 25 production lines, each with 6+ sensors. That's 250+ updates per second at 10 Hz - absolutely must bypass React for this scale.",
+      "whatItDoes": "Creates object with lines L01-L25 using Array.from() and Object.fromEntries(). Each line has: fill_level, viscosity, sauce_temp, cap_torque, bottle_flow_rate, label_alignment, bottle_count, anomaly_score, anomaly_type.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "25 lines * 10 Hz = 250 direct mutations/sec - no problem for JS",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "store-getters-updaters",
+      "title": "Transient State Accessors & Updaters",
+      "startLine": 81,
+      "endLine": 123,
+      "anchors": [
+        {"kind": "function", "value": "getTransientState", "line": 91},
+        {"kind": "function", "value": "updateTransientRig", "line": 97},
+        {"kind": "function", "value": "getKetchupTransientState", "line": 113},
+        {"kind": "function", "value": "updateKetchupLine", "line": 119}
+      ],
+      "why": "These exported functions provide controlled access to transient state. Getters return the raw object for reading in useFrame. Updaters use Object.assign for efficient partial updates.",
+      "whatItDoes": "getTransientState(): Returns transientState object. updateTransientRig(rigId, data): Merges data into rigs[rigId]. getKetchupTransientState(): Returns ketchupTransientState. updateKetchupLine(lineId, data): Merges data into lines[lineId].",
+      "failureModes": [
+        {
+          "condition": "Invalid rigId/lineId",
+          "behavior": "No-op (if guard fails)",
+          "recovery": "Updates for unknown IDs are silently ignored"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Object.assign is faster than spread for partial updates",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "store-zustand-create",
+      "title": "Zustand Store for UI State",
+      "startLine": 125,
+      "endLine": 156,
+      "anchors": [
+        {"kind": "function", "value": "useSensorStore", "line": 133}
+      ],
+      "why": "UI state that SHOULD trigger re-renders (connection status, alerts, selected rig) uses Zustand. It's minimal React state for things that need UI updates.",
+      "whatItDoes": "Creates Zustand store with subscribeWithSelector middleware (enables selective subscriptions). Initial state: connected=false, connectionError=null, selectedRig=null, viewMode='rig', alerts=[], maxAlerts=10, systemStatus object.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "subscribeWithSelector avoids unnecessary re-renders from unrelated state changes",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "store-actions",
+      "title": "Zustand Actions for State Updates",
+      "startLine": 158,
+      "endLine": 198,
+      "anchors": [],
+      "why": "Zustand actions encapsulate state mutations. They're called from event handlers and UI components to update connection status, alerts, selection, etc.",
+      "whatItDoes": "Actions include: setConnected/setConnectionError (connection state), setLastUpdate (timestamp), setSelectedRig/clearSelectedRig (rig selection), setSelectedKetchupLine/clearSelectedKetchupLine, setViewMode, toggleDebug/togglePause, addAlert (prepends and limits to maxAlerts), clearAlerts, dismissAlert (filters by ID), setSystemStatus.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "addAlert uses slice(0, maxAlerts) to cap array size",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "store-add-alert",
+      "title": "Alert Management Logic",
+      "startLine": 174,
+      "endLine": 189,
+      "anchors": [],
+      "why": "Alerts need unique IDs (for dismissal), timestamps (for display), and capping (prevent memory leaks). The addAlert action handles all of this.",
+      "whatItDoes": "Creates new alert with: id (Date.now()), timestamp (ISO string), plus spread of input alert data. Prepends to alerts array (newest first). Slices to maxAlerts (10) to prevent unbounded growth. dismissAlert filters out by ID.",
+      "failureModes": [],
+      "tests": [
+        {
+          "what": "Test alert capping",
+          "how": "Add 15 alerts, verify only 10 remain"
+        }
+      ],
+      "perfNotes": "Array slice + spread is efficient for small arrays (< 100)",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "store-computed-getters",
+      "title": "Computed Getters for Alert State",
+      "startLine": 195,
+      "endLine": 201,
+      "anchors": [],
+      "why": "Components often need derived values like 'how many alerts?' or 'any critical alerts?'. Computed getters provide these without storing redundant state.",
+      "whatItDoes": "getAlertCount(): Returns alerts.length. hasActiveAlerts(): Returns true if any alert has severity='critical'. These call get() to access current state within the getter.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "Getters are computed on demand, not cached",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    }
+  ]
+}

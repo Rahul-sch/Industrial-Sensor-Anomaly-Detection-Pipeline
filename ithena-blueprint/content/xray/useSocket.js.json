@@ -1,0 +1,163 @@
+{
+  "filePath": "useSocket.js",
+  "fileHash": "use-socket-v1",
+  "lastModified": "2025-01-22T00:00:00Z",
+  "language": "javascript",
+  "entries": [
+    {
+      "id": "socket-overview",
+      "title": "Socket.IO Real-Time Data Hook",
+      "startLine": 1,
+      "endLine": 14,
+      "anchors": [
+        {"kind": "import", "value": "io", "line": 2},
+        {"kind": "function", "value": "useSocket", "line": 15}
+      ],
+      "why": "The 3D dashboard needs real-time sensor data without polling. Socket.IO provides bidirectional WebSocket communication with automatic reconnection and fallback to polling.",
+      "whatItDoes": "Imports socket.io-client for WebSocket connection, Zustand store actions for state updates, and transient state mutators for high-frequency data. The hook manages the entire socket lifecycle.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": ["frontend-3d-twin", "websockets"],
+      "relatedNodes": ["dashboard-3d", "websocket-server"]
+    },
+    {
+      "id": "socket-state-setup",
+      "title": "Hook State & Zustand Selectors",
+      "startLine": 15,
+      "endLine": 25,
+      "anchors": [],
+      "why": "The hook needs references for socket instance and reconnection tracking, plus Zustand actions for updating UI state when connection status changes.",
+      "whatItDoes": "useRef for socket instance (persists across renders) and reconnect counter. Selects Zustand actions: setConnected, setConnectionError, setLastUpdate, addAlert, setSystemStatus.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "socket-telemetry-handler",
+      "title": "Rig Telemetry Handler (10 Hz)",
+      "startLine": 26,
+      "endLine": 44,
+      "anchors": [
+        {"kind": "function", "value": "handleTelemetry", "line": 26}
+      ],
+      "why": "Telemetry arrives at 10 Hz (100ms intervals). Using React state would cause 10 re-renders per second per rig. Instead, we mutate TRANSIENT state directly, avoiding React overhead.",
+      "whatItDoes": "Extracts machine_id and sensor values from event data. Validates machine_id is A/B/C. Calls updateTransientRig() to directly mutate transient state object. Updates lastUpdate timestamp (throttled to 1 Hz in UI).",
+      "failureModes": [
+        {
+          "condition": "Invalid machine_id",
+          "behavior": "Silently ignored (if check fails)",
+          "recovery": "Data for unknown machines is dropped"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Direct mutation = O(1), no React reconciliation",
+      "securityNotes": null,
+      "relatedDocs": ["data-flow-overview"],
+      "relatedNodes": ["websocket-server"]
+    },
+    {
+      "id": "socket-anomaly-handler",
+      "title": "Anomaly Alert Handler",
+      "startLine": 46,
+      "endLine": 64,
+      "anchors": [
+        {"kind": "function", "value": "handleAnomalyAlert", "line": 46}
+      ],
+      "why": "Unlike telemetry, anomaly alerts are LOW frequency but HIGH importance. They SHOULD trigger React re-renders to show alert notifications immediately.",
+      "whatItDoes": "Creates alert object with: type, severity (critical if score > 0.8), machine_id, message, score, contributing sensors, detection method. Calls addAlert() to update Zustand state (triggers HUD re-render). Also updates transient state's anomalyScore.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "Re-render on anomaly is intentional - need to show alert UI",
+      "securityNotes": null,
+      "relatedDocs": ["anomaly-detection"],
+      "relatedNodes": ["ml-detection"]
+    },
+    {
+      "id": "socket-ketchup-handlers",
+      "title": "Ketchup Factory Event Handlers",
+      "startLine": 70,
+      "endLine": 111,
+      "anchors": [
+        {"kind": "function", "value": "handleKetchupTelemetry", "line": 71},
+        {"kind": "function", "value": "handleKetchupAnomalyAlert", "line": 94}
+      ],
+      "why": "The ketchup factory has different sensors (fill_level, viscosity, sauce_temp) and 25 production lines instead of 3 rigs. Separate handlers process these different event structures.",
+      "whatItDoes": "handleKetchupTelemetry: Extracts line_id (L01-L25) and ketchup-specific sensors, updates transient state via updateKetchupLine(). handleKetchupAnomalyAlert: Similar to rig alerts but includes anomaly_type (overfill, underfill, viscosity_fault).",
+      "failureModes": [
+        {
+          "condition": "Invalid line_id (doesn't start with 'L')",
+          "behavior": "Update skipped",
+          "recovery": "Malformed events ignored"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "25 lines * 10 Hz = 250 updates/sec, direct mutation handles this",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "socket-connection-setup",
+      "title": "Socket Connection & Event Binding",
+      "startLine": 113,
+      "endLine": 175,
+      "anchors": [],
+      "why": "useEffect initializes the socket connection once on mount. It configures transports, reconnection behavior, and binds all event handlers. Cleanup disconnects on unmount.",
+      "whatItDoes": "Creates socket.io connection to localhost:5000 with: WebSocket + polling transports, 10 reconnection attempts, 1-5 second reconnection delay, 10 second timeout. Binds handlers for: connect, disconnect, connect_error, rig_telemetry, anomaly_alert, system_status, ketchup_telemetry, ketchup_anomaly_alert.",
+      "failureModes": [
+        {
+          "condition": "Backend not running",
+          "behavior": "connect_error fired, increments reconnectAttempts",
+          "recovery": "After 10 failures, shows error in HUD"
+        },
+        {
+          "condition": "Network disconnection",
+          "behavior": "disconnect event, auto-reconnect attempts begin",
+          "recovery": "Socket.IO handles reconnection automatically"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "WebSocket preferred, polling fallback for restrictive networks",
+      "securityNotes": null,
+      "relatedDocs": ["websockets"],
+      "relatedNodes": ["websocket-server"]
+    },
+    {
+      "id": "socket-subscription",
+      "title": "Machine Subscription on Connect",
+      "startLine": 133,
+      "endLine": 135,
+      "anchors": [],
+      "why": "The backend may support filtering which machines a client receives data for. Emitting 'subscribe_machines' tells the server this client wants data for rigs A, B, C.",
+      "whatItDoes": "On successful connection, emits 'subscribe_machines' event with { machines: ['A', 'B', 'C'] }. Server responds with 'machines_subscribed' confirmation.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "socket-cleanup",
+      "title": "Cleanup & useSocketEmit Hook",
+      "startLine": 166,
+      "endLine": 206,
+      "anchors": [
+        {"kind": "function", "value": "useSocketEmit", "line": 185}
+      ],
+      "why": "React's useEffect cleanup prevents memory leaks and duplicate event handlers. useSocketEmit provides a way to send events back to the server (e.g., acknowledge alerts).",
+      "whatItDoes": "Cleanup: Removes all event listeners with socket.off(), then disconnects. useSocketEmit: Returns emit() function that sends events to server if connected. Useful for bidirectional communication.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    }
+  ]
+}

@@ -1,0 +1,213 @@
+{
+  "filePath": "analysis_engine.py",
+  "fileHash": "analysis-engine-v1",
+  "lastModified": "2025-01-22T00:00:00Z",
+  "language": "python",
+  "entries": [
+    {
+      "id": "engine-imports",
+      "title": "Scientific Computing Stack",
+      "startLine": 1,
+      "endLine": 14,
+      "anchors": [
+        {"kind": "module", "value": "numpy", "line": 7},
+        {"kind": "module", "value": "pandas", "line": 8},
+        {"kind": "module", "value": "scipy.stats", "line": 9}
+      ],
+      "why": "Context analysis requires heavy numerical computation: correlation matrices, z-scores, statistical tests. NumPy/Pandas/SciPy are the standard scientific Python stack for these operations.",
+      "whatItDoes": "Imports numpy for array math, pandas for DataFrames, scipy.stats for t-distribution p-values, psycopg2 for database queries, and the local config module.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "These libraries use C extensions under the hood - vectorized operations are fast",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": ["consumer"]
+    },
+    {
+      "id": "engine-sensor-columns",
+      "title": "50 Sensor Columns Definition",
+      "startLine": 16,
+      "endLine": 50,
+      "anchors": [
+        {"kind": "variable", "value": "SENSOR_COLUMNS", "line": 20},
+        {"kind": "variable", "value": "SENSOR_CATEGORIES", "line": 39}
+      ],
+      "why": "The analysis engine needs to know ALL 50 sensor parameters. Hard-coding them here ensures consistency with producer.py and enables category-based analysis (environmental vs mechanical vs thermal, etc.).",
+      "whatItDoes": "Defines SENSOR_COLUMNS list with 50 sensors in 5 categories (10 each): environmental, mechanical, thermal, electrical, fluid dynamics. SENSOR_CATEGORIES dict maps category names to their sensors for grouping analysis results.",
+      "failureModes": [
+        {
+          "condition": "Producer adds new sensor not in this list",
+          "behavior": "New sensor ignored in correlation/pattern analysis",
+          "recovery": "Keep this list synchronized with producer.py manually"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Class-level constants avoid repeated list creation",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": ["producer"]
+    },
+    {
+      "id": "engine-init",
+      "title": "Analyzer Initialization",
+      "startLine": 52,
+      "endLine": 59,
+      "anchors": [
+        {"kind": "function", "value": "__init__", "line": 52}
+      ],
+      "why": "The window_size determines how many readings before/after an anomaly to fetch for context. This affects both query performance (larger windows = more data) and analysis quality (more context = better correlation detection).",
+      "whatItDoes": "Accepts optional window_size parameter, defaults to config.CONTEXT_WINDOW_SIZE if not provided. Stores instance logger for error tracking.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "Window size impacts DB query cost - 50 readings before + 50 after = 101 rows per analysis",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "engine-context-window",
+      "title": "Context Window Fetcher (3 Queries)",
+      "startLine": 61,
+      "endLine": 127,
+      "anchors": [
+        {"kind": "function", "value": "get_context_window", "line": 61}
+      ],
+      "why": "To understand WHY an anomaly occurred, you need context: what were the sensor values leading up to it? What happened after? This fetches a window of readings centered on the anomaly.",
+      "whatItDoes": "Executes 3 SQL queries: (1) fetch the anomaly reading by ID, (2) fetch window_size readings BEFORE by ID DESC, (3) fetch window_size readings AFTER by ID ASC. Returns dict with 'before', 'anomaly', 'after' DataFrames. Note: before_rows is reversed to chronological order.",
+      "failureModes": [
+        {
+          "condition": "reading_id not found in database",
+          "behavior": "Returns None with warning log",
+          "recovery": "Caller should check for None return"
+        },
+        {
+          "condition": "Database connection fails",
+          "behavior": "Logs error, returns None",
+          "recovery": "Retry logic should be at calling layer"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test with reading at dataset start",
+          "how": "Pass reading_id=1, verify before DataFrame is empty"
+        }
+      ],
+      "perfNotes": "3 sequential queries - could be combined with UNION but readability matters more here",
+      "securityNotes": "Uses parameterized queries (%s) - safe from SQL injection",
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "engine-correlations",
+      "title": "Pearson Correlation with P-Values",
+      "startLine": 129,
+      "endLine": 202,
+      "anchors": [
+        {"kind": "function", "value": "compute_correlations", "line": 129}
+      ],
+      "why": "Finding which sensors move together helps identify root cause. If temperature and bearing_temp are highly correlated during an anomaly, they might share a common cause (overheating). P-values filter out spurious correlations from small samples.",
+      "whatItDoes": "Concatenates before+anomaly+after into one DataFrame. Computes 50x50 Pearson correlation matrix. For each pair: calculates t-statistic and p-value from scipy.stats.t.cdf. Filters to |r|>0.5 AND p<0.05. Labels as 'strong' (>0.7) or 'moderate'. Returns top 20 sorted by absolute correlation.",
+      "failureModes": [
+        {
+          "condition": "Fewer than 3 readings in window",
+          "behavior": "Returns None with warning",
+          "recovery": "Need minimum sample size for meaningful correlation"
+        },
+        {
+          "condition": "All values identical for a sensor",
+          "behavior": "std=0 causes division issues",
+          "recovery": "1e-10 epsilon prevents division by zero"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Verify correlation symmetry",
+          "how": "Check corr(A,B) == corr(B,A) in matrix"
+        }
+      ],
+      "perfNotes": "O(n^2) for 50 sensors = 1225 unique pairs - fast enough",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "engine-zscore-calc",
+      "title": "Z-Score Anomaly Scoring",
+      "startLine": 204,
+      "endLine": 298,
+      "anchors": [
+        {"kind": "function", "value": "identify_anomalous_patterns", "line": 204}
+      ],
+      "why": "Z-scores tell us 'how unusual is this value compared to recent baseline?' A z-score of 3 means the value is 3 standard deviations from the mean - extremely rare if data is normally distributed (~0.3% chance).",
+      "whatItDoes": "For each of 50 sensors: computes baseline mean/std from 'before' readings, calculates z-score of anomaly value, computes percent change, determines trend direction from last 3 readings, adds category and unit metadata. Sorts by |z_score| descending. Groups results by sensor category.",
+      "failureModes": [
+        {
+          "condition": "No baseline readings (anomaly at dataset start)",
+          "behavior": "Returns None with warning",
+          "recovery": "Need historical data for baseline comparison"
+        },
+        {
+          "condition": "baseline_std = 0 (constant values)",
+          "behavior": "z_score set to 0",
+          "recovery": "Constant values aren't anomalous by definition"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Linear scan through 50 sensors - very fast",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "engine-summary",
+      "title": "Complete Analysis Summary Generator",
+      "startLine": 300,
+      "endLine": 345,
+      "anchors": [
+        {"kind": "function", "value": "generate_analysis_summary", "line": 300}
+      ],
+      "why": "This is the main entry point for external callers. It orchestrates context fetching, correlation analysis, and pattern identification into a single JSON-serializable result ready for ChatGPT or the UI.",
+      "whatItDoes": "Calls get_context_window(), compute_correlations(), identify_anomalous_patterns() in sequence. Converts Pandas DataFrames to dicts using to_dict('records'). Converts timestamps to strings for JSON serialization. Returns complete analysis package with reading_id, context, correlations, patterns, detected_sensors.",
+      "failureModes": [
+        {
+          "condition": "Context window fetch fails",
+          "behavior": "Returns None immediately",
+          "recovery": "Caller should handle gracefully"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Full analysis takes ~50ms including DB queries",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": ["chatgpt-integration"]
+    },
+    {
+      "id": "engine-anomaly-lookup",
+      "title": "Anomaly Details Lookup Function",
+      "startLine": 348,
+      "endLine": 391,
+      "anchors": [
+        {"kind": "function", "value": "get_anomaly_details", "line": 348}
+      ],
+      "why": "The anomaly_detections table stores what the ML detected. This helper fetches those details so we know which sensors triggered the alert and what detection method (rule-based, Isolation Forest, LSTM) flagged it.",
+      "whatItDoes": "Standalone function (not a class method) that queries anomaly_detections by ID. Returns dict with: id, reading_id (foreign key to sensor_readings), detection_method, anomaly_score, is_anomaly flag, detected_sensors array, created_at timestamp.",
+      "failureModes": [
+        {
+          "condition": "anomaly_id not found",
+          "behavior": "Returns None",
+          "recovery": "Caller should validate anomaly exists"
+        },
+        {
+          "condition": "Database connection fails",
+          "behavior": "Logs error, returns None",
+          "recovery": "Caller handles None case"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Single indexed lookup by primary key - very fast",
+      "securityNotes": "Parameterized query prevents SQL injection",
+      "relatedDocs": [],
+      "relatedNodes": ["consumer", "combined-pipeline"]
+    }
+  ]
+}

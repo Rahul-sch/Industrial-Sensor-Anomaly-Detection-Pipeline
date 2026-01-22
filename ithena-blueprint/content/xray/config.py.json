@@ -1,0 +1,330 @@
+{
+  "fileName": "config.py",
+  "description": "Centralized configuration management for the Rig Alpha industrial IoT system. Type-safe dataclass configuration with environment variable support.",
+  "totalLines": 646,
+  "sections": [
+    {
+      "id": "module-overview",
+      "name": "Module Overview",
+      "startLine": 1,
+      "endLine": 24
+    },
+    {
+      "id": "environment-detection",
+      "name": "Environment Detection",
+      "startLine": 26,
+      "endLine": 46
+    },
+    {
+      "id": "kafka-config",
+      "name": "Kafka Configuration",
+      "startLine": 49,
+      "endLine": 129
+    },
+    {
+      "id": "database-config",
+      "name": "Database Configuration",
+      "startLine": 132,
+      "endLine": 200
+    },
+    {
+      "id": "ml-config",
+      "name": "ML Pipeline Configuration",
+      "startLine": 203,
+      "endLine": 311
+    },
+    {
+      "id": "websocket-config",
+      "name": "WebSocket Configuration",
+      "startLine": 314,
+      "endLine": 362
+    },
+    {
+      "id": "security-config",
+      "name": "Security Configuration",
+      "startLine": 365,
+      "endLine": 430
+    },
+    {
+      "id": "logging-config",
+      "name": "Logging Configuration",
+      "startLine": 433,
+      "endLine": 506
+    },
+    {
+      "id": "sensor-parameters",
+      "name": "Sensor Parameter Definitions",
+      "startLine": 509,
+      "endLine": 578
+    },
+    {
+      "id": "master-config",
+      "name": "Master Configuration Class",
+      "startLine": 581,
+      "endLine": 646
+    }
+  ],
+  "entries": [
+    {
+      "id": "entry-1",
+      "lineStart": 1,
+      "lineEnd": 24,
+      "sectionId": "module-overview",
+      "title": "Module Docstring & Purpose",
+      "importance": "why",
+      "content": "The config.py module serves as the **single source of truth** for all system settings. Rather than scattering configuration across multiple files, this centralized approach provides:\n\n1. **Type Safety**: Dataclasses ensure configuration values are correctly typed\n2. **Environment Awareness**: Automatic loading from environment variables\n3. **Validation**: Built-in checks for production readiness\n4. **Discoverability**: All settings documented in one place\n\nThis pattern is common in production systems where you need different configurations for dev/staging/production environments.",
+      "tags": ["architecture", "configuration", "best-practices"],
+      "relatedLinks": [
+        {
+          "type": "wiki",
+          "label": "Configuration Patterns",
+          "href": "/wiki/system-architecture"
+        }
+      ]
+    },
+    {
+      "id": "entry-2",
+      "lineStart": 26,
+      "lineEnd": 46,
+      "sectionId": "environment-detection",
+      "title": "Environment Detection Enum",
+      "importance": "how",
+      "content": "The `Environment` enum defines the four deployment stages:\n\n```python\nclass Environment(Enum):\n    DEVELOPMENT = \"development\"  # Local dev\n    STAGING = \"staging\"          # Pre-prod testing\n    PRODUCTION = \"production\"    # Live system\n    TESTING = \"testing\"          # Automated tests\n```\n\nThe `get_environment()` function reads `RIG_ALPHA_ENV` and safely defaults to development if the value is invalid. This prevents crashes from typos in environment variables.\n\n**Why Enum?** Enums prevent typo-related bugs. Instead of comparing strings (`if env == \"producton\"`), we compare enum values which are IDE-autocompleted and typo-proof.",
+      "tags": ["environment", "enum", "safety"],
+      "codeSnippet": {
+        "language": "python",
+        "code": "def get_environment() -> Environment:\n    env_str = os.getenv(\"RIG_ALPHA_ENV\", \"development\").lower()\n    try:\n        return Environment(env_str)\n    except ValueError:\n        return Environment.DEVELOPMENT"
+      }
+    },
+    {
+      "id": "entry-3",
+      "lineStart": 49,
+      "lineEnd": 80,
+      "sectionId": "kafka-config",
+      "title": "KafkaConfig Dataclass - Connection Settings",
+      "importance": "critical",
+      "content": "The `KafkaConfig` dataclass centralizes all Kafka settings. Key fields:\n\n| Field | Default | Purpose |\n|-------|---------|--------|\n| `bootstrap_servers` | localhost:9092 | Broker addresses (comma-separated for cluster) |\n| `sensor_topic` | rig-sensor-data | Topic for raw sensor readings |\n| `consumer_group` | rig-alpha-consumer | Consumer group for offset tracking |\n\n**Topic Architecture:**\n- `rig-sensor-data`: Raw 50-parameter sensor readings (high volume)\n- `rig-anomalies`: Detected anomalies (low volume, high importance)\n- `rig-predictions`: ML model predictions for the dashboard\n\nThe `default_factory=lambda` pattern allows reading environment variables at instantiation time, not module load time.",
+      "tags": ["kafka", "topics", "dataclass"],
+      "relatedLinks": [
+        {
+          "type": "wiki",
+          "label": "Kafka Deep Dive",
+          "href": "/wiki/kafka-fundamentals"
+        },
+        {
+          "type": "xray",
+          "label": "Consumer.py",
+          "href": "/xray/consumer.py"
+        }
+      ]
+    },
+    {
+      "id": "entry-4",
+      "lineStart": 81,
+      "lineEnd": 105,
+      "sectionId": "kafka-config",
+      "title": "Kafka Performance & Reliability Tuning",
+      "importance": "how",
+      "content": "These settings control consumer behavior:\n\n**Performance Tuning:**\n- `batch_size=100`: Process messages in batches for efficiency\n- `poll_timeout_ms=1000`: Wait up to 1 second for messages\n- `max_poll_records=500`: Cap messages per poll to prevent memory issues\n\n**Reliability Settings:**\n- `auto_offset_reset=\"earliest\"`: On first run, start from oldest message (no data loss)\n- `enable_auto_commit=True`: Automatically commit offsets (simplifies code)\n- `auto_commit_interval_ms=5000`: Commit every 5 seconds\n\n**Trade-off Alert:** `enable_auto_commit=True` is convenient but can lead to data loss on crashes. Production systems often use manual commits after successful processing.",
+      "tags": ["kafka", "performance", "reliability"],
+      "codeSnippet": {
+        "language": "python",
+        "code": "# Conservative: Start from oldest, process in small batches\nauto_offset_reset: str = \"earliest\"\nbatch_size: int = 100\nmax_poll_records: int = 500"
+      }
+    },
+    {
+      "id": "entry-5",
+      "lineStart": 106,
+      "lineEnd": 129,
+      "sectionId": "kafka-config",
+      "title": "Kafka Security & Consumer Config Builder",
+      "importance": "how",
+      "content": "Optional security settings for production Kafka clusters:\n\n```python\nsecurity_protocol: Optional[str]  # SASL_SSL for secure clusters\nsasl_mechanism: Optional[str]     # PLAIN, SCRAM-SHA-256, etc.\nsasl_username: Optional[str]\nsasl_password: Optional[str]\n```\n\nThe `to_consumer_config()` method converts the dataclass to a dictionary compatible with `kafka-python`'s `KafkaConsumer()` constructor. It only includes security settings if they're configured, keeping the config clean for development.\n\n**Pattern:** This converter method pattern is useful when your internal config structure differs from a library's expected format.",
+      "tags": ["kafka", "security", "SASL"],
+      "relatedLinks": [
+        {
+          "type": "wiki",
+          "label": "Security Overview",
+          "href": "/wiki/security-architecture"
+        }
+      ]
+    },
+    {
+      "id": "entry-6",
+      "lineStart": 132,
+      "lineEnd": 175,
+      "sectionId": "database-config",
+      "title": "DatabaseConfig - TimescaleDB Settings",
+      "importance": "critical",
+      "content": "TimescaleDB configuration for time-series storage:\n\n**Connection Settings:**\n- Standard PostgreSQL connection (host, port, user, password)\n- Connection pooling with `min_pool_size=5` and `max_pool_size=20`\n\n**TimescaleDB-Specific:**\n- `chunk_interval=\"1 day\"`: Create new partition daily (good for high-volume)\n- `retention_days=90`: Auto-delete data older than 90 days\n- `compression_after_days=7`: Compress chunks older than 7 days (90% space savings)\n\n**Why TimescaleDB?**\nTime-series data from 50 sensors at high frequency creates billions of rows. TimescaleDB handles this with:\n1. Automatic time-based partitioning (chunks)\n2. Built-in compression for older data\n3. Fast time-range queries via chunk exclusion",
+      "tags": ["database", "timescaledb", "time-series"],
+      "relatedLinks": [
+        {
+          "type": "wiki",
+          "label": "TimescaleDB Guide",
+          "href": "/wiki/timescaledb-integration"
+        }
+      ]
+    },
+    {
+      "id": "entry-7",
+      "lineStart": 176,
+      "lineEnd": 200,
+      "sectionId": "database-config",
+      "title": "Connection String Properties",
+      "importance": "how",
+      "content": "Python `@property` decorators provide computed values:\n\n```python\n@property\ndef connection_string(self) -> str:\n    return f\"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}\"\n\n@property  \ndef async_connection_string(self) -> str:\n    return f\"postgresql+asyncpg://{self.user}:{self.password}@...\"\n```\n\n**Two connection strings because:**\n- `connection_string`: For synchronous operations (psycopg2)\n- `async_connection_string`: For async operations (asyncpg with SQLAlchemy)\n\nThe consumer uses sync connections in batch processing; the WebSocket server uses async for concurrent client handling.",
+      "tags": ["database", "async", "connection-string"]
+    },
+    {
+      "id": "entry-8",
+      "lineStart": 203,
+      "lineEnd": 260,
+      "sectionId": "ml-config",
+      "title": "MLConfig - Feature Engineering Settings",
+      "importance": "critical",
+      "content": "The ML pipeline configuration controls the hybrid detection system:\n\n**Feature Engineering:**\n- `feature_window_size=100`: Use 100 samples for rolling features\n- `feature_columns`: The 10 most predictive sensor parameters\n\n**Anomaly Thresholds (0.0 to 1.0 scale):**\n| Level | Threshold | Meaning |\n|-------|-----------|--------|\n| Warning | 0.5 | Something unusual, investigate |\n| Anomaly | 0.7 | Likely problem, alert operators |\n| Critical | 0.9 | Serious issue, immediate action |\n\n**Why 10 features, not 50?**\nDimensionality reduction improves ML performance. These 10 were selected based on:\n1. Correlation with historical failures\n2. Signal-to-noise ratio\n3. Feature importance from Random Forest analysis",
+      "tags": ["ml", "features", "thresholds"],
+      "relatedLinks": [
+        {
+          "type": "wiki",
+          "label": "Anomaly Detection",
+          "href": "/wiki/anomaly-detection"
+        },
+        {
+          "type": "xray",
+          "label": "ML Pipeline Code",
+          "href": "/xray/combined_pipeline.py"
+        }
+      ]
+    },
+    {
+      "id": "entry-9",
+      "lineStart": 261,
+      "lineEnd": 285,
+      "sectionId": "ml-config",
+      "title": "Isolation Forest & LSTM Hyperparameters",
+      "importance": "how",
+      "content": "Detector-specific hyperparameters:\n\n**Isolation Forest:**\n- `n_estimators=100`: Number of trees (more = better but slower)\n- `contamination=0.1`: Expected 10% anomaly rate in training data\n\n**LSTM Autoencoder:**\n- `sequence_length=50`: Look at 50 timesteps of history\n- `hidden_units=64`: LSTM layer size (balance: capacity vs. overfitting)\n- `learning_rate=0.001`: Adam optimizer default\n- `epochs=50`: Training iterations\n- `batch_size=32`: Samples per gradient update\n\n**Tuning these values:**\n1. Start with defaults\n2. Monitor validation loss during training\n3. Adjust based on precision/recall trade-offs\n4. More epochs if underfitting, fewer if overfitting",
+      "tags": ["ml", "isolation-forest", "lstm", "hyperparameters"],
+      "codeSnippet": {
+        "language": "python",
+        "code": "# Isolation Forest: Good for static anomalies\nisolation_forest_estimators: int = 100\nisolation_forest_contamination: float = 0.1\n\n# LSTM: Good for temporal patterns\nlstm_sequence_length: int = 50\nlstm_hidden_units: int = 64"
+      }
+    },
+    {
+      "id": "entry-10",
+      "lineStart": 286,
+      "lineEnd": 311,
+      "sectionId": "ml-config",
+      "title": "Ensemble Weights & Sensor Limits",
+      "importance": "critical",
+      "content": "**Ensemble Fusion Weights:**\n```python\nrule_based_weight: float = 0.3      # 30% rules\nisolation_forest_weight: float = 0.3 # 30% statistical\nlstm_weight: float = 0.4             # 40% temporal\n```\n\nWeights must sum to 1.0. The LSTM gets highest weight because temporal patterns are most predictive for this equipment.\n\n**Rule-Based Sensor Limits:**\nPhysics-based constraints that should never be violated:\n\n| Sensor | Min | Max | Critical Max |\n|--------|-----|-----|-------------|\n| Temperature | -10°C | 150°C | 180°C |\n| Pressure | 0 bar | 500 bar | 600 bar |\n| Vibration | 0 mm/s | 10 mm/s | 15 mm/s |\n\nExceeding `critical_max` triggers immediate alerts regardless of ML scores.",
+      "tags": ["ml", "ensemble", "rules", "limits"],
+      "relatedLinks": [
+        {
+          "type": "faq",
+          "label": "Why hybrid detection?",
+          "href": "/faq#hybrid-detection"
+        }
+      ]
+    },
+    {
+      "id": "entry-11",
+      "lineStart": 314,
+      "lineEnd": 362,
+      "sectionId": "websocket-config",
+      "title": "WebSocketConfig - Real-time Streaming",
+      "importance": "how",
+      "content": "WebSocket server settings for the 3D dashboard:\n\n**Connection Management:**\n- `max_connections=100`: Limit concurrent dashboard clients\n- `heartbeat_interval_seconds=30`: Ping every 30s to detect dead connections\n- `connection_timeout_seconds=60`: Drop if no pong after 60s\n\n**Throttling:**\n- `sensor_broadcast_interval_ms=100`: Send sensor updates every 100ms (10 Hz)\n- `anomaly_broadcast_immediate=True`: Anomalies sent instantly, not throttled\n\n**Why throttle sensors but not anomalies?**\n- Sensor data: High volume, dashboard can interpolate missing points\n- Anomalies: Low volume, high importance, need immediate visibility",
+      "tags": ["websocket", "real-time", "throttling"],
+      "relatedLinks": [
+        {
+          "type": "wiki",
+          "label": "3D Dashboard",
+          "href": "/wiki/frontend-3d-twin"
+        }
+      ]
+    },
+    {
+      "id": "entry-12",
+      "lineStart": 365,
+      "lineEnd": 430,
+      "sectionId": "security-config",
+      "title": "SecurityConfig - Authentication & TLS",
+      "importance": "critical",
+      "content": "Security settings for production deployments:\n\n**JWT Authentication:**\n- `jwt_secret`: **MUST be changed in production** (≥32 chars)\n- `jwt_algorithm=\"HS256\"`: HMAC with SHA-256\n- `jwt_expiry_hours=24`: Tokens valid for 24 hours\n\n**Rate Limiting:**\n- `rate_limit_requests_per_minute=100`: Prevent API abuse\n- `rate_limit_burst=20`: Allow short bursts above limit\n\n**TLS/HTTPS:**\n- `tls_enabled`: Should be `true` in production\n- `tls_cert_path`/`tls_key_path`: Certificate file paths\n\n**validate_production_settings():**\nThis method returns warnings for common security misconfigurations. Run it during startup to catch issues early.",
+      "tags": ["security", "jwt", "tls", "rate-limiting"],
+      "codeSnippet": {
+        "language": "python",
+        "code": "def validate_production_settings(self) -> List[str]:\n    issues = []\n    if self.jwt_secret == \"dev-secret-change-in-production\":\n        issues.append(\"CRITICAL: Default JWT secret in use\")\n    if not self.tls_enabled and CURRENT_ENV == Environment.PRODUCTION:\n        issues.append(\"WARNING: TLS disabled in production\")\n    return issues"
+      }
+    },
+    {
+      "id": "entry-13",
+      "lineStart": 433,
+      "lineEnd": 506,
+      "sectionId": "logging-config",
+      "title": "LoggingConfig - Structured Logging",
+      "importance": "how",
+      "content": "Python logging configuration with production-ready features:\n\n**Output Formats:**\n- `format_json=False`: Human-readable for development\n- `format_json=True`: Structured JSON for production (Splunk, ELK stack)\n\n**File Rotation:**\n- `log_rotation_mb=100`: Rotate when file reaches 100MB\n- `log_retention_count=10`: Keep 10 rotated files\n\n**Per-Component Levels:**\n```python\ncomponent_levels = {\n    \"kafka\": \"INFO\",\n    \"database\": \"INFO\",\n    \"ml_pipeline\": \"DEBUG\",  # More verbose for debugging\n    \"websocket\": \"WARNING\",  # Less noise\n}\n```\n\n**get_logging_dict_config():**\nReturns a dictionary compatible with `logging.config.dictConfig()`, Python's standard way to configure logging.",
+      "tags": ["logging", "observability", "debugging"]
+    },
+    {
+      "id": "entry-14",
+      "lineStart": 509,
+      "lineEnd": 578,
+      "sectionId": "sensor-parameters",
+      "title": "All 50 Sensor Parameter Definitions",
+      "importance": "critical",
+      "content": "The complete sensor inventory for Rig Alpha:\n\n| Category | Count | Examples |\n|----------|-------|----------|\n| Temperature | 10 | Motor, bearing, oil, coolant, ambient |\n| Pressure | 10 | Oil, hydraulic, intake, exhaust, boost |\n| Vibration | 8 | Motor X/Y/Z, bearings, gearbox, pump |\n| Flow | 6 | Coolant, oil, fuel, air intake |\n| Electrical | 8 | Current, voltage, power, frequency |\n| Mechanical | 8 | RPM, torque, position, load cells |\n\nEach `SensorParameter` defines:\n- `name`: Unique identifier\n- `unit`: Measurement unit (°C, bar, mm/s, etc.)\n- `min_value`/`max_value`: Valid range\n- `description`: Human-readable explanation\n- `category`: For grouping in dashboards",
+      "tags": ["sensors", "parameters", "iot"],
+      "relatedLinks": [
+        {
+          "type": "wiki",
+          "label": "Sensor Categories",
+          "href": "/wiki/data-flow-overview"
+        },
+        {
+          "type": "map",
+          "label": "System Map",
+          "href": "/map"
+        }
+      ]
+    },
+    {
+      "id": "entry-15",
+      "lineStart": 581,
+      "lineEnd": 620,
+      "sectionId": "master-config",
+      "title": "Config Master Class",
+      "importance": "how",
+      "content": "The `Config` class aggregates all configuration sections:\n\n```python\n@dataclass\nclass Config:\n    environment: Environment\n    kafka: KafkaConfig\n    database: DatabaseConfig\n    ml: MLConfig\n    websocket: WebSocketConfig\n    security: SecurityConfig\n    logging: LoggingConfig\n```\n\n**Helper Methods:**\n- `is_production()` / `is_development()`: Environment checks\n- `validate_all()`: Run all validators, return issues list\n- `to_dict()`: Export non-sensitive config (for debugging)\n- `export_to_json()`: Save config snapshot to file\n\n**Usage Pattern:**\n```python\nfrom config import config\n\nif config.is_production():\n    issues = config.validate_all()\n    if issues:\n        sys.exit(1)  # Don't start with misconfig\n```",
+      "tags": ["configuration", "dataclass", "validation"],
+      "codeSnippet": {
+        "language": "python",
+        "code": "# Import the singleton instance\nfrom config import config\n\n# Access nested config\nbroker = config.kafka.bootstrap_servers\nthreshold = config.ml.anomaly_threshold\n\n# Validate before starting\nconfig.validate_all()"
+      }
+    },
+    {
+      "id": "entry-16",
+      "lineStart": 621,
+      "lineEnd": 635,
+      "sectionId": "master-config",
+      "title": "Singleton Instance & Utility Functions",
+      "importance": "how",
+      "content": "**Singleton Pattern:**\n```python\n# Global configuration instance - created once at import\nconfig = Config()\n```\n\nAll modules import this same instance, ensuring consistent configuration throughout the application.\n\n**Utility Functions:**\n- `get_sensor_by_name(name)`: Look up sensor by identifier\n- `get_sensors_by_category(category)`: Get all sensors in a category\n- `print_config_summary()`: Display current config (for debugging)\n\n**Why Singleton?**\nConfiguration should be:\n1. Loaded once at startup\n2. Immutable during runtime\n3. Accessible from any module\n4. Consistent across all components",
+      "tags": ["singleton", "patterns", "utilities"]
+    },
+    {
+      "id": "entry-17",
+      "lineStart": 636,
+      "lineEnd": 646,
+      "sectionId": "master-config",
+      "title": "Main Block - Testing & Validation",
+      "importance": "how",
+      "content": "The `if __name__ == \"__main__\":` block allows testing the config module directly:\n\n```bash\n$ python config.py\n\nRig Alpha Configuration Summary\n================================\nEnvironment: development\nKafka: localhost:9092...\n...\n\nConfiguration validated successfully!\n\nSensor Categories:\n  electrical: 8 sensors\n  flow: 6 sensors\n  mechanical: 8 sensors\n  pressure: 10 sensors\n  temperature: 10 sensors\n  vibration: 8 sensors\n```\n\nThis is useful for:\n1. Verifying environment variables are loaded correctly\n2. Checking validation before deploying\n3. Quick reference for current settings",
+      "tags": ["testing", "validation", "cli"]
+    }
+  ]
+}

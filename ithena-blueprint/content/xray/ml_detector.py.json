@@ -1,0 +1,232 @@
+{
+  "filePath": "ml_detector.py",
+  "fileHash": "ml-detector-v1",
+  "lastModified": "2025-01-22T00:00:00Z",
+  "language": "python",
+  "entries": [
+    {
+      "id": "ml-module-overview",
+      "title": "Isolation Forest Anomaly Detector",
+      "startLine": 1,
+      "endLine": 16,
+      "anchors": [
+        {"kind": "import", "value": "IsolationForest", "line": 10},
+        {"kind": "import", "value": "StandardScaler", "line": 11}
+      ],
+      "why": "Isolation Forest is ideal for multivariate anomaly detection in sensor data. It works by 'isolating' anomalies - unusual data points require fewer random splits to separate from normal data, giving them lower scores.",
+      "whatItDoes": "Imports scikit-learn's IsolationForest (the core ML algorithm), StandardScaler (feature normalization), joblib (model persistence), pandas (data manipulation), and psycopg2 (database access for training data).",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": ["anomaly-detection", "ml-pipelines"],
+      "relatedNodes": ["ml-detection"]
+    },
+    {
+      "id": "ml-sensor-columns",
+      "title": "All 50 Sensor Feature Columns",
+      "startLine": 18,
+      "endLine": 38,
+      "anchors": [
+        {"kind": "class", "value": "AnomalyDetector", "line": 18},
+        {"kind": "variable", "value": "SENSOR_COLUMNS", "line": 22}
+      ],
+      "why": "The detector needs to know which columns to use for training and inference. These 50 parameters span 5 categories: Environmental (10), Mechanical (10), Thermal (10), Electrical (10), and Fluid Dynamics (10).",
+      "whatItDoes": "Defines the AnomalyDetector class and its SENSOR_COLUMNS list - all 50 sensor parameters that the ML model uses as features. The order must match the database schema for consistent feature vectors.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "50 features is manageable for Isolation Forest (no curse of dimensionality like KNN)",
+      "securityNotes": null,
+      "relatedDocs": ["data-flow-overview"],
+      "relatedNodes": ["producer"]
+    },
+    {
+      "id": "ml-init",
+      "title": "Detector Initialization & Model Loading",
+      "startLine": 40,
+      "endLine": 87,
+      "anchors": [
+        {"kind": "function", "value": "__init__", "line": 40},
+        {"kind": "function", "value": "_load_model", "line": 73}
+      ],
+      "why": "The detector should persist trained models to avoid retraining on every startup. Initialization checks for existing models and loads them if available, enabling fast cold starts.",
+      "whatItDoes": "1) Sets contamination rate (expected anomaly proportion) and n_estimators from config, 2) Creates IsolationForest with random_state=42 for reproducibility, 3) Initializes StandardScaler for feature normalization, 4) Checks models directory and loads existing model if present.",
+      "failureModes": [
+        {
+          "condition": "Saved model incompatible (sklearn version mismatch)",
+          "behavior": "Logs warning, sets is_trained=False",
+          "recovery": "Model will be retrained on next detect() call"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "n_jobs=-1 uses all CPU cores for training/inference",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-save-model",
+      "title": "Model Persistence with joblib",
+      "startLine": 89,
+      "endLine": 101,
+      "anchors": [
+        {"kind": "function", "value": "_save_model", "line": 89}
+      ],
+      "why": "Trained models should be saved to disk so they survive restarts. joblib is preferred over pickle for scikit-learn models because it handles numpy arrays more efficiently.",
+      "whatItDoes": "Saves a dictionary containing: the trained IsolationForest model, the fitted StandardScaler, and feature statistics (means/stds) used for contribution analysis.",
+      "failureModes": [
+        {
+          "condition": "Disk full or permission denied",
+          "behavior": "Logs error, continues without saving",
+          "recovery": "Model works in-memory but lost on restart"
+        }
+      ],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": "Model files should be protected - malicious models could produce bad predictions",
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-fetch-training-data",
+      "title": "Training Data Fetch from TimescaleDB",
+      "startLine": 103,
+      "endLine": 144,
+      "anchors": [
+        {"kind": "function", "value": "_fetch_training_data", "line": 103}
+      ],
+      "why": "Isolation Forest learns 'normal' patterns from historical data. It needs enough examples of normal operation to establish a baseline. Data is fetched from the sensor_readings table.",
+      "whatItDoes": "1) Connects to PostgreSQL, 2) Queries last N readings (ORDER BY created_at DESC), 3) Returns pandas DataFrame with all 50 sensor columns plus reading ID.",
+      "failureModes": [
+        {
+          "condition": "Database connection fails",
+          "behavior": "Logs error, returns None",
+          "recovery": "Training will fail, detection returns False"
+        },
+        {
+          "condition": "Empty result set",
+          "behavior": "Returns None",
+          "recovery": "Training fails due to insufficient data"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "LIMIT clause prevents memory issues with large tables",
+      "securityNotes": null,
+      "relatedDocs": ["timescaledb-integration"],
+      "relatedNodes": ["timescaledb"]
+    },
+    {
+      "id": "ml-train",
+      "title": "Model Training Pipeline",
+      "startLine": 146,
+      "endLine": 200,
+      "anchors": [
+        {"kind": "function", "value": "train", "line": 146}
+      ],
+      "why": "Training fits the Isolation Forest to 'normal' data. After training, the model can score new readings - lower scores (more negative) indicate more anomalous data.",
+      "whatItDoes": "1) Fetches training data if not provided, 2) Validates MIN_TRAINING_SAMPLES, 3) Fills NaN values with column means, 4) Stores feature means/stds for contribution analysis, 5) Scales data with StandardScaler, 6) Fits IsolationForest, 7) Saves model to disk.",
+      "failureModes": [
+        {
+          "condition": "Fewer than MIN_TRAINING_SAMPLES",
+          "behavior": "Logs warning, returns False",
+          "recovery": "Wait for more data to accumulate"
+        },
+        {
+          "condition": "Training exception (e.g., all-NaN column)",
+          "behavior": "Logs error, returns False",
+          "recovery": "Check data quality, fix upstream issues"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test training with synthetic data",
+          "how": "Generate 500 normal readings, verify is_trained becomes True"
+        }
+      ],
+      "perfNotes": "Training 1000 samples with 100 trees takes ~1-2 seconds",
+      "securityNotes": null,
+      "relatedDocs": ["anomaly-detection"],
+      "relatedNodes": ["ml-detection"]
+    },
+    {
+      "id": "ml-contributing-sensors",
+      "title": "Identify Contributing Sensors via Z-Score",
+      "startLine": 223,
+      "endLine": 253,
+      "anchors": [
+        {"kind": "function", "value": "_identify_contributing_sensors", "line": 223}
+      ],
+      "why": "When an anomaly is detected, operators need to know WHICH sensors are unusual. Z-score analysis identifies sensors that deviate significantly from their historical means.",
+      "whatItDoes": "For each sensor, calculates z-score: (value - mean) / std. Sensors with |z-score| > threshold_std (default 2.0) are considered contributors. Returns list of sensor names.",
+      "failureModes": [
+        {
+          "condition": "std = 0 (constant feature)",
+          "behavior": "Skipped (std > 0 check)",
+          "recovery": "Constant features never contribute"
+        }
+      ],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "ml-detect",
+      "title": "Real-Time Anomaly Detection",
+      "startLine": 255,
+      "endLine": 301,
+      "anchors": [
+        {"kind": "function", "value": "detect", "line": 255}
+      ],
+      "why": "This is the HOT PATH - called for every incoming sensor reading. It must be fast (< 10ms) to handle real-time data streams without backpressure.",
+      "whatItDoes": "1) Auto-trains if not trained, 2) Converts reading dict to feature array, 3) Wraps in DataFrame (sklearn compat), 4) Scales features, 5) Calls model.predict() (-1=anomaly, 1=normal), 6) Gets decision_function score (lower=more anomalous), 7) Identifies contributing sensors if anomaly.",
+      "failureModes": [
+        {
+          "condition": "Model not trained and training fails",
+          "behavior": "Returns (False, 0.0, [])",
+          "recovery": "No detection until model can be trained"
+        },
+        {
+          "condition": "Missing feature in reading",
+          "behavior": "Uses stored mean or 0",
+          "recovery": "Graceful fallback for sparse data"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test detection latency",
+          "how": "Time 1000 detect() calls, verify p99 < 10ms"
+        }
+      ],
+      "perfNotes": "predict() + decision_function() are O(n_trees * log(n_samples))",
+      "securityNotes": null,
+      "relatedDocs": ["anomaly-detection"],
+      "relatedNodes": ["ml-detection", "consumer"]
+    },
+    {
+      "id": "ml-record-anomaly",
+      "title": "Database Recording & Singleton Pattern",
+      "startLine": 334,
+      "endLine": 393,
+      "anchors": [
+        {"kind": "function", "value": "record_anomaly_detection", "line": 334},
+        {"kind": "function", "value": "get_detector", "line": 387}
+      ],
+      "why": "Anomaly detections should be persisted for historical analysis, reporting, and ML retraining. The singleton pattern ensures one detector instance is reused across the application.",
+      "whatItDoes": "record_anomaly_detection() inserts into anomaly_detections table with: reading_id, method ('isolation_forest'), score, is_anomaly flag, and contributing sensors array. get_detector() returns a global singleton instance.",
+      "failureModes": [
+        {
+          "condition": "Database insert fails",
+          "behavior": "Logs error, returns None",
+          "recovery": "Anomaly is detected but not recorded"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "INSERT is async-safe with RETURNING for immediate ID access",
+      "securityNotes": null,
+      "relatedDocs": ["timescaledb-integration"],
+      "relatedNodes": ["timescaledb"]
+    }
+  ]
+}

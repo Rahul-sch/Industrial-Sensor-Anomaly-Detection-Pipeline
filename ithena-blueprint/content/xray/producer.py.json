@@ -1,0 +1,254 @@
+{
+  "filePath": "producer.py",
+  "fileHash": "producer-v1",
+  "lastModified": "2025-01-22T00:00:00Z",
+  "language": "python",
+  "entries": [
+    {
+      "id": "producer-module-docstring",
+      "title": "Sensor Data Producer Overview",
+      "startLine": 1,
+      "endLine": 19,
+      "anchors": [
+        {"kind": "import", "value": "KafkaProducer", "line": 15},
+        {"kind": "import", "value": "psycopg2", "line": 17}
+      ],
+      "why": "The producer generates realistic sensor data for the entire Rig Alpha system. It simulates 50 correlated sensor parameters and publishes them to Kafka at configurable intervals. This is the data SOURCE for the entire pipeline.",
+      "whatItDoes": "Imports all dependencies: Kafka client for message publishing, psycopg2 for database queries (custom sensors), requests for API calls (injection settings), and datetime for timestamps.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": ["data-flow-overview", "kafka-fundamentals"],
+      "relatedNodes": ["producer"]
+    },
+    {
+      "id": "producer-debug-logging",
+      "title": "NDJSON Debug Logging System",
+      "startLine": 21,
+      "endLine": 39,
+      "anchors": [
+        {"kind": "function", "value": "debug_log", "line": 24}
+      ],
+      "why": "Structured debug logging in NDJSON (Newline-Delimited JSON) format enables machine-parseable logs for debugging the data pipeline. Each log entry includes session/run IDs for tracing.",
+      "whatItDoes": "The debug_log() function writes structured log entries with: sessionId, runId, hypothesisId (for A/B testing), location (file:function), message, data payload, and Unix timestamp in milliseconds.",
+      "failureModes": [
+        {
+          "condition": "Log file write fails",
+          "behavior": "Silently swallowed with pass - never crashes producer",
+          "recovery": "Logging is best-effort, system continues without logs"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "File I/O on every log call - consider batching in high-volume scenarios",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "producer-class-init",
+      "title": "SensorDataProducer Class Initialization",
+      "startLine": 45,
+      "endLine": 75,
+      "anchors": [
+        {"kind": "class", "value": "SensorDataProducer", "line": 45},
+        {"kind": "function", "value": "__init__", "line": 48}
+      ],
+      "why": "The class encapsulates all producer state and behavior. Initialization sets up graceful shutdown handlers and calculates total messages based on configured duration and interval.",
+      "whatItDoes": "1) Sets up Python logging, 2) Registers SIGINT/SIGTERM handlers for graceful shutdown, 3) Calculates total_messages from DURATION_HOURS and INTERVAL_SECONDS, 4) Initializes anomaly injection state and custom sensor tracking.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": ["system-architecture"],
+      "relatedNodes": ["producer"]
+    },
+    {
+      "id": "producer-kafka-connect",
+      "title": "Kafka Connection with Exponential Backoff",
+      "startLine": 91,
+      "endLine": 116,
+      "anchors": [
+        {"kind": "function", "value": "connect_to_kafka", "line": 91}
+      ],
+      "why": "Kafka brokers may be temporarily unavailable during startup or maintenance. Exponential backoff prevents overwhelming the broker with connection attempts while ensuring eventual connection.",
+      "whatItDoes": "Attempts to connect up to MAX_RETRIES times. On failure, waits retry_delay seconds (starting at INITIAL_RETRY_DELAY), then doubles the delay up to MAX_RETRY_DELAY. Checks should_shutdown flag between retries.",
+      "failureModes": [
+        {
+          "condition": "Kafka broker unavailable",
+          "behavior": "Retries with exponential backoff",
+          "recovery": "After MAX_RETRIES, raises KafkaError to caller"
+        },
+        {
+          "condition": "Shutdown signal during retry",
+          "behavior": "Returns None immediately, no exception",
+          "recovery": "Caller should check for None return"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test backoff timing",
+          "how": "Mock KafkaProducer to fail, verify retry delays double each time"
+        }
+      ],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": ["kafka-fundamentals"],
+      "relatedNodes": ["kafka"]
+    },
+    {
+      "id": "producer-custom-sensors",
+      "title": "Custom Sensor Loading from Database",
+      "startLine": 118,
+      "endLine": 170,
+      "anchors": [
+        {"kind": "function", "value": "load_custom_sensors", "line": 118}
+      ],
+      "why": "The dashboard allows operators to define custom sensors beyond the 50 built-in parameters. This function loads active custom sensors from the database, enabling runtime sensor configuration without code changes.",
+      "whatItDoes": "Queries custom_sensors table for active sensors, extracts sensor_name, category, unit, ranges, and thresholds. Stores in self.custom_sensors dict for use in generate_sensor_reading(). Reloads every 60 seconds.",
+      "failureModes": [
+        {
+          "condition": "Database connection fails",
+          "behavior": "Logs warning, continues with built-in sensors only",
+          "recovery": "self.custom_sensors = {} - graceful degradation"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Periodic reload (60s) adds small DB overhead but enables live config changes",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": ["timescaledb"]
+    },
+    {
+      "id": "producer-generate-reading",
+      "title": "Correlated Sensor Reading Generation",
+      "startLine": 266,
+      "endLine": 604,
+      "anchors": [
+        {"kind": "function", "value": "generate_sensor_reading", "line": 266}
+      ],
+      "why": "Real industrial sensors are CORRELATED - when RPM increases, temperature rises, vibration increases, power consumption goes up. Generating uncorrelated random values would produce unrealistic data that ML models couldn't learn from.",
+      "whatItDoes": "Uses RPM as the BASE value, then derives all other 49 parameters through physical correlations:\n\n1. Higher RPM → Higher temperature (friction/heat)\n2. Higher temperature → Lower humidity (dry air)\n3. Higher RPM → Higher vibration (mechanical forces)\n4. Higher RPM → Higher power consumption\n5. Temperature affects viscosity (hotter = less viscous)\n\nEach value includes small random noise (±5-10%) for realism.",
+      "failureModes": [],
+      "tests": [
+        {
+          "what": "Test correlation physics",
+          "how": "Generate 1000 readings, verify temperature correlates with RPM (Pearson r > 0.8)"
+        }
+      ],
+      "perfNotes": "50 random.uniform() calls per message - negligible CPU",
+      "securityNotes": null,
+      "relatedDocs": ["data-flow-overview", "sensor-categories"],
+      "relatedNodes": ["producer"]
+    },
+    {
+      "id": "producer-send-message",
+      "title": "Kafka Message Publishing",
+      "startLine": 606,
+      "endLine": 660,
+      "anchors": [
+        {"kind": "function", "value": "send_message", "line": 606}
+      ],
+      "why": "This is the critical path for data ingestion. Messages must be serialized, sent to Kafka, and acknowledged within a timeout to ensure no data loss.",
+      "whatItDoes": "1) Serializes reading dict to JSON, 2) Calls producer.send() with topic from config, 3) Waits for acknowledgment with 10s timeout, 4) Logs progress every LOG_PROGRESS_INTERVAL messages, 5) Returns True/False for success/failure.",
+      "failureModes": [
+        {
+          "condition": "Kafka send timeout (10s)",
+          "behavior": "Logs error, returns False",
+          "recovery": "Caller should decide retry strategy"
+        },
+        {
+          "condition": "Serialization error",
+          "behavior": "Exception caught, returns False",
+          "recovery": "Invalid data logged but not sent"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Synchronous wait for ack - throughput limited to ~100 msg/s. For higher throughput, use async sends with callback.",
+      "securityNotes": null,
+      "relatedDocs": ["kafka-fundamentals"],
+      "relatedNodes": ["kafka"]
+    },
+    {
+      "id": "producer-anomaly-injection",
+      "title": "Anomaly Injection System",
+      "startLine": 662,
+      "endLine": 741,
+      "anchors": [
+        {"kind": "function", "value": "check_injection_settings", "line": 662},
+        {"kind": "function", "value": "generate_anomalous_reading", "line": 693}
+      ],
+      "why": "To test and validate the ML anomaly detection pipeline, operators need to inject KNOWN anomalies. This allows verifying that detectors correctly identify unusual patterns.",
+      "whatItDoes": "check_injection_settings() polls the dashboard API for injection triggers (manual 'inject_now' or scheduled). generate_anomalous_reading() creates a normal reading then INTENTIONALLY pushes 3-7 random sensors outside their thresholds by 10-50% of range.",
+      "failureModes": [
+        {
+          "condition": "Dashboard API unavailable",
+          "behavior": "Returns False - no injection",
+          "recovery": "Silent failure, normal data continues"
+        }
+      ],
+      "tests": [
+        {
+          "what": "Test anomaly magnitude",
+          "how": "Generate anomalous reading, verify affected sensors exceed thresholds"
+        }
+      ],
+      "perfNotes": null,
+      "securityNotes": "API endpoint should be authenticated in production to prevent unauthorized anomaly injection",
+      "relatedDocs": ["anomaly-detection"],
+      "relatedNodes": ["ml-detection"]
+    },
+    {
+      "id": "producer-main-loop",
+      "title": "Main Producer Loop",
+      "startLine": 743,
+      "endLine": 882,
+      "anchors": [
+        {"kind": "function", "value": "run", "line": 743}
+      ],
+      "why": "The main loop orchestrates the entire data generation process: connect to Kafka, load config, generate readings, send messages, and handle graceful shutdown.",
+      "whatItDoes": "1) Connect to Kafka, 2) Load custom sensors, 3) Calculate end_time from DURATION_HOURS, 4) Loop while current_time < end_time AND not shutdown_requested: a) Reload config if needed, b) Check injection settings, c) Generate reading (normal or anomalous), d) Send to Kafka, e) Sleep for INTERVAL_SECONDS.",
+      "failureModes": [
+        {
+          "condition": "Kafka connection lost mid-loop",
+          "behavior": "send_message() returns False, logged but continues",
+          "recovery": "Messages may be lost; consider reconnection logic"
+        },
+        {
+          "condition": "KeyboardInterrupt",
+          "behavior": "Caught, logged, calls shutdown()",
+          "recovery": "Graceful exit with producer flush"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "time.sleep() is blocking - for sub-second intervals, consider asyncio",
+      "securityNotes": null,
+      "relatedDocs": ["system-architecture"],
+      "relatedNodes": ["producer", "kafka"]
+    },
+    {
+      "id": "producer-shutdown",
+      "title": "Graceful Shutdown Handler",
+      "startLine": 884,
+      "endLine": 901,
+      "anchors": [
+        {"kind": "function", "value": "shutdown", "line": 884},
+        {"kind": "function", "value": "main", "line": 894}
+      ],
+      "why": "Kafka producers buffer messages internally. Without flushing on shutdown, buffered messages would be lost. Graceful shutdown ensures all pending messages are delivered.",
+      "whatItDoes": "1) Flushes producer buffer (waits up to 30s for pending sends), 2) Closes the Kafka producer connection, 3) Logs shutdown complete. The main() function simply instantiates SensorDataProducer and calls run().",
+      "failureModes": [
+        {
+          "condition": "Flush timeout (30s)",
+          "behavior": "Some messages may be lost",
+          "recovery": "Increase timeout or investigate broker issues"
+        }
+      ],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    }
+  ]
+}

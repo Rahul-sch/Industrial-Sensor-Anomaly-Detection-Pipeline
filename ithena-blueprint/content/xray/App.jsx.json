@@ -1,0 +1,140 @@
+{
+  "filePath": "App.jsx",
+  "fileHash": "app-jsx-v1",
+  "lastModified": "2025-01-22T00:00:00Z",
+  "language": "javascript",
+  "entries": [
+    {
+      "id": "app-imports",
+      "title": "React Three Fiber & Three.js Setup",
+      "startLine": 1,
+      "endLine": 9,
+      "anchors": [
+        {"kind": "import", "value": "Canvas", "line": 2},
+        {"kind": "import", "value": "THREE", "line": 4}
+      ],
+      "why": "React Three Fiber (R3F) is a React renderer for Three.js, enabling declarative 3D scene composition. Instead of imperative Three.js code, we write JSX components that become 3D objects.",
+      "whatItDoes": "Imports: Suspense (async loading), Canvas (R3F's root component), Loader/Preload (asset management from drei), THREE namespace for WebGL constants, and local components for scene, effects, HUD, and socket connection.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": ["frontend-3d-twin"],
+      "relatedNodes": ["dashboard-3d"]
+    },
+    {
+      "id": "app-component",
+      "title": "Main App Component",
+      "startLine": 11,
+      "endLine": 93,
+      "anchors": [
+        {"kind": "function", "value": "App", "line": 22}
+      ],
+      "why": "The App component is the root of the 3D digital twin. It orchestrates the Canvas (WebGL), scene content, effects, UI overlays, and WebSocket connection initialization.",
+      "whatItDoes": "1) Calls useSocket() to establish real-time connection, 2) Renders full-screen div with Canvas, 3) Configures WebGL: shadows, antialiasing, ACES tone mapping, high-performance mode, 4) Sets camera: 65° FOV, near=0.1, far=500, positioned at (0, 2, 15), 5) Wraps scene in Suspense for async loading.",
+      "failureModes": [
+        {
+          "condition": "WebGL not supported",
+          "behavior": "Canvas fails to render, blank screen",
+          "recovery": "Show fallback message for unsupported browsers"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "dpr={[1, 2]} limits pixel ratio to 2x max, preventing GPU overload on Retina displays",
+      "securityNotes": null,
+      "relatedDocs": ["frontend-3d-twin"],
+      "relatedNodes": ["dashboard-3d"]
+    },
+    {
+      "id": "app-canvas-config",
+      "title": "WebGL Canvas Configuration",
+      "startLine": 29,
+      "endLine": 50,
+      "anchors": [],
+      "why": "Three.js WebGL configuration affects visual quality and performance. These settings balance realism (shadows, tone mapping) with performance (high-performance preference).",
+      "whatItDoes": "gl prop configures WebGLRenderer: antialias=true (smooth edges), ACESFilmicToneMapping (cinematic color), SRGBColorSpace (correct color output), powerPreference='high-performance' (prefer discrete GPU). onCreated callback enables soft PCF shadow maps.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "PCFSoftShadowMap is more expensive than BasicShadowMap but looks much better",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "app-scene-content",
+      "title": "Scene Content with Suspense",
+      "startLine": 51,
+      "endLine": 62,
+      "anchors": [],
+      "why": "3D assets (models, textures) load asynchronously. Suspense shows a loading fallback while assets load, preventing a blank screen or partially-loaded scene.",
+      "whatItDoes": "Wraps FactoryScene and Effects in Suspense with LoadingFallback. Preload component tells drei to preload all assets upfront. Effects is currently commented out for debugging.",
+      "failureModes": [
+        {
+          "condition": "Asset fails to load",
+          "behavior": "Suspense fallback shown indefinitely",
+          "recovery": "Check network tab, verify asset URLs"
+        }
+      ],
+      "tests": [],
+      "perfNotes": "Preload all reduces runtime loading stutters",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "app-loader",
+      "title": "Loading Progress Bar (drei Loader)",
+      "startLine": 68,
+      "endLine": 88,
+      "anchors": [],
+      "why": "Users need feedback during asset loading. The drei Loader shows a styled progress bar that matches the digital twin's cyberpunk aesthetic.",
+      "whatItDoes": "Configures Loader component with custom styles: dark background (#0a0a0a), cyan accent (#00ffff), JetBrains Mono font. dataInterpolation formats the percentage as 'LOADING DIGITAL TWIN... XX%'.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "app-loading-fallback",
+      "title": "3D Loading Fallback Component",
+      "startLine": 95,
+      "endLine": 108,
+      "anchors": [
+        {"kind": "function", "value": "LoadingFallback", "line": 98}
+      ],
+      "why": "When assets are loading, showing nothing is jarring. A simple wireframe cube gives visual feedback that the 3D context is working while actual content loads.",
+      "whatItDoes": "Renders minimal scene: ambient light at 10% intensity, centered wireframe box (2x2x2 units) in cyan color. This appears inside the Canvas during Suspense loading.",
+      "failureModes": [],
+      "tests": [],
+      "perfNotes": "Wireframe is very cheap to render",
+      "securityNotes": null,
+      "relatedDocs": [],
+      "relatedNodes": []
+    },
+    {
+      "id": "app-click-to-start",
+      "title": "Pointer Lock Overlay",
+      "startLine": 110,
+      "endLine": 152,
+      "anchors": [
+        {"kind": "function", "value": "ClickToStart", "line": 113}
+      ],
+      "why": "FPS-style mouse look requires pointer lock (hiding cursor, getting raw mouse movement). Browsers require a user gesture (click) to enable pointer lock for security reasons.",
+      "whatItDoes": "1) Shows fullscreen overlay with 'CLICK TO ENTER' prompt, 2) On click, calls document.body.requestPointerLock(), 3) Listens for pointerlockchange to hide overlay when locked, 4) Shows controls hint (WASD/Mouse).",
+      "failureModes": [
+        {
+          "condition": "Pointer lock denied",
+          "behavior": "Overlay stays visible, user can't look around",
+          "recovery": "User must grant permission or use different browser"
+        }
+      ],
+      "tests": [],
+      "perfNotes": null,
+      "securityNotes": "Pointer lock is security-sensitive - only works after user gesture",
+      "relatedDocs": ["frontend-3d-twin"],
+      "relatedNodes": []
+    }
+  ]
+}
