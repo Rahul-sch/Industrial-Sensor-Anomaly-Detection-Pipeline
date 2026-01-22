@@ -12,6 +12,14 @@ ENV/
 dist/
 build/
 
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+
 # IDE
 .vscode/
 .idea/
