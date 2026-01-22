@@ -328,15 +328,25 @@ function ControlsHint({ viewMode }) {
           {viewMode === 'ketchup' ? 'KETCHUP FACTORY DIGITAL TWIN v1.0' : 'RIG ALPHA DIGITAL TWIN v2.0'}
         </div>
 
-        {/* Dashboard Link Button */}
-        <a
-          href="http://localhost:5000"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-3 py-1 text-xs rounded bg-black/60 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-colors"
-        >
-          📊 ORIGINAL DASHBOARD
-        </a>
+        {/* Link Buttons */}
+        <div className="flex gap-2">
+          <a
+            href="http://localhost:3000"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1 text-xs rounded bg-gradient-to-r from-cyan-900/60 to-blue-900/60 border border-cyan-500/50 text-cyan-300 hover:text-white hover:border-cyan-400 hover:shadow-[0_0_10px_rgba(6,182,212,0.3)] transition-all"
+          >
+            📚 STUDY GUIDE
+          </a>
+          <a
+            href="http://localhost:5000"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1 text-xs rounded bg-black/60 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-colors"
+          >
+            📊 DASHBOARD
+          </a>
+        </div>
       </div>
     </div>
   )

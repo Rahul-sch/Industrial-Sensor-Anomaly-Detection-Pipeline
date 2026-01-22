@@ -14,6 +14,8 @@ import {
   TrendingUp,
   Flame,
   GraduationCap,
+  Box,
+  ExternalLink,
 } from 'lucide-react';
 import { useStudyProgress } from '@/hooks/useStudyProgress';
 import { useFlashcardProgress } from '@/hooks/useFlashcardProgress';
@@ -152,6 +154,20 @@ export function Sidebar() {
             <p className="text-[10px] text-[var(--foreground-muted)]">Studied</p>
           </div>
         </div>
+      </div>
+
+      {/* 3D Digital Twin Link */}
+      <div className="mt-6 mx-2">
+        <a
+          href="http://localhost:5173"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-[var(--accent-cyan)]/10 to-[var(--accent-purple)]/10 border border-[var(--accent-cyan)]/30 hover:border-[var(--accent-cyan)]/60 hover:shadow-[0_0_15px_rgba(6,182,212,0.2)] transition-all group"
+        >
+          <Box className="w-5 h-5 text-[var(--accent-cyan)]" />
+          <span className="text-sm font-medium text-[var(--foreground)]">3D Digital Twin</span>
+          <ExternalLink className="w-3 h-3 ml-auto text-[var(--foreground-muted)] group-hover:text-[var(--accent-cyan)] transition-colors" />
+        </a>
       </div>
 
       {/* Footer */}
