@@ -1,12 +1,57 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, AlertTriangle, TestTube, Zap, Shield, Link2 } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  AlertTriangle,
+  TestTube,
+  Zap,
+  Shield,
+  Link2,
+  AlertCircle,
+  Lightbulb,
+  Code,
+  Info,
+} from 'lucide-react';
 import type { XRayEntry as XRayEntryType } from '@/lib/types';
 import clsx from 'clsx';
 
+// Importance type and styling
+type ImportanceLevel = 'critical' | 'why' | 'how' | 'note';
+
+const importanceConfig: Record<
+  ImportanceLevel,
+  { icon: typeof AlertCircle; color: string; bg: string; label: string }
+> = {
+  critical: {
+    icon: AlertCircle,
+    color: 'text-[var(--accent-red)]',
+    bg: 'bg-[var(--accent-red)]/10',
+    label: 'Critical',
+  },
+  why: {
+    icon: Lightbulb,
+    color: 'text-[var(--accent-green)]',
+    bg: 'bg-[var(--accent-green)]/10',
+    label: 'Why',
+  },
+  how: {
+    icon: Code,
+    color: 'text-[var(--accent-blue)]',
+    bg: 'bg-[var(--accent-blue)]/10',
+    label: 'How',
+  },
+  note: {
+    icon: Info,
+    color: 'text-[var(--accent-yellow)]',
+    bg: 'bg-[var(--accent-yellow)]/10',
+    label: 'Note',
+  },
+};
+
 interface XRayEntryProps {
-  entry: XRayEntryType;
+  entry: XRayEntryType & { importance?: ImportanceLevel };
   isActive: boolean;
   onHover: () => void;
   onLeave: () => void;
@@ -15,6 +60,11 @@ interface XRayEntryProps {
 
 export function XRayEntry({ entry, isActive, onHover, onLeave, onClick }: XRayEntryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Get importance styling
+  const importance = entry.importance || 'how';
+  const importanceStyle = importanceConfig[importance];
+  const ImportanceIcon = importanceStyle.icon;
 
   const getBadgeClass = (kind: string) => {
     switch (kind) {
@@ -35,7 +85,15 @@ export function XRayEntry({ entry, isActive, onHover, onLeave, onClick }: XRayEn
 
   return (
     <div
-      className={clsx('commentary-entry', isActive && 'active')}
+      className={clsx(
+        'commentary-entry',
+        isActive && 'active',
+        // Add importance border color on hover
+        importance === 'critical' && 'hover:border-[var(--accent-red)]/50',
+        importance === 'why' && 'hover:border-[var(--accent-green)]/50',
+        importance === 'how' && 'hover:border-[var(--accent-blue)]/50',
+        importance === 'note' && 'hover:border-[var(--accent-yellow)]/50'
+      )}
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
     >
@@ -44,6 +102,16 @@ export function XRayEntry({ entry, isActive, onHover, onLeave, onClick }: XRayEn
         className="flex items-start gap-3 cursor-pointer"
         onClick={onClick}
       >
+        {/* Importance indicator */}
+        <div
+          className={clsx(
+            'flex-shrink-0 w-1 self-stretch rounded-full',
+            importance === 'critical' && 'bg-[var(--accent-red)]',
+            importance === 'why' && 'bg-[var(--accent-green)]',
+            importance === 'how' && 'bg-[var(--accent-blue)]',
+            importance === 'note' && 'bg-[var(--accent-yellow)]'
+          )}
+        />
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -60,6 +128,17 @@ export function XRayEntry({ entry, isActive, onHover, onLeave, onClick }: XRayEn
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <h3 className="font-semibold text-[var(--foreground)]">{entry.title}</h3>
+            {/* Importance badge */}
+            <span
+              className={clsx(
+                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                importanceStyle.color,
+                importanceStyle.bg
+              )}
+            >
+              <ImportanceIcon className="w-3 h-3" />
+              {importanceStyle.label}
+            </span>
             <span className="text-xs text-[var(--foreground-muted)]">
               L{entry.startLine}-{entry.endLine}
             </span>

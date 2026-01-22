@@ -3,10 +3,17 @@
   "fileHash": "c78e3ba",
   "lastModified": "2025-01-12T00:00:00Z",
   "language": "python",
+  "importanceLegend": {
+    "critical": "Essential code that affects data integrity or system stability",
+    "why": "Design decisions and architectural rationale",
+    "how": "Implementation details and patterns",
+    "note": "Helpful context and optional features"
+  },
   "entries": [
     {
       "id": "consumer-imports-core",
       "title": "Core Library Imports",
+      "importance": "how",
       "startLine": 6,
       "endLine": 16,
       "anchors": [
@@ -45,6 +52,7 @@
     {
       "id": "consumer-imports-http",
       "title": "Optional HTTP Client Import",
+      "importance": "note",
       "startLine": 18,
       "endLine": 23,
       "anchors": [
@@ -74,6 +82,7 @@
     {
       "id": "consumer-imports-ml",
       "title": "Conditional ML Detection Import",
+      "importance": "how",
       "startLine": 27,
       "endLine": 37,
       "anchors": [
@@ -109,6 +118,7 @@
     {
       "id": "consumer-class-init",
       "title": "SensorDataConsumer Initialization",
+      "importance": "how",
       "startLine": 40,
       "endLine": 60,
       "anchors": [
@@ -143,6 +153,7 @@
     {
       "id": "consumer-logging-setup",
       "title": "Logging Configuration",
+      "importance": "note",
       "startLine": 62,
       "endLine": 75,
       "anchors": [
@@ -171,6 +182,7 @@
     {
       "id": "consumer-signal-handler",
       "title": "Graceful Shutdown Signal Handler",
+      "importance": "critical",
       "startLine": 77,
       "endLine": 80,
       "anchors": [
@@ -194,6 +206,7 @@
     {
       "id": "consumer-kafka-connect",
       "title": "Kafka Connection with Exponential Backoff",
+      "importance": "critical",
       "startLine": 82,
       "endLine": 111,
       "anchors": [
@@ -241,6 +254,7 @@
     {
       "id": "consumer-db-connect",
       "title": "PostgreSQL Connection with Exponential Backoff",
+      "importance": "critical",
       "startLine": 113,
       "endLine": 146,
       "anchors": [
@@ -279,6 +293,7 @@
     {
       "id": "consumer-validate-message",
       "title": "Message Validation",
+      "importance": "how",
       "startLine": 148,
       "endLine": 158,
       "anchors": [
@@ -312,6 +327,7 @@
     {
       "id": "consumer-rule-anomaly",
       "title": "Rule-Based Anomaly Detection",
+      "importance": "how",
       "startLine": 160,
       "endLine": 176,
       "anchors": [
@@ -345,6 +361,7 @@
     {
       "id": "consumer-record-alert",
       "title": "Alert Recording",
+      "importance": "note",
       "startLine": 178,
       "endLine": 197,
       "anchors": [
@@ -377,6 +394,7 @@
     {
       "id": "consumer-custom-sensors",
       "title": "Custom Sensor Validation",
+      "importance": "how",
       "startLine": 199,
       "endLine": 256,
       "anchors": [
@@ -410,6 +428,7 @@
     {
       "id": "consumer-insert-reading",
       "title": "50-Parameter Database Insert",
+      "importance": "critical",
       "startLine": 258,
       "endLine": 347,
       "anchors": [
@@ -449,6 +468,7 @@
     {
       "id": "consumer-ml-detection",
       "title": "ML Anomaly Detection Pipeline",
+      "importance": "how",
       "startLine": 349,
       "endLine": 404,
       "anchors": [
@@ -487,6 +507,7 @@
     {
       "id": "consumer-3d-telemetry",
       "title": "3D Digital Twin Telemetry Update",
+      "importance": "note",
       "startLine": 406,
       "endLine": 451,
       "anchors": [
@@ -520,6 +541,7 @@
     {
       "id": "consumer-process-message",
       "title": "Message Processing Pipeline",
+      "importance": "critical",
       "startLine": 453,
       "endLine": 516,
       "anchors": [
@@ -562,6 +584,7 @@
     {
       "id": "consumer-main-loop",
       "title": "Main Consumer Loop",
+      "importance": "critical",
       "startLine": 518,
       "endLine": 561,
       "anchors": [
@@ -600,6 +623,7 @@
     {
       "id": "consumer-shutdown",
       "title": "Resource Cleanup",
+      "importance": "why",
       "startLine": 563,
       "endLine": 579,
       "anchors": [
@@ -628,6 +652,7 @@
     {
       "id": "consumer-entry-point",
       "title": "Module Entry Point",
+      "importance": "note",
       "startLine": 582,
       "endLine": 589,
       "anchors": [
