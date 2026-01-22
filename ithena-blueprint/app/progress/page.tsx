@@ -310,7 +310,7 @@ export default function ProgressPage() {
         <StatCard
           icon={BookOpen}
           label="Articles Read"
-          value={progress.articlesRead}
+          value={progress.articlesRead.length}
           color="var(--accent-blue)"
           link="/wiki"
         />

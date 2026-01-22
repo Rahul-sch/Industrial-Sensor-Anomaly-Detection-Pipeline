@@ -259,7 +259,7 @@ export interface FlashCardProgress {
   nextReview: string;
   interval: number;       // Days until next review
   easeFactor: number;     // SM-2 ease factor (default 2.5)
-  status: 'new' | 'learning' | 'review' | 'mastered';
+  repetitions?: number;   // SM-2 repetition count
 }
 
 // ===================
@@ -279,6 +279,8 @@ export interface QuizQuestion {
   difficulty: Difficulty;
   relatedWiki?: string[];
   relatedFaq?: string[];
+  relatedContent?: string[];
+  tags?: string[];
 }
 
 export interface Quiz {
@@ -287,9 +289,10 @@ export interface Quiz {
   description: string;
   category: WikiCategory | 'general';
   difficulty: Difficulty;
-  questions: QuizQuestion[];
-  timeLimit?: number;     // Minutes, optional
-  passingScore: number;   // Percentage (0-100)
+  questions: string[];       // Question IDs
+  timeLimit?: number;        // Minutes, optional
+  passingScore: number;      // Percentage (0-100)
+  estimatedMinutes?: number; // Estimated time to complete
 }
 
 export interface QuizAttempt {
@@ -330,11 +333,14 @@ export interface Achievement {
 // Study Annotation Types
 // ===================
 
+export type HighlightColor = 'blue' | 'green' | 'red' | 'yellow' | 'purple';
+
 export interface StudyHighlight {
   id: string;
   contentId: string;
   text: string;
   type: AnnotationType;
+  color?: HighlightColor;
   position: {
     startOffset: number;
     endOffset: number;
@@ -347,6 +353,7 @@ export interface StudyNote {
   id: string;
   contentId: string;
   content: string;
+  tags?: string[];
   createdAt: string;
   updatedAt: string;
 }

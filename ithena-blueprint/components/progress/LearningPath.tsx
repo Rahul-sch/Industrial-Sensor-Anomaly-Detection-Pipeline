@@ -243,7 +243,8 @@ export function LearningPath({
                   style={{
                     backgroundColor:
                       state === 'current' ? color : state === 'completed' ? undefined : undefined,
-                    ringColor: state === 'current' ? color : undefined,
+                    // @ts-expect-error Tailwind CSS ring color
+                    '--tw-ring-color': state === 'current' ? color : undefined,
                   }}
                   title={node.title}
                 >

@@ -5,7 +5,7 @@ export const quizQuestions: QuizQuestion[] = [
   // Kafka Questions
   {
     id: 'q-kafka-exactly-once-1',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What three components work together to achieve exactly-once semantics in Kafka?',
     options: [
       'Consumer groups, partitions, and offsets',
@@ -22,7 +22,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-kafka-idempotent',
-    type: 'true_false',
+    type: 'true-false',
     question: 'Idempotent producers in Kafka guarantee that sending the same message multiple times will result in multiple duplicates in the topic.',
     options: ['True', 'False'],
     correctAnswer: 1,
@@ -34,7 +34,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-kafka-acks',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What does setting `acks=all` mean for Kafka producers?',
     options: [
       'The producer does not wait for any acknowledgment',
@@ -51,7 +51,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-kafka-partition-key',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'How does Kafka determine which partition a message goes to when a key is provided?',
     options: [
       'Random selection',
@@ -68,7 +68,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-kafka-consumer-group',
-    type: 'fill_blank',
+    type: 'fill-blank',
     question: 'In Kafka, a _______ ensures that each partition is consumed by exactly one consumer within the group.',
     options: ['consumer group', 'partition', 'offset', 'topic'],
     correctAnswer: 0,
@@ -82,7 +82,7 @@ export const quizQuestions: QuizQuestion[] = [
   // ML/Anomaly Detection Questions
   {
     id: 'q-ml-iforest-1',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'How does Isolation Forest detect anomalies?',
     options: [
       'By measuring distance from cluster centroids',
@@ -99,7 +99,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-ml-contamination',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What does the contamination parameter in Isolation Forest represent?',
     options: [
       'The maximum tree depth',
@@ -116,7 +116,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-ml-feature-scaling',
-    type: 'true_false',
+    type: 'true-false',
     question: 'Isolation Forest requires feature scaling/normalization to work effectively.',
     options: ['True', 'False'],
     correctAnswer: 1,
@@ -128,7 +128,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-ml-sliding-window',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What is the primary purpose of using a sliding window for anomaly detection in time series?',
     options: [
       'To reduce memory usage',
@@ -145,7 +145,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-ml-retraining',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'Why might you periodically retrain an anomaly detection model in a production system?',
     options: [
       'To reduce model size',
@@ -164,7 +164,7 @@ export const quizQuestions: QuizQuestion[] = [
   // Database Questions
   {
     id: 'q-db-timescale-1',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What is a hypertable in TimescaleDB?',
     options: [
       'A regular PostgreSQL table with indexes',
@@ -181,7 +181,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-db-retention',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What is a data retention policy in the context of time-series databases?',
     options: [
       'A backup strategy',
@@ -198,7 +198,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-db-continuous-aggregate',
-    type: 'true_false',
+    type: 'true-false',
     question: 'Continuous aggregates in TimescaleDB are updated in real-time with every new row insert.',
     options: ['True', 'False'],
     correctAnswer: 1,
@@ -210,7 +210,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-db-index-brin',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'Why are BRIN indexes particularly effective for time-series data?',
     options: [
       'They store exact values for fast lookups',
@@ -229,7 +229,7 @@ export const quizQuestions: QuizQuestion[] = [
   // Security Questions
   {
     id: 'q-sec-kafka-auth',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'Which protocol provides both authentication and encryption for Kafka?',
     options: [
       'PLAINTEXT',
@@ -246,7 +246,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-sec-acl',
-    type: 'fill_blank',
+    type: 'fill-blank',
     question: 'Kafka uses _______ to control which users can read from or write to specific topics.',
     options: ['ACLs', 'firewalls', 'passwords', 'tokens'],
     correctAnswer: 0,
@@ -258,7 +258,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-sec-secrets',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What is the recommended way to manage database credentials in a production application?',
     options: [
       'Hard-code them in the source code',
@@ -275,7 +275,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-sec-encryption-at-rest',
-    type: 'true_false',
+    type: 'true-false',
     question: 'Encryption at rest protects data from being read by unauthorized users while it travels over the network.',
     options: ['True', 'False'],
     correctAnswer: 1,
@@ -289,7 +289,7 @@ export const quizQuestions: QuizQuestion[] = [
   // Frontend/Dashboard Questions
   {
     id: 'q-fe-three-js',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What is the primary purpose of Three.js in a monitoring dashboard?',
     options: [
       'Database queries',
@@ -306,7 +306,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-fe-websocket',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'Why use WebSockets instead of HTTP polling for real-time dashboards?',
     options: [
       'WebSockets are simpler to implement',
@@ -323,7 +323,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-fe-react-rerender',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What React hook is best for preventing unnecessary re-renders when dealing with frequently updating data?',
     options: [
       'useEffect',
@@ -342,7 +342,7 @@ export const quizQuestions: QuizQuestion[] = [
   // System Architecture Questions
   {
     id: 'q-arch-decoupling',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What is the main benefit of using Kafka as a message broker between services?',
     options: [
       'Faster database queries',
@@ -359,7 +359,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-arch-backpressure',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What is backpressure in a streaming data pipeline?',
     options: [
       'A technique to compress data',
@@ -376,7 +376,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-arch-eventual-consistency',
-    type: 'true_false',
+    type: 'true-false',
     question: 'In an eventually consistent system, all nodes will always have identical data at any given moment.',
     options: ['True', 'False'],
     correctAnswer: 1,
@@ -390,7 +390,7 @@ export const quizQuestions: QuizQuestion[] = [
   // Monitoring & Observability Questions
   {
     id: 'q-obs-metrics',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What are the three pillars of observability?',
     options: [
       'CPU, memory, and disk',
@@ -407,7 +407,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-obs-percentile',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'Why is p99 latency often more important than average latency for monitoring?',
     options: [
       'p99 is easier to calculate',
@@ -424,7 +424,7 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 'q-obs-alerting',
-    type: 'multiple_choice',
+    type: 'multiple-choice',
     question: 'What is alert fatigue and how can it be prevented?',
     options: [
       'A database performance issue; solved by adding indexes',
@@ -543,7 +543,8 @@ export function shuffleQuestions(questions: QuizQuestion[]): QuizQuestion[] {
 }
 
 export function shuffleOptions(question: QuizQuestion): QuizQuestion {
-  if (question.type === 'true_false') return question;
+  if (question.type === 'true-false') return question;
+  if (!question.options) return question;
 
   const optionsWithIndex = question.options.map((opt, idx) => ({ opt, idx }));
   const shuffled = [...optionsWithIndex].sort(() => Math.random() - 0.5);

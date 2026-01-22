@@ -41,7 +41,8 @@ export default function FlashcardsPage() {
     startTime: Date.now(),
   });
 
-  const { progress, startSession, endSession, recordFlashcardReview } = useStudyProgress();
+  const studyProgress = useStudyProgress();
+  const { startSession, endSession, recordFlashcardReview, streakDays, flashcardsReviewed } = studyProgress;
 
   // Filter cards by category
   useEffect(() => {
@@ -159,11 +160,11 @@ export default function FlashcardsPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              <StreakCounter streak={progress.streakDays} />
+              <StreakCounter streak={streakDays} />
               <MasteryRing
                 progress={
-                  progress.flashcardsReviewed > 0
-                    ? Math.min(100, (progress.flashcardsReviewed / flashcardData.length) * 100)
+                  flashcardsReviewed > 0
+                    ? Math.min(100, (flashcardsReviewed / flashcardData.length) * 100)
                     : 0
                 }
                 size={48}

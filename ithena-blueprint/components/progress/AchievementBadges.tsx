@@ -310,7 +310,7 @@ export function AchievementBadges({
       quizProgress.stats.totalQuestions > 0
         ? Math.round((quizProgress.stats.totalCorrect / quizProgress.stats.totalQuestions) * 100)
         : 0;
-    const perfectQuizzes = Object.values(quizProgress.quizProgress).filter(
+    const perfectQuizzes = Object.values(quizProgress.quizStats).filter(
       (p) => p.bestScore === 100
     ).length;
 
@@ -325,7 +325,7 @@ export function AchievementBadges({
           isUnlocked = progress.totalTimeSpent >= achievement.requirement.value;
           break;
         case 'articles':
-          isUnlocked = progress.articlesRead >= achievement.requirement.value;
+          isUnlocked = progress.articlesRead.length >= achievement.requirement.value;
           break;
         case 'masteredCards':
           isUnlocked = masteredCards >= achievement.requirement.value;

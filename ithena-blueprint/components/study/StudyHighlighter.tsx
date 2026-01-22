@@ -89,6 +89,15 @@ export function StudyHighlighter({
     setShowColorPicker(true);
   }, []);
 
+  // Map color to annotation type
+  const colorToType: Record<HighlightColor, 'how' | 'why' | 'critical' | 'note'> = {
+    blue: 'how',
+    green: 'why',
+    red: 'critical',
+    yellow: 'note',
+    purple: 'note',
+  };
+
   // Handle highlight creation
   const handleHighlight = useCallback(
     (color: HighlightColor) => {
@@ -98,7 +107,9 @@ export function StudyHighlighter({
         id: `hl-${Date.now()}`,
         contentId,
         text: selectedText,
+        type: colorToType[color],
         color,
+        position: { startOffset: 0, endOffset: selectedText.length },
         createdAt: new Date().toISOString(),
       };
 
@@ -176,8 +187,9 @@ export function HighlightsList({
   // Group highlights by color
   const grouped = highlights.reduce(
     (acc, h) => {
-      if (!acc[h.color]) acc[h.color] = [];
-      acc[h.color].push(h);
+      const color = h.color ?? 'yellow';
+      if (!acc[color]) acc[color] = [];
+      acc[color].push(h);
       return acc;
     },
     {} as Record<HighlightColor, StudyHighlight[]>
@@ -330,7 +342,7 @@ export function useHighlights(contentId: string) {
 
   const exportHighlights = useCallback(() => {
     const markdown = highlights
-      .map((h) => `- **[${HIGHLIGHT_COLORS[h.color as HighlightColor].label}]** "${h.text}"`)
+      .map((h) => `- **[${HIGHLIGHT_COLORS[(h.color ?? 'yellow') as HighlightColor].label}]** "${h.text}"`)
       .join('\n');
 
     const blob = new Blob([`# Highlights for ${contentId}\n\n${markdown}`], {

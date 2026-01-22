@@ -111,7 +111,7 @@ export function NotesPanel({
   const handleExport = useCallback(() => {
     const markdown = notes
       .map((n) => {
-        const tags = n.tags.length > 0 ? `\nTags: ${n.tags.join(', ')}` : '';
+        const tags = n.tags && n.tags.length > 0 ? `\nTags: ${n.tags.join(', ')}` : '';
         return `## Note (${new Date(n.createdAt).toLocaleDateString()})\n\n${n.content}${tags}\n`;
       })
       .join('\n---\n\n');
@@ -276,7 +276,7 @@ function NoteCard({
   onCreateFlashcard?: (front: string, back: string) => void;
 }) {
   const [editContent, setEditContent] = useState(note.content);
-  const [editTags, setEditTags] = useState(note.tags);
+  const [editTags, setEditTags] = useState(note.tags ?? []);
 
   if (isEditing) {
     return (
@@ -312,7 +312,7 @@ function NoteCard({
         {note.content}
       </p>
 
-      {note.tags.length > 0 && (
+      {note.tags && note.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {note.tags.map((tag) => (
             <span

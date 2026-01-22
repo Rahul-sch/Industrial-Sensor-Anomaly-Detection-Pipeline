@@ -67,7 +67,7 @@ export function ProgressOverview({
       cardMasteryPercent,
       dueCards,
       quizAccuracy,
-      articlesRead: progress.articlesRead,
+      articlesRead: progress.articlesRead.length,
       quizzesCompleted: quizProgress.stats.quizzesCompleted,
       streakDays: progress.streakDays,
     };

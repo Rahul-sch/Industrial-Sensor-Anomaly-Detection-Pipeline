@@ -24,6 +24,16 @@ interface ReviewButton {
   key: string;
 }
 
+// Map SM2Quality to IntervalPreview keys
+const QUALITY_TO_INTERVAL_KEY: Record<SM2Quality, 'again' | 'hard' | 'good' | 'easy'> = {
+  0: 'again',
+  1: 'again', // Map to again (same as 0)
+  2: 'hard',
+  3: 'hard',
+  4: 'good',
+  5: 'easy',
+};
+
 const REVIEW_BUTTONS: ReviewButton[] = [
   {
     quality: 0,
@@ -36,7 +46,7 @@ const REVIEW_BUTTONS: ReviewButton[] = [
     key: '1',
   },
   {
-    quality: 1,
+    quality: 3,
     label: 'Hard',
     shortLabel: '2',
     description: 'Incorrect, but upon seeing answer, remembered',
@@ -46,7 +56,7 @@ const REVIEW_BUTTONS: ReviewButton[] = [
     key: '2',
   },
   {
-    quality: 3,
+    quality: 4,
     label: 'Good',
     shortLabel: '3',
     description: 'Correct with some hesitation',
@@ -106,7 +116,8 @@ export function FlashCardReviewButtons({
       {/* Buttons */}
       <div className="flex gap-2 justify-center">
         {REVIEW_BUTTONS.map((button) => {
-          const interval = intervals[button.quality];
+          const intervalKey = QUALITY_TO_INTERVAL_KEY[button.quality];
+          const interval = intervals[intervalKey];
 
           return (
             <button

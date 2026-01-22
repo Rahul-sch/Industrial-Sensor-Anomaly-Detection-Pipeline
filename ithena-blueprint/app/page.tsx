@@ -122,7 +122,7 @@ export default function Home() {
     {
       id: 'article',
       label: 'Read one article',
-      done: progress.articlesRead > 0,
+      done: progress.articlesRead.length > 0,
     },
   ];
 

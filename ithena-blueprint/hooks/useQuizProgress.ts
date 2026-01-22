@@ -31,6 +31,15 @@ interface QuestionStats {
   accuracy: number;
 }
 
+interface QuizStatsObject {
+  totalQuestions: number;
+  totalCorrect: number;
+  totalQuizzesTaken: number;
+  totalQuizzesPassed: number;
+  quizzesCompleted: number; // Alias for totalQuizzesTaken
+  overallAccuracy: number;
+}
+
 interface QuizProgressState {
   // Per-quiz stats
   quizStats: Record<string, QuizStats>;
@@ -45,6 +54,9 @@ interface QuizProgressState {
   totalQuizzesTaken: number;
   totalQuizzesPassed: number;
   overallAccuracy: number;
+
+  // Stats object for compatibility
+  stats: QuizStatsObject;
 
   // Actions
   recordAttempt: (attempt: QuizAttempt) => void;
@@ -75,6 +87,16 @@ export const useQuizProgress = create<QuizProgressState>()(
       totalQuizzesTaken: 0,
       totalQuizzesPassed: 0,
       overallAccuracy: 0,
+
+      // Stats object for compatibility
+      stats: {
+        totalQuestions: 0,
+        totalCorrect: 0,
+        totalQuizzesTaken: 0,
+        totalQuizzesPassed: 0,
+        quizzesCompleted: 0,
+        overallAccuracy: 0,
+      },
 
       recordAttempt: (attempt: QuizAttempt) => {
         const state = get();
@@ -233,6 +255,14 @@ export const useQuizProgress = create<QuizProgressState>()(
           totalQuizzesTaken: 0,
           totalQuizzesPassed: 0,
           overallAccuracy: 0,
+          stats: {
+            totalQuestions: 0,
+            totalCorrect: 0,
+            totalQuizzesTaken: 0,
+            totalQuizzesPassed: 0,
+            quizzesCompleted: 0,
+            overallAccuracy: 0,
+          },
         });
       },
 
@@ -259,15 +289,20 @@ export const useQuizProgress = create<QuizProgressState>()(
           totalQuizzesTaken: totalTaken,
           totalQuizzesPassed: totalPassed,
           overallAccuracy,
+          stats: {
+            totalQuestions: totalAttempts,
+            totalCorrect,
+            totalQuizzesTaken: totalTaken,
+            totalQuizzesPassed: totalPassed,
+            quizzesCompleted: totalTaken,
+            overallAccuracy,
+          },
         });
       },
     }),
     {
       name: 'ithena-quiz-progress',
       storage: createJSONStorage(() => localStorage),
-      onRehydrate: () => (state) => {
-        state?.recalculateStats();
-      },
     }
   )
 );

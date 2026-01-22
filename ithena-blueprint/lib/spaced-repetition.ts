@@ -14,8 +14,11 @@
  * 5 - Perfect response
  */
 
+// SM-2 Quality rating type (0-5)
+export type SM2Quality = 0 | 1 | 2 | 3 | 4 | 5;
+
 export interface SM2Input {
-  quality: number;        // 0-5 rating of recall quality
+  quality: SM2Quality;    // 0-5 rating of recall quality
   interval: number;       // Current interval in days
   easeFactor: number;     // Current ease factor (default 2.5)
   repetitions: number;    // Number of successful repetitions
@@ -274,7 +277,7 @@ export function previewIntervals(
   currentEaseFactor: number,
   currentRepetitions: number
 ): IntervalPreview {
-  const getInterval = (quality: number) =>
+  const getInterval = (quality: SM2Quality) =>
     calculateSM2({
       quality,
       interval: currentInterval,

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 
 interface StreakCounterProps {
-  days: number;
+  days?: number;
+  streak?: number; // Alias for days
   showLabel?: boolean;
   size?: 'sm' | 'md' | 'lg';
   animate?: boolean;
@@ -26,12 +27,15 @@ const sizeConfig = {
 };
 
 export function StreakCounter({
-  days,
+  days: daysProp,
+  streak,
   showLabel = true,
   size = 'md',
   animate = true,
   className = '',
 }: StreakCounterProps) {
+  // Support both 'days' and 'streak' props
+  const days = daysProp ?? streak ?? 0;
   const config = sizeConfig[size];
 
   // Determine flame intensity based on streak length

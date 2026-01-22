@@ -1,7 +1,8 @@
 'use client';
 
 interface ProgressRingProps {
-  progress: number;           // 0-100
+  progress?: number;          // 0-100
+  value?: number;             // Alias for progress (0-100)
   size?: number;              // Diameter in pixels
   strokeWidth?: number;       // Ring thickness
   color?: string;             // Ring color (CSS variable or hex)
@@ -13,6 +14,7 @@ interface ProgressRingProps {
 
 export function ProgressRing({
   progress,
+  value,
   size = 80,
   strokeWidth = 8,
   color = 'var(--accent-green)',
@@ -21,8 +23,10 @@ export function ProgressRing({
   children,
   className = '',
 }: ProgressRingProps) {
+  // Support both 'progress' and 'value' props
+  const progressValue = progress ?? value ?? 0;
   // Clamp progress to 0-100
-  const clampedProgress = Math.max(0, Math.min(100, progress));
+  const clampedProgress = Math.max(0, Math.min(100, progressValue));
 
   // Calculate SVG dimensions
   const radius = (size - strokeWidth) / 2;

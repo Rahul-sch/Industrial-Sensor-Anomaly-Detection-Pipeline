@@ -57,7 +57,7 @@ export function QuizResults({
           wrongQuestions.push({
             question: q,
             userAnswer: answer,
-            correctAnswer: q.correctAnswer,
+            correctAnswer: q.correctAnswer as number,
           });
         }
       }
@@ -78,7 +78,7 @@ export function QuizResults({
 
   // Calculate time efficiency
   const avgTimePerQuestion = Math.round(timeSpent / questions.length);
-  const expectedTime = quiz.estimatedMinutes * 60;
+  const expectedTime = (quiz.estimatedMinutes ?? 5) * 60;
   const timeEfficiency = timeSpent < expectedTime ? 'Fast' : timeSpent < expectedTime * 1.5 ? 'On pace' : 'Slow';
 
   return (
@@ -282,10 +282,10 @@ function WrongAnswerCard({
 
       <div className="space-y-1 text-sm">
         <p className="text-[var(--accent-red)]">
-          <span className="opacity-70">Your answer:</span> {question.options[userAnswer]}
+          <span className="opacity-70">Your answer:</span> {question.options?.[userAnswer]}
         </p>
         <p className="text-[var(--accent-green)]">
-          <span className="opacity-70">Correct answer:</span> {question.options[correctAnswer]}
+          <span className="opacity-70">Correct answer:</span> {question.options?.[correctAnswer]}
         </p>
       </div>
 

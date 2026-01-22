@@ -7,6 +7,15 @@ import type { SM2Quality } from '@/lib/spaced-repetition';
 import { calculateSM2, getCardsForReview, sortCardsByPriority } from '@/lib/spaced-repetition';
 import { flashcardData } from '@/content/flashcards/flashcard-data';
 
+interface FlashcardStatsObject {
+  totalReviewed: number;
+  totalCards: number;
+  mastered: number;
+  learning: number;
+  new: number;
+  dueToday: number;
+}
+
 interface FlashcardProgressState {
   // Per-card progress tracking
   cardProgress: Record<string, FlashCardProgress>;
@@ -18,10 +27,14 @@ interface FlashcardProgressState {
   newCards: number;
   dueToday: number;
 
+  // Stats object for compatibility
+  stats: FlashcardStatsObject;
+
   // Actions
   reviewCard: (cardId: string, quality: SM2Quality) => void;
   getCardProgress: (cardId: string) => FlashCardProgress | null;
   getCardsForReview: () => string[];
+  getDueCards: () => string[]; // Alias for getCardsForReview
   getCardsByStatus: (status: 'new' | 'learning' | 'mastered') => string[];
   resetCardProgress: (cardId: string) => void;
   resetAllProgress: () => void;
@@ -61,6 +74,16 @@ export const useFlashcardProgress = create<FlashcardProgressState>()(
       newCards: flashcardData.length,
       dueToday: 0,
 
+      // Stats object for compatibility
+      stats: {
+        totalReviewed: 0,
+        totalCards: flashcardData.length,
+        mastered: 0,
+        learning: 0,
+        new: flashcardData.length,
+        dueToday: 0,
+      },
+
       reviewCard: (cardId: string, quality: SM2Quality) => {
         const state = get();
         const existingProgress = state.cardProgress[cardId] || createDefaultProgress(cardId);
@@ -70,7 +93,7 @@ export const useFlashcardProgress = create<FlashcardProgressState>()(
           quality,
           interval: existingProgress.interval,
           easeFactor: existingProgress.easeFactor,
-          repetitions: existingProgress.repetitions,
+          repetitions: existingProgress.repetitions ?? 0,
         });
 
         // Calculate next review date
@@ -124,13 +147,17 @@ export const useFlashcardProgress = create<FlashcardProgressState>()(
         }
 
         // Sort by priority (using SM-2 helper)
-        const progressRecords = dueCards.map((id) => ({
-          cardId: id,
-          ...(state.cardProgress[id] || createDefaultProgress(id)),
-        }));
+        const progressRecords = dueCards.map((id) =>
+          state.cardProgress[id] || createDefaultProgress(id)
+        );
 
         const sorted = sortCardsByPriority(progressRecords);
         return sorted.map((p) => p.cardId);
+      },
+
+      // Alias for getCardsForReview
+      getDueCards: () => {
+        return get().getCardsForReview();
       },
 
       getCardsByStatus: (status: 'new' | 'learning' | 'mastered') => {
@@ -166,6 +193,14 @@ export const useFlashcardProgress = create<FlashcardProgressState>()(
           learningCards: 0,
           newCards: flashcardData.length,
           dueToday: 0,
+          stats: {
+            totalReviewed: 0,
+            totalCards: flashcardData.length,
+            mastered: 0,
+            learning: 0,
+            new: flashcardData.length,
+            dueToday: 0,
+          },
         });
       },
 
@@ -177,6 +212,7 @@ export const useFlashcardProgress = create<FlashcardProgressState>()(
         let learning = 0;
         let newCount = 0;
         let due = 0;
+        let totalReviewed = 0;
 
         for (const card of flashcardData) {
           const progress = state.cardProgress[card.id];
@@ -185,6 +221,7 @@ export const useFlashcardProgress = create<FlashcardProgressState>()(
             newCount++;
             due++; // New cards are always due
           } else {
+            totalReviewed += progress.reviewCount;
             const status = getCardStatus(progress);
             if (status === 'mastered') mastered++;
             else if (status === 'learning') learning++;
@@ -200,16 +237,20 @@ export const useFlashcardProgress = create<FlashcardProgressState>()(
           learningCards: learning,
           newCards: newCount,
           dueToday: due,
+          stats: {
+            totalReviewed,
+            totalCards: flashcardData.length,
+            mastered,
+            learning,
+            new: newCount,
+            dueToday: due,
+          },
         });
       },
     }),
     {
       name: 'ithena-flashcard-progress',
       storage: createJSONStorage(() => localStorage),
-      onRehydrate: () => (state) => {
-        // Recalculate stats after rehydration
-        state?.recalculateStats();
-      },
     }
   )
 );

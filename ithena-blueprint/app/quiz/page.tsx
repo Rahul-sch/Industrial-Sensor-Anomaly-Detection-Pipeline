@@ -31,7 +31,8 @@ export default function QuizPage() {
   const [timeSpent, setTimeSpent] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
 
-  const { progress, startSession, endSession, recordQuizScore } = useStudyProgress();
+  const studyProgress = useStudyProgress();
+  const { startSession, endSession, recordQuizScore, streakDays } = studyProgress;
 
   // Timer effect
   useEffect(() => {
@@ -95,7 +96,8 @@ export default function QuizPage() {
     setTimerActive(false);
     const correctCount = questions.filter((q, i) => answers[i] === q.correctAnswer).length;
     const score = Math.round((correctCount / questions.length) * 100);
-    recordQuizScore(selectedQuiz!.id, score);
+    const passed = score >= (selectedQuiz?.passingScore ?? 70);
+    recordQuizScore(score, passed);
     endSession();
     setState('results');
   }, [questions, answers, selectedQuiz, recordQuizScore, endSession]);
@@ -146,7 +148,7 @@ export default function QuizPage() {
         case '4':
           if (!showResult) {
             const index = parseInt(e.key) - 1;
-            if (index < questions[currentQuestion]?.options.length) {
+            if (index < (questions[currentQuestion]?.options?.length ?? 0)) {
               handleAnswer(index);
             }
           }
@@ -200,7 +202,7 @@ export default function QuizPage() {
               {state === 'active' && (
                 <QuizTimer seconds={timeSpent} />
               )}
-              <StreakCounter streak={progress.streakDays} size="sm" />
+              <StreakCounter streak={streakDays} size="sm" />
             </div>
           </div>
         </div>
@@ -230,7 +232,7 @@ export default function QuizPage() {
               currentQuestion={currentQuestion + 1}
               totalQuestions={questions.length}
               answers={answers}
-              correctAnswers={questions.map((q) => q.correctAnswer)}
+              correctAnswers={questions.map((q) => q.correctAnswer as number)}
               showResults={showResult}
             />
 
@@ -259,7 +261,7 @@ export default function QuizPage() {
                 total={questions.length}
                 current={currentQuestion + 1}
                 answers={answers}
-                correctAnswers={questions.map((q) => q.correctAnswer)}
+                correctAnswers={questions.map((q) => q.correctAnswer as number)}
                 showResults={showResult}
                 onNavigate={(index) => {
                   setCurrentQuestion(index);

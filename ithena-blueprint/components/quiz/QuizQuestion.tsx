@@ -42,9 +42,9 @@ export function QuizQuestion({
 
   // Get question type label
   const typeLabel = {
-    multiple_choice: 'Multiple Choice',
-    true_false: 'True or False',
-    fill_blank: 'Fill in the Blank',
+    'multiple-choice': 'Multiple Choice',
+    'true-false': 'True or False',
+    'fill-blank': 'Fill in the Blank',
   }[question.type];
 
   return (
@@ -65,13 +65,13 @@ export function QuizQuestion({
       {/* Question Text */}
       <div className="p-6 bg-[var(--background-secondary)] rounded-xl">
         <h3 className="text-xl font-medium text-[var(--foreground)] leading-relaxed">
-          {question.type === 'fill_blank'
+          {question.type === 'fill-blank'
             ? formatFillBlankQuestion(question.question)
             : question.question}
         </h3>
 
         {/* Tags */}
-        {question.tags.length > 0 && (
+        {question.tags && question.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4">
             {question.tags.map((tag) => (
               <span
@@ -87,7 +87,7 @@ export function QuizQuestion({
 
       {/* Options */}
       <div className="space-y-3">
-        {question.options.map((option, index) => (
+        {question.options?.map((option, index) => (
           <QuizOption
             key={index}
             option={option}
@@ -122,11 +122,11 @@ export function QuizQuestion({
             >
               {isCorrect ? 'Correct!' : 'Incorrect'}
             </p>
-            {!isCorrect && (
+            {!isCorrect && question.options && (
               <p className="text-sm text-[var(--foreground-muted)] mt-1">
                 The correct answer is:{' '}
                 <span className="text-[var(--accent-green)] font-medium">
-                  {question.options[question.correctAnswer]}
+                  {question.options[question.correctAnswer as number]}
                 </span>
               </p>
             )}

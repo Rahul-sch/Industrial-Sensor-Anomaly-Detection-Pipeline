@@ -18,17 +18,25 @@ const INITIAL_PROGRESS: UserProgress = {
 };
 
 interface StudyProgressState extends UserProgress {
+  // Computed properties for compatibility
+  totalTimeSpent: number; // Alias for totalTimeSpentMinutes
+
+  // Current session tracking
+  _currentSessionId: string | null;
+
   // Actions
   startSession: (mode: StudySession['mode'], contentId: string) => string;
-  endSession: (sessionId: string, completed: boolean) => void;
+  endSession: (sessionId?: string, completed?: boolean) => void; // Optional params for convenience
   markArticleRead: (articleSlug: string) => void;
   markArticleInProgress: (articleSlug: string) => void;
   incrementFlashcardsReviewed: () => void;
   incrementFlashcardsMastered: () => void;
   recordQuizScore: (score: number, passed: boolean) => void;
+  recordFlashcardReview: (cardId: string, quality: number) => void; // Track per-card flashcard reviews
   unlockAchievement: (achievementId: string) => void;
   updateStreak: () => void;
   addTimeSpent: (minutes: number) => void;
+  addStudyTime: (minutes: number) => void; // Alias for addTimeSpent
   reset: () => void;
 }
 
@@ -54,6 +62,12 @@ export const useStudyProgress = create<StudyProgressState>()(
     (set, get) => ({
       ...INITIAL_PROGRESS,
 
+      // totalTimeSpent is kept in sync with totalTimeSpentMinutes
+      totalTimeSpent: 0,
+
+      // Current session tracking
+      _currentSessionId: null,
+
       startSession: (mode, contentId) => {
         const sessionId = `session-${Date.now()}`;
         const session: StudySession = {
@@ -68,6 +82,7 @@ export const useStudyProgress = create<StudyProgressState>()(
 
         set((state) => ({
           sessions: [...state.sessions.slice(-99), session], // Keep last 100 sessions
+          _currentSessionId: sessionId,
         }));
 
         // Update streak when starting a session
@@ -76,10 +91,14 @@ export const useStudyProgress = create<StudyProgressState>()(
         return sessionId;
       },
 
-      endSession: (sessionId, completed) => {
+      endSession: (sessionId, completed = true) => {
+        const state = get();
+        const targetSessionId = sessionId || state._currentSessionId;
+        if (!targetSessionId) return;
+
         set((state) => {
           const sessions = state.sessions.map((s) => {
-            if (s.id === sessionId) {
+            if (s.id === targetSessionId) {
               const endTime = new Date();
               const startTime = new Date(s.startTime);
               const timeSpentSeconds = Math.floor(
@@ -96,14 +115,17 @@ export const useStudyProgress = create<StudyProgressState>()(
           });
 
           // Calculate time spent in minutes
-          const session = sessions.find((s) => s.id === sessionId);
+          const session = sessions.find((s) => s.id === targetSessionId);
           const additionalMinutes = session
             ? Math.floor(session.timeSpentSeconds / 60)
             : 0;
 
+          const newTotal = state.totalTimeSpentMinutes + additionalMinutes;
           return {
             sessions,
-            totalTimeSpentMinutes: state.totalTimeSpentMinutes + additionalMinutes,
+            totalTimeSpentMinutes: newTotal,
+            totalTimeSpent: newTotal,
+            _currentSessionId: null,
           };
         });
       },
@@ -195,9 +217,28 @@ export const useStudyProgress = create<StudyProgressState>()(
       },
 
       addTimeSpent: (minutes) => {
+        set((state) => {
+          const newTotal = state.totalTimeSpentMinutes + minutes;
+          return {
+            totalTimeSpentMinutes: newTotal,
+            totalTimeSpent: newTotal,
+          };
+        });
+      },
+
+      // Alias for addTimeSpent
+      addStudyTime: (minutes) => {
+        get().addTimeSpent(minutes);
+      },
+
+      // Track flashcard review (increments reviewed count and optionally mastered)
+      recordFlashcardReview: (_cardId, quality) => {
+        // cardId can be used for per-card tracking if needed
         set((state) => ({
-          totalTimeSpentMinutes: state.totalTimeSpentMinutes + minutes,
+          flashcardsReviewed: state.flashcardsReviewed + 1,
+          flashcardsMastered: quality >= 4 ? state.flashcardsMastered + 1 : state.flashcardsMastered,
         }));
+        get().updateStreak();
       },
 
       reset: () => set(INITIAL_PROGRESS),

@@ -80,6 +80,10 @@ export function ActivityHeatmap({
 
   // Load activity data
   const activityData = useMemo(() => {
+    // Check if we're on the client side
+    if (typeof window === 'undefined') {
+      return generateSampleData(months);
+    }
     // Try to load from localStorage first
     const stored = localStorage.getItem('ithena-activity-data');
     if (stored) {
@@ -383,6 +387,9 @@ export function ActivityHeatmap({
 // Compact inline heatmap (last 7 days)
 export function ActivityHeatmapMini({ className = '' }: { className?: string }) {
   const activityData = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return generateSampleData(1);
+    }
     const stored = localStorage.getItem('ithena-activity-data');
     if (stored) {
       return new Map<string, DayActivity>(Object.entries(JSON.parse(stored)));
