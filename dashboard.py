@@ -106,7 +106,7 @@ if LIMITER_AVAILABLE:
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["200 per hour"],
+        default_limits=["1000 per minute"],  # Much higher for dashboard polling
         storage_uri="memory://"
     )
 else:
@@ -145,6 +145,13 @@ def handle_403_error(e):
     """Handle 403 errors and return JSON for API routes"""
     if request.path.startswith('/api/'):
         return jsonify({'success': False, 'error': 'Access forbidden'}), 403
+    return e
+
+@app.errorhandler(429)
+def handle_429_error(e):
+    """Handle 429 rate limit errors and return JSON for API routes"""
+    if request.path.startswith('/api/'):
+        return jsonify({'success': False, 'error': 'Rate limit exceeded. Please slow down.'}), 429
     return e
 
 @app.errorhandler(401)
@@ -933,14 +940,14 @@ def api_login():
     data = request.json or {}
     username = data.get('username')
     password = data.get('password')
-    
+
     if not username or not password:
         return jsonify({'success': False, 'error': 'Username and password required'}), 400
-    
+
     conn = get_db_connection()
     if not conn:
         return jsonify({'success': False, 'error': 'Database not connected'}), 500
-    
+
     try:
         cursor = conn.cursor()
         

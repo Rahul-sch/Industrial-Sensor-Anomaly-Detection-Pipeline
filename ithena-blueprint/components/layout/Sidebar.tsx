@@ -16,6 +16,7 @@ import {
   GraduationCap,
   Box,
   ExternalLink,
+  Link2,
 } from 'lucide-react';
 import { useStudyProgress } from '@/hooks/useStudyProgress';
 import { useFlashcardProgress } from '@/hooks/useFlashcardProgress';
@@ -24,6 +25,7 @@ import clsx from 'clsx';
 // Main navigation items
 const mainNavItems = [
   { href: '/', label: 'Home', icon: Home },
+  { href: '/connections', label: 'Code Connections', icon: Link2 },
   { href: '/wiki', label: 'Wiki', icon: BookOpen },
   { href: '/xray', label: 'Code X-Ray', icon: Code2 },
   { href: '/map', label: 'System Map', icon: Map },

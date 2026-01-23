@@ -16,6 +16,7 @@ import {
   Circle,
   ChevronRight,
   TrendingUp,
+  Link2,
 } from 'lucide-react';
 import { useStudyProgress } from '@/hooks/useStudyProgress';
 import { useFlashcardProgress } from '@/hooks/useFlashcardProgress';
@@ -24,6 +25,16 @@ import { StreakCounter } from '@/components/ui/StreakCounter';
 import clsx from 'clsx';
 
 const modes = [
+  {
+    id: 'connections',
+    label: 'Code Connections',
+    description:
+      'Visual guide to critical code flows. See exactly how Kafka, ML detection, and WebSocket connect.',
+    icon: Link2,
+    href: '/connections',
+    color: 'cyan',
+    stats: ['3 critical flows', 'Real code', 'Fast to study'],
+  },
   {
     id: 'wiki',
     label: 'First Principles Wiki',

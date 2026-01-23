@@ -5,9 +5,9 @@ import { compileWikiMDX } from '@/lib/mdx';
 import { ArticleRenderer } from '@/components/wiki/ArticleRenderer';
 
 interface WikiPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 async function getWikiArticle(slug: string) {
@@ -34,7 +34,8 @@ async function getWikiArticle(slug: string) {
 }
 
 export default async function WikiArticlePage({ params }: WikiPageProps) {
-  const article = await getWikiArticle(params.slug);
+  const { slug } = await params;
+  const article = await getWikiArticle(slug);
 
   if (!article) {
     notFound();

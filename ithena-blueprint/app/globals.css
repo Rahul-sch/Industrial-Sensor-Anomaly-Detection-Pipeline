@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Ithena: The Blueprint - Dark Theme */
 
@@ -27,16 +29,6 @@
   --code-gutter: #475569;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-background-secondary: var(--background-secondary);
-  --color-background-tertiary: var(--background-tertiary);
-  --color-foreground: var(--foreground);
-  --color-foreground-muted: var(--foreground-muted);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
 }
 
 html { scroll-behavior: smooth; }
